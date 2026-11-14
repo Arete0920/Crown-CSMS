@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to Crown are documented here.
+This file records historical development milestones, not a current feature availability or deployment certification statement. Entries document work as described at the time; they do not establish that an integration is active, a feature is currently available to buyers, or the hosted environment is current. For current release authority and known limitations, consult [Current Release Status](docs/CURRENT_RELEASE_STATUS.md) and [Known Limitations](docs/KNOWN_LIMITATIONS.md).
+
+**Payment status:** Historical references to CompuWerx or billing automation are not evidence of active payment processing. External payments remain disabled pending the separate provider, security, and release authorizations.
 
 ## [Unreleased] - Investor Release Readiness Sprint
 

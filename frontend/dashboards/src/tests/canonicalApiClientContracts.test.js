@@ -14,7 +14,7 @@ describe("canonical frontend API client contracts", () => {
   it("routes Crown navigation through authenticatedFetch", () => {
     const source = load("../components/crown/CrownLayout.jsx");
     expect(source).toContain('import { authenticatedFetch } from "../../utils/authClient.js";');
-    expect(source).toContain('authenticatedFetch("/api/v1/nav/")');
+    expect(source).toMatch(/authenticatedFetch\(\s*["']\/api\/v1\/nav\/["']\s*(?:,|\))/);
     expect(source).not.toContain('globalThis.fetch("/api/v1/nav/"');
     expect(source).not.toContain("function getSchoolId()");
     expect(source).not.toContain("function getToken()");

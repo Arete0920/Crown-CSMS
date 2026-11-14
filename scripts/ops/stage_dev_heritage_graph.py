@@ -1,4 +1,4 @@
-"""Fail-closed DEV-only reviewed 24-migration stage for issue #427.
+"""Fail-closed DEV-only explicitly selected migration stage for issue #427.
 
 Never called by ordinary deploy-dev. Cannot self-authorize; GitHub Actions dev
 workflow owns consent, provenance and maintenance window. Does not create Azure
@@ -26,6 +26,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DEV_APP = 'crown-api-dev'
 EXPECTED_COUNT = 24
 CONFIRMATION = 'migrate-dev-reviewed-24'
+PROFILES = {
+    'heritage24': (EXPECTED_COUNT, CONFIRMATION),
+    'finance_setup_0003': (1, 'migrate-dev-finance-setup-0003'),
+}
 REPO = 'Arete0920/Crown-CSMS'
 REPO_ID = 1339719218
 REHEARSAL_WORKFLOW = '.github/workflows/isolated-postgres-restore-drill.yml'
@@ -40,7 +44,14 @@ def _allowed_sha(value):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{40}', value) is not None
 
 
-def authority(expected_sha, confirmation, synthetic, backup, maintenance, run_id, environ):
+def profile_contract(profile):
+    if profile not in PROFILES:
+        raise StageBlocked('reviewed_migration_profile_invalid')
+    return PROFILES[profile]
+
+
+def authority(expected_sha, confirmation, synthetic, backup, maintenance, run_id, environ,
+              *, profile='heritage24'):
     """All authorizations must be explicit before configuration/secret reads."""
     if not _allowed_sha(expected_sha):
         raise StageBlocked('exact_source_sha_required')
@@ -49,7 +60,8 @@ def authority(expected_sha, confirmation, synthetic, backup, maintenance, run_id
             or environ.get('GITHUB_REF') != 'refs/heads/main'
             or environ.get('GITHUB_SHA') != expected_sha):
         raise StageBlocked('manual_protected_main_only')
-    if (confirmation != CONFIRMATION or synthetic != 'true' or backup != 'true'
+    _, required_confirmation = profile_contract(profile)
+    if (confirmation != required_confirmation or synthetic != 'true' or backup != 'true'
             or maintenance != 'true'):
         raise StageBlocked('owner_approval_or_recovery_evidence_missing')
     stage_run = environ.get('GITHUB_RUN_ID', '')
@@ -64,10 +76,11 @@ def authority(expected_sha, confirmation, synthetic, backup, maintenance, run_id
     return int(run_id)
 
 
-def receipt_contract(receipt, expected_sha):
+def receipt_contract(receipt, expected_sha, *, profile='heritage24'):
     """Rehearsal evidence only; does not substitute for checking live DB plan."""
     if not isinstance(receipt, dict) or not _allowed_sha(expected_sha):
         raise StageBlocked('reviewed_restore_receipt_invalid')
+    expected_count, _ = profile_contract(profile)
     rehearsal = receipt.get('migration_rehearsal')
     required_outer = {
         'result': 'PASS', 'source_sha': expected_sha,
@@ -80,7 +93,7 @@ def receipt_contract(receipt, expected_sha):
     }
     required_inner = {
         'result': 'PASS', 'source_sha': expected_sha,
-        'target_postgres_major': 15, 'reviewed_migrations': EXPECTED_COUNT,
+        'target_postgres_major': 15, 'reviewed_migrations': expected_count,
         'remaining_pending': 0, 'existing_seed_rows_preserved': True,
         'existing_nonseed_table_values_preserved': True,
         'existing_table_counts_preserved': True, 'atomic_graph': True,
@@ -94,7 +107,7 @@ def receipt_contract(receipt, expected_sha):
             or type(rehearsal.get('baseline_migration_records')) is not int
             or rehearsal['baseline_migration_records'] < 1
             or type(rehearsal.get('migrated_records')) is not int
-            or rehearsal['migrated_records'] != rehearsal['baseline_migration_records'] + EXPECTED_COUNT
+            or rehearsal['migrated_records'] != rehearsal['baseline_migration_records'] + expected_count
             or type(rehearsal.get('baseline_public_tables')) is not int
             or rehearsal['baseline_public_tables'] < 1
             or receipt.get('row_counts_match') is not True
@@ -107,7 +120,19 @@ def receipt_contract(receipt, expected_sha):
             or not isinstance(receipt.get('source_database_identity_sha256'), str)
             or re.fullmatch(r'[0-9a-f]{64}', receipt['source_database_identity_sha256']) is None
             or not isinstance(rehearsal.get('baseline_fingerprint'), str)
-            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_fingerprint']) is None):
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_fingerprint']) is None
+            or not isinstance(rehearsal.get('baseline_columns_fingerprint'), str)
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_columns_fingerprint']) is None
+            or not isinstance(rehearsal.get('baseline_rows_fingerprint'), str)
+            or re.fullmatch(r'[0-9a-f]{64}', rehearsal['baseline_rows_fingerprint']) is None):
+        raise StageBlocked('reviewed_restore_receipt_invalid')
+    if profile == 'finance_setup_0003' and (
+            receipt.get('reviewed_migration_profile') != profile
+            or rehearsal.get('reviewed_profile') != profile
+            or rehearsal.get('finance_school_id_semantics_preserved') is not True):
+        raise StageBlocked('reviewed_restore_receipt_invalid')
+    if (receipt.get('reviewed_migration_profile', 'heritage24') != profile
+            or rehearsal.get('reviewed_profile', 'heritage24') != profile):
         raise StageBlocked('reviewed_restore_receipt_invalid')
     if type(receipt.get('source_postgres_version')) is not int or receipt['source_postgres_version'] // 10000 != 15:
         raise StageBlocked('source_postgresql15_not_verified')
@@ -189,12 +214,13 @@ def _fetch_artifact_zip(artifact_id, token):
         raise StageBlocked('rehearsal_artifact_download_denied') from None
 
 
-def authenticated_rehearsal_receipt(run_id, artifact_id, expected_sha, environ):
+def authenticated_rehearsal_receipt(run_id, artifact_id, expected_sha, environ, *, profile='heritage24'):
     """Bind a prior successful restore to GitHub run, ZIP digest and receipt.
 
     The schema-stage run must have its own GITHUB_RUN_ID. A local JSON path or
     operator-provided checksum alone never establishes the prior run's identity.
     """
+    profile_contract(profile)
     token = environ.get('CROWN_STAGE_GITHUB_TOKEN', '')
     if (not isinstance(token, str) or not token or any(ord(ch) <= 32 for ch in token)
             or not isinstance(artifact_id, str)
@@ -255,35 +281,51 @@ def authenticated_rehearsal_receipt(run_id, artifact_id, expected_sha, environ):
         raise
     except (BadZipFile, ValueError, UnicodeError, OSError):
         raise StageBlocked('rehearsal_receipt_archive_invalid') from None
-    receipt_contract(receipt, expected_sha)
+    receipt_contract(receipt, expected_sha, profile=profile)
     return receipt
 
 
-def live_baseline_contract(receipt, fingerprint, migration_records, public_tables):
-    """Refuse a stale restored-copy rehearsal before any live schema mutation.
+def live_baseline_contract(receipt, fingerprint, migration_records, public_tables,
+                           columns_fingerprint, rows_fingerprint):
+    """Classify source/clone drift without disclosing data or relaxing denial.
 
-    The fingerprint hashes the original public columns and row digests, using
-    the same data_fingerprint() implementation as the disposable PG15 drill.
-    A matching DB hostname alone cannot establish the same data baseline.
+    A maintenance authorization flag is not a write freeze. Every discrepancy
+    remains a hard stop before migrations; only fixed categories are exported.
     """
     rehearsal = receipt.get('migration_rehearsal') if isinstance(receipt, dict) else None
-    if (
-        not isinstance(rehearsal, dict)
-        or not isinstance(fingerprint, str)
-        or re.fullmatch(r'[0-9a-f]{64}', fingerprint) is None
-        or type(migration_records) is not int
-        or type(public_tables) is not int
-        or fingerprint != rehearsal.get('baseline_fingerprint')
-        or migration_records != rehearsal.get('baseline_migration_records')
-        or public_tables != rehearsal.get('baseline_public_tables')
-    ):
-        raise StageBlocked('live_dev_baseline_differs_from_rehearsal')
+    hashes = (fingerprint, columns_fingerprint, rows_fingerprint)
+    required = ('baseline_fingerprint', 'baseline_columns_fingerprint',
+                'baseline_rows_fingerprint')
+    if (not isinstance(rehearsal, dict)
+            or any(not isinstance(value, str) or re.fullmatch(r'[0-9a-f]{64}', value) is None
+                   for value in hashes)
+            or type(migration_records) is not int or type(public_tables) is not int
+            or any(not isinstance(rehearsal.get(key), str)
+                   or re.fullmatch(r'[0-9a-f]{64}', rehearsal[key]) is None for key in required)
+            or type(rehearsal.get('baseline_migration_records')) is not int
+            or type(rehearsal.get('baseline_public_tables')) is not int):
+        raise StageBlocked('live_dev_baseline_comparison_unverified')
+    if migration_records != rehearsal['baseline_migration_records']:
+        raise StageBlocked('live_dev_migration_history_count_differs_from_rehearsal')
+    if public_tables != rehearsal['baseline_public_tables']:
+        raise StageBlocked('live_dev_public_table_count_differs_from_rehearsal')
+    columns_differ = columns_fingerprint != rehearsal['baseline_columns_fingerprint']
+    rows_differ = rows_fingerprint != rehearsal['baseline_rows_fingerprint']
+    if columns_differ and rows_differ:
+        raise StageBlocked('live_dev_columns_and_rows_differ_from_rehearsal')
+    if columns_differ:
+        raise StageBlocked('live_dev_columns_differ_from_rehearsal')
+    if rows_differ:
+        raise StageBlocked('live_dev_row_values_differ_from_rehearsal')
+    if fingerprint != rehearsal['baseline_fingerprint']:
+        raise StageBlocked('live_dev_combined_fingerprint_inconsistent')
     return True
 
 
-def plan_contract(plan, reviewed):
+def plan_contract(plan, reviewed, *, profile='heritage24'):
     """Accept precisely the reviewed non-reverse DAG, never a partial suffix."""
-    if not isinstance(plan, list) or len(plan) != EXPECTED_COUNT:
+    expected_count, _ = profile_contract(profile)
+    if not isinstance(plan, list) or len(plan) != expected_count:
         raise StageBlocked('live_pending_graph_differs_from_rehearsal')
     observed = []
     for item, reverse in plan:
@@ -309,14 +351,45 @@ def verify_current_main(expected_sha, *, run=subprocess.run):
         raise StageBlocked('protected_main_moved_or_unverified')
 
 
-def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
+def finance_column_contract(connection, *, migrated=False):
+    with connection.cursor() as cursor:
+        cursor.execute('SELECT data_type,character_maximum_length FROM information_schema.columns '
+                       'WHERE table_schema=%s AND table_name=%s AND column_name=%s',
+                       ['public', 'finance_setup_financepolicyversion', 'school_id'])
+        if cursor.fetchone() != (('character varying', 36) if migrated else ('integer', None)):
+            raise StageBlocked('finance_school_id_schema_invalid')
+
+
+def preserve_rows(connection, columns, before, seed_before, *, profile='heritage24', finance_before=None):
+    from rehearse_dev_heritage_migrations import row_digest, seed_row_multiset, SEED_TABLES
+    expected_count, _ = profile_contract(profile)
+    finance = profile == 'finance_setup_0003'
+    for table, names in columns.items():
+        after = row_digest(connection, table, names)
+        if table == 'django_migrations':
+            if after[0] != before[table][0] + expected_count:
+                raise StageBlocked('migration_record_preservation_failed')
+        elif finance and table == 'finance_setup_financepolicyversion':
+            if finance_before is None or row_digest(connection, table, names, finance_school_as_text=True) != finance_before:
+                raise StageBlocked('existing_dev_data_changed')
+        elif not finance and table in SEED_TABLES:
+            if seed_before[table] - seed_row_multiset(connection, table, names):
+                raise StageBlocked('existing_seed_data_changed')
+        elif after != before[table]:
+            raise StageBlocked('existing_dev_data_changed')
+
+
+def execute_stage(expected_sha, receipt, *, get_dev_settings=None, profile='heritage24'):
     """Transactional migration under the existing PostgreSQL advisory lock."""
-    from rehearse_dev_heritage_migrations import (MIGRATIONS, SEED_TABLES, verify_manifest,
-        table_facts, row_digest, seed_row_multiset, data_fingerprint)
+    from rehearse_dev_heritage_migrations import (profile_manifest, SEED_TABLES, verify_manifest,
+        table_facts, row_digest, seed_row_multiset, data_fingerprint,
+        component_fingerprint)
     from run_dev_inquiry_migration import (load_dev_settings, validate_database_url,
                                             DEV_HOST, Blocked as DevConfigBlocked)
-    verify_manifest()  # Exact 24 pinned file digests before Azure appsettings reads.
-    receipt_contract(receipt, expected_sha)
+    reviewed = profile_manifest(profile)
+    finance = profile == 'finance_setup_0003'
+    verify_manifest(profile=profile)  # Pinned source before Azure appsettings reads.
+    receipt_contract(receipt, expected_sha, profile=profile)
     verify_current_main(expected_sha)
     load_settings = get_dev_settings or load_dev_settings
     try:
@@ -381,17 +454,22 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
                 raise StageBlocked('migration_graph_conflict')
             targets = executor.loader.graph.leaf_nodes()
             plan = executor.migration_plan(targets)
-            names = plan_contract(plan, MIGRATIONS)
+            names = plan_contract(plan, reviewed, profile=profile)
             history = set(MigrationRecorder(connection).applied_migrations())
             columns = table_facts(connection)
             before = {table: row_digest(connection, table, names)
                       for table, names in columns.items()}
             seed_before = {table: seed_row_multiset(connection, table, columns[table])
                            for table in SEED_TABLES if table in columns}
+            if finance:
+                finance_column_contract(connection)
+            finance_before = row_digest(connection, 'finance_setup_financepolicyversion',
+                columns['finance_setup_financepolicyversion'], finance_school_as_text=True) if finance else None
             # Match the exact data baseline rehearsed on the disposable copy,
             # not merely its database name, migration graph or receipt shape.
             live_baseline_contract(receipt, data_fingerprint(columns, before),
-                                   len(history), len(columns))
+                                   len(history), len(columns),
+                                   component_fingerprint(columns), component_fingerprint(before))
             verify_current_main(expected_sha)  # race protection immediately before schema mutation
             with transaction.atomic(using=connection.alias):
                 executor.migrate(targets)
@@ -403,18 +481,13 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
                 # Check original values before committing any live DDL. The
                 # reviewed permission/feature seeds may add rows but may not
                 # mutate or remove any existing entries.
-                for table, names_for_table in columns.items():
-                    after = row_digest(connection, table, names_for_table)
-                    if table == 'django_migrations':
-                        if after[0] != before[table][0] + EXPECTED_COUNT:
-                            raise StageBlocked('migration_record_preservation_failed')
-                    elif table in SEED_TABLES:
-                        if seed_before[table] - seed_row_multiset(connection, table, names_for_table):
-                            raise StageBlocked('existing_seed_data_changed')
-                    elif after != before[table]:
-                        raise StageBlocked('existing_dev_data_changed')
+                if finance:
+                    finance_column_contract(connection, migrated=True)
+                preserve_rows(connection, columns, before, seed_before,
+                              profile=profile, finance_before=finance_before)
                 # All DDL, migration-history writes and validation share PG15 transaction.
             return dict(result='PASS', source_sha=expected_sha,
+                        reviewed_profile=profile,
                         applied_migrations_count=len(names), remaining_pending=0,
                         target_app=DEV_APP,
                         database_identity_sha256=identity,
@@ -430,6 +503,7 @@ def execute_stage(expected_sha, receipt, *, get_dev_settings=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--expected-sha', required=True)
+    parser.add_argument('--profile', default='heritage24', choices=tuple(PROFILES))
     parser.add_argument('--confirmation', default='')
     parser.add_argument('--synthetic-dev-confirmed', default='false')
     parser.add_argument('--backup-recovery-verified', default='false')
@@ -443,12 +517,13 @@ def main(argv=None):
     try:
         authority(args.expected_sha, args.confirmation, args.synthetic_dev_confirmed,
                   args.backup_recovery_verified, args.maintenance_window_confirmed,
-                  args.rehearsal_run_id, os.environ)
+                  args.rehearsal_run_id, os.environ, profile=args.profile)
         receipt = authenticated_rehearsal_receipt(
             args.rehearsal_run_id, args.rehearsal_artifact_id, args.expected_sha, os.environ,
+            profile=args.profile,
         )
         with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            outcome = execute_stage(args.expected_sha, receipt)
+            outcome = execute_stage(args.expected_sha, receipt, profile=args.profile)
         status.update(outcome, live_dev_schema_write_performed=True)
     except Exception as exc:
         status['reason'] = str(exc) if isinstance(exc, StageBlocked) else 'dev_schema_stage_execution_blocked'

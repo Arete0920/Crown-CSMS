@@ -270,16 +270,27 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
     student.refresh_from_db(fields=["school"])
     academic_student = _canonical_schedule_fixture(user)
 
-    StudentIdentityLink.objects.update_or_create(
-        core_student=student,
-        defaults={
-            "school_id": SCHOOL_ID,
-            "compatibility_student": academic_student,
-            "source": StudentIdentityLink.SOURCE_RECONCILIATION,
-            "verification_status": StudentIdentityLink.STATUS_VERIFIED,
-            "evidence_reference": f"sandbox:heritage:student-self-service:{STUDENT_NUMBER}",
-        },
-    )
+    reference = f"sandbox:heritage:student-self-service:{STUDENT_NUMBER}"
+    identity_link = StudentIdentityLink.objects.filter(core_student=student).first()
+    # Warm reads must not take SQLite write locks for unchanged demo fixtures.
+    if (
+        identity_link is None
+        or str(identity_link.school_id) != str(SCHOOL_ID)
+        or identity_link.compatibility_student_id != academic_student.pk
+        or identity_link.source != StudentIdentityLink.SOURCE_RECONCILIATION
+        or identity_link.verification_status != StudentIdentityLink.STATUS_VERIFIED
+        or identity_link.evidence_reference != reference
+    ):
+        StudentIdentityLink.objects.update_or_create(
+            core_student=student,
+            defaults={
+                "school_id": SCHOOL_ID,
+                "compatibility_student": academic_student,
+                "source": StudentIdentityLink.SOURCE_RECONCILIATION,
+                "verification_status": StudentIdentityLink.STATUS_VERIFIED,
+                "evidence_reference": reference,
+            },
+        )
     enrollment = AcademicEnrollment.objects.select_related("section").get(
         school_id=SCHOOL_ID,
         student=academic_student,
@@ -294,21 +305,34 @@ def _ensure_student_records(user: UserAccount) -> tuple[Student, AcademicStudent
         email="teacher.lower@heritage.example.org",
         defaults={"first_name": "Eleanor", "last_name": "Lower", "phone": "555-0110"},
     )
-    AttendanceRecord.objects.filter(
+    legacy_attendance = AttendanceRecord.objects.filter(
         student=student,
         date=date(2026, 8, 10),
         section__isnull=True,
-    ).delete()
-    AttendanceRecord.objects.update_or_create(
+    )
+    if legacy_attendance.exists():
+        legacy_attendance.delete()
+    attendance = AttendanceRecord.objects.filter(
         student=student,
         section=enrollment.section,
         date=date(2026, 8, 10),
-        defaults={
-            "course": None,
-            "status": AttendanceRecord.STATUS_PRESENT,
-            "notes_public": "Heritage sandbox section-aware attendance.",
-        },
-    )
+    ).first()
+    if (
+        attendance is None
+        or attendance.course_id is not None
+        or attendance.status != AttendanceRecord.STATUS_PRESENT
+        or attendance.notes_public != "Heritage sandbox section-aware attendance."
+    ):
+        AttendanceRecord.objects.update_or_create(
+            student=student,
+            section=enrollment.section,
+            date=date(2026, 8, 10),
+            defaults={
+                "course": None,
+                "status": AttendanceRecord.STATUS_PRESENT,
+                "notes_public": "Heritage sandbox section-aware attendance.",
+            },
+        )
     GradeRecord.objects.get_or_create(
         student=student,
         course=course,

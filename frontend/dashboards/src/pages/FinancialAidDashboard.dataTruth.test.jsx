@@ -39,6 +39,7 @@ describe('Financial Aid dashboard data truth', () => {
     expect(content).not.toContain('Compliance: Clean');
     expect(content).not.toContain('April disbursement batch prepared');
     expect(config.quickActions).toEqual([
+      { label: 'Review Applications and Awards', href: '/financial-aid/decisions' },
       { label: 'Open Financial Aid Setup', href: '/aid-setup' },
       { label: 'Open Finance', href: '/finance' },
     ]);
