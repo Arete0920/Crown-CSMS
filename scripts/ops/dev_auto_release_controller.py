@@ -182,7 +182,7 @@ def dispatch(client, workflow, sha):
     if workflow == BACKEND:
         inputs = {
             "ref": sha,
-            "auto_code_only": "true",
+            "confirm_dev_reviewed24": "auto-code-only",
             "apply_reviewed_heritage24": "false",
             "apply_finance_setup_0003": "false",
             "synthetic_dev_confirmed": "false",
