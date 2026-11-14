@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import RoleDashboardPage from "../pages/RoleDashboardPage.jsx";
 import BillingDashboard from "../pages/BillingDashboard.jsx";
 import FinancialAidDashboard from "../pages/FinancialAidDashboard.jsx";
+import JirehAidDecisionsPage from "../pages/JirehAidDecisionsPage.jsx";
 import JirehSGODashboard from "../pages/JirehSGODashboard.jsx";
 import JirehSGOIntakePage from "../pages/JirehSGOIntakePage.jsx";
 import JirehSGOLoginPage from "../pages/JirehSGOLoginPage.jsx";
@@ -462,6 +463,14 @@ export const router = createBrowserRouter([
     element: (
       <RoleRouteGuard allowedRoles={FINANCIAL_AID_ALLOWED_ROLES}>
         <FinancialAidDashboard />
+      </RoleRouteGuard>
+    ),
+  },
+  {
+    path: PATHS.FINANCIAL_AID_DECISIONS,
+    element: (
+      <RoleRouteGuard allowedRoles={FINANCIAL_AID_ALLOWED_ROLES}>
+        <JirehAidDecisionsPage />
       </RoleRouteGuard>
     ),
   },

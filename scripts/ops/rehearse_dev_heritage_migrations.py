@@ -1,4 +1,4 @@
-"""Rehearse the exact reviewed 24-node DEV graph on a disposable PG15 restore.
+"""Rehearse an explicitly selected, pinned graph on a disposable PG15 restore.
 
 This module has no DEV connection, Azure login or live-apply mode. Row contents
 and process exception text never leave the child. Default deployment stays closed.
@@ -52,6 +52,11 @@ MIGRATIONS = {
     "teacher_evaluations.0003_order_access_decisions": _TEACHER_EVALUATION_SHA256[2],
 }
 SEED_TABLES = {"core_crownpermission", "core_rolepermission", "subscriptions_feature"}
+FINANCE_MIGRATIONS = {
+    "finance_setup.0003_financepolicyversion_uuid_compatible_school_id":
+        "69acb0b039778836df994e75b75834f877006ae29919501c93f5fa593628ae65",
+}
+PROFILES = {"heritage24": MIGRATIONS, "finance_setup_0003": FINANCE_MIGRATIONS}
 DB_NAME = re.compile(r"crown_restore_[0-9]{1,20}_[0-9]{1,5}\Z")
 
 
@@ -59,18 +64,25 @@ class RehearsalBlocked(RuntimeError):
     """Only fixed non-sensitive reason codes are emitted."""
 
 
-def verify_manifest(root=ROOT):
-    for identity, digest in MIGRATIONS.items():
+def profile_manifest(profile):
+    if profile not in PROFILES:
+        raise RehearsalBlocked("reviewed_migration_profile_invalid")
+    return PROFILES[profile]
+
+
+def verify_manifest(root=ROOT, *, profile="heritage24"):
+    for identity, digest in profile_manifest(profile).items():
         app, name = identity.split(".", 1)
         path = root / "backend" / app / "migrations" / (name + ".py")
         if path.is_symlink() or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
             raise RehearsalBlocked("reviewed_migration_source_mismatch")
 
 
-def verify_plan(plan):
+def verify_plan(plan, *, profile="heritage24"):
+    manifest = profile_manifest(profile)
     identities = [item.app_label + "." + item.name for item, _ in plan]
-    if (any(backwards for _, backwards in plan) or len(identities) != len(MIGRATIONS)
-            or set(identities) != set(MIGRATIONS)):
+    if (any(backwards for _, backwards in plan) or len(identities) != len(manifest)
+            or set(identities) != set(manifest)):
         raise RehearsalBlocked("restored_pending_graph_differs")
     # Independent migrations may have a different topological ordering.
     return identities
@@ -105,9 +117,11 @@ def child_environment(database, port, cluster, source_sha, environ):
     return result
 
 
-def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subprocess.run):
-    verify_manifest()
+def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subprocess.run, profile="heritage24"):
+    manifest = profile_manifest(profile)
+    verify_manifest(profile=profile)
     env = child_environment(database, port, cluster, source_sha, environ)
+    env["CROWN_REHEARSAL_PROFILE"] = profile
     try:
         result = run([sys.executable, str(Path(__file__).resolve()), "--clone"],
                      cwd=ROOT, env=env, capture_output=True, text=True, timeout=900, check=False)
@@ -121,7 +135,10 @@ def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subproce
     if (result.returncode or receipt.get("result") != "PASS"
             or receipt.get("source_sha") != source_sha or receipt.get("remaining_pending") != 0
             or type(receipt.get("remaining_pending")) is not int
-            or receipt.get("reviewed_migrations") != len(MIGRATIONS)
+            or type(receipt.get("reviewed_migrations")) is not int
+            or receipt.get("reviewed_migrations") != len(manifest)
+            or receipt.get("reviewed_profile", "heritage24") != profile
+            or (profile == "finance_setup_0003" and receipt.get("finance_school_id_semantics_preserved") is not True)
             or receipt.get("target_postgres_major") != 15
             or type(receipt.get("baseline_migration_records")) is not int
             or receipt.get("baseline_migration_records", 0) < 1
@@ -129,7 +146,11 @@ def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subproce
             or receipt.get("baseline_public_tables", 0) < 1
             or not isinstance(receipt.get("baseline_fingerprint"), str)
             or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_fingerprint", ""))
-            or receipt.get("migrated_records") != receipt.get("baseline_migration_records", 0) + len(MIGRATIONS)
+            or not isinstance(receipt.get("baseline_columns_fingerprint"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_columns_fingerprint", ""))
+            or not isinstance(receipt.get("baseline_rows_fingerprint"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt.get("baseline_rows_fingerprint", ""))
+            or receipt.get("migrated_records") != receipt.get("baseline_migration_records", 0) + len(manifest)
             or receipt.get("existing_seed_rows_preserved") is not True
             or receipt.get("existing_nonseed_table_values_preserved") is not True
             or receipt.get("existing_table_counts_preserved") is not True
@@ -142,7 +163,7 @@ def rehearse_clone(database, port, cluster, source_sha, environ, *, run=subproce
             reason = "clone_migration_rehearsal_failed"
         error = RehearsalBlocked(reason)
         error.receipt = dict(result="BLOCKED", source_sha=source_sha, reason=reason)
-        if receipt.get("migration") in MIGRATIONS:
+        if receipt.get("migration") in manifest:
             error.receipt["migration"] = receipt["migration"]
         if isinstance(receipt.get("sqlstate"), str) and re.fullmatch(r"[0-9A-Z]{5}", receipt["sqlstate"]):
             error.receipt["sqlstate"] = receipt["sqlstate"]
@@ -163,12 +184,14 @@ def table_facts(connection):
     return columns
 
 
-def row_digest(connection, table, columns):
+def row_digest(connection, table, columns, *, finance_school_as_text=False):
     quote = connection.ops.quote_name
     digest, count = hashlib.sha256(), 0
     with connection.cursor() as cursor:
         cursor.execute("SELECT row_to_json(t)::text FROM (SELECT " +
-                       ",".join(quote(c) for c in columns) + " FROM public." + quote(table) +
+                       ",".join(quote(c) + "::text AS " + quote(c)
+                                if finance_school_as_text and c == "school_id" else quote(c)
+                                for c in columns) + " FROM public." + quote(table) +
                        ') t ORDER BY (row_to_json(t)::text) COLLATE "C"')
         while rows := cursor.fetchmany(500):
             for (value,) in rows:
@@ -198,10 +221,15 @@ def seed_row_multiset(connection, table, columns):
     return counts
 
 
-def data_fingerprint(columns, rows):
-    """Source/clone comparison receipt; no row contents leave the process."""
-    return hashlib.sha256(json.dumps({"columns": columns, "rows": rows}, sort_keys=True,
+def component_fingerprint(value):
+    """Canonical digest of schema or aggregate row digests, never raw data."""
+    return hashlib.sha256(json.dumps(value, sort_keys=True,
                                     separators=(",", ":")).encode()).hexdigest()
+
+
+def data_fingerprint(columns, rows):
+    """Preserve the original combined baseline fingerprint exactly."""
+    return component_fingerprint({"columns": columns, "rows": rows})
 
 
 def verify_legacy_writes(executor, connection):
@@ -246,6 +274,25 @@ def verify_legacy_writes(executor, connection):
         raise error from None
 
 
+def verify_finance_policy_writes(executor, connection):
+    """Roll back numeric legacy INSERT and canonical UUID INSERT/read probes."""
+    from uuid import uuid4
+    from django.db import transaction
+    old = executor.loader.project_state([
+        ("finance_setup", "0002_alter_discountpolicy_max_discount_percent_bp_and_more")
+    ]).apps.get_model("finance_setup", "FinancePolicyVersion")
+    from finance_setup.models import FinancePolicyVersion
+    with transaction.atomic(using=connection.alias):
+        numeric = old.objects.create(school_id=uuid4().int % 2_000_000_000, academic_year="2098-2099")
+        numeric.refresh_from_db()
+        canonical = str(uuid4())
+        policy = FinancePolicyVersion.objects.create(school_id=canonical, academic_year="2098-2099")
+        policy.refresh_from_db()
+        if policy.school_id != canonical or not str(numeric.school_id).isdigit():
+            raise RehearsalBlocked("legacy_insert_contract_failed")
+        transaction.set_rollback(True, using=connection.alias)
+
+
 def migrate_restored_copy():
     import django
     django.setup()
@@ -262,7 +309,8 @@ def migrate_restored_copy():
         cursor.execute("SELECT system_identifier FROM pg_control_system()")
         cluster = cursor.fetchone()[0]
     validate_target(database, actual, user, version, cluster, os.environ["CROWN_REHEARSAL_CLUSTER"])
-    verify_manifest()
+    profile = os.environ.get("CROWN_REHEARSAL_PROFILE", "heritage24")
+    verify_manifest(profile=profile)
     active_migration = None
     def progress(action, migration=None, fake=False):
         nonlocal active_migration
@@ -271,10 +319,20 @@ def migrate_restored_copy():
     executor = MigrationExecutor(connection, progress_callback=progress)
     executor.loader.check_consistent_history(connection)
     targets = executor.loader.graph.leaf_nodes()
-    planned = verify_plan(executor.migration_plan(targets))
+    planned = verify_plan(executor.migration_plan(targets), profile=profile)
+    finance = profile == "finance_setup_0003"
+    finance_table = "finance_setup_financepolicyversion"
+    if finance:
+        from scripts.ci.verify_finance_setup_uuid_migration import _actual_school_id_type
+        if _actual_school_id_type() != "integer":
+            raise RehearsalBlocked("finance_school_id_schema_invalid")
     before_history = set(MigrationRecorder(connection).applied_migrations())
     columns = table_facts(connection)
     baseline = {table: row_digest(connection, table, names) for table, names in columns.items()}
+    # Preserve raw pre-migration fingerprints. Only the reviewed school_id
+    # integer -> text representation is normalized for row equality checks.
+    finance_before = row_digest(connection, finance_table, columns[finance_table],
+                                finance_school_as_text=True) if finance else None
     seed_baseline = {
         table: seed_row_multiset(connection, table, columns[table])
         for table in SEED_TABLES if table in columns
@@ -297,16 +355,28 @@ def migrate_restored_copy():
             if table == "django_migrations":
                 if after[0] != baseline[table][0] + len(planned):
                     raise RehearsalBlocked("migration_history_changed")
-            elif table in SEED_TABLES:
+            elif table in SEED_TABLES and not finance:
                 if seed_baseline[table] - seed_row_multiset(connection, table, names):
+                    raise RehearsalBlocked("existing_data_changed")
+            elif finance and table == finance_table:
+                if row_digest(connection, table, names, finance_school_as_text=True) != finance_before:
                     raise RehearsalBlocked("existing_data_changed")
             elif after != baseline[table]:
                 raise RehearsalBlocked("existing_data_changed")
-        verify_legacy_writes(executor, connection)
+        if finance:
+            if _actual_school_id_type() != "character varying":
+                raise RehearsalBlocked("finance_school_id_schema_invalid")
+            verify_finance_policy_writes(executor, connection)
+        else:
+            verify_legacy_writes(executor, connection)
         return dict(result="PASS", source_sha=os.environ["BUILD_SHA"], target_postgres_major=15,
+                    reviewed_profile=profile, finance_school_id_semantics_preserved=finance,
                     reviewed_migrations=len(planned), remaining_pending=0,
                     baseline_migration_records=len(before_history), migrated_records=len(after_history),
-                    baseline_fingerprint=data_fingerprint(columns, baseline), baseline_public_tables=len(columns),
+                    baseline_fingerprint=data_fingerprint(columns, baseline),
+                    baseline_columns_fingerprint=component_fingerprint(columns),
+                    baseline_rows_fingerprint=component_fingerprint(baseline),
+                    baseline_public_tables=len(columns),
                     existing_nonseed_table_values_preserved=True, existing_seed_rows_preserved=True,
                     existing_table_counts_preserved=True,
                     live_schema_write_performed=False, atomic_graph=True, legacy_inserts_preserved=True)
@@ -320,7 +390,7 @@ if __name__ == "__main__":
     except Exception as error:
         outcome = {"result": "BLOCKED", "reason": str(error) if isinstance(error, RehearsalBlocked)
                    else "clone_migration_rehearsal_failed"}
-        if getattr(error, "migration", None) in MIGRATIONS:
+        if getattr(error, "migration", None) in {**MIGRATIONS, **FINANCE_MIGRATIONS}:
             outcome["migration"] = error.migration
         code = getattr(error, "sqlstate", None)
         if isinstance(code, str) and re.fullmatch(r"[0-9A-Z]{5}", code):
