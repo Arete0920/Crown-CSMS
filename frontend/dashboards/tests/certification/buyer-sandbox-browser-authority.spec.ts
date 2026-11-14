@@ -255,6 +255,67 @@ if (isRemoteLive) {
       expect(denied.status()).toBeLessThan(500);
     });
 
+    test('Hosted SGO enforces parent, processor and school-scoped authority', async ({ page }) => {
+      // Read-only security-negative checks; no processor or scholarship mutation.
+      const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
+      const familyUrl = HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/family/programs/';
+      const processorUrl = HOSTED_DEV_API + '/api/v1/buyer-demo/jireh/sgo/processor/programs/';
+      const family = await page.request.get(familyUrl, { headers: parent });
+      expect(family.status()).toBe(200);
+      const familyRecords = await family.json();
+      expect(familyRecords.synthetic_only).toBe(true);
+      expect(familyRecords.funds_status).toBe('NONCASH_ONLY');
+      expect(Array.isArray(familyRecords.programs)).toBe(true);
+      expect(familyRecords.programs.length).toBeGreaterThan(0);
+
+      const deniedProcessor = await page.request.get(processorUrl, { headers: parent });
+      expect([403, 404]).toContain(deniedProcessor.status());
+      const wrongSchool = await page.request.get(familyUrl, {
+        headers: { ...parent, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+      });
+      expect([400, 403, 404]).toContain(wrongSchool.status());
+
+      const admin = await launchInvitedBuyer(page, 'School Administrator');
+      const deniedFamily = await page.request.get(familyUrl, { headers: admin });
+      expect([403, 404]).toContain(deniedFamily.status());
+      const processor = await page.request.get(processorUrl, { headers: admin });
+      expect(processor.status()).toBe(200);
+      const processing = await processor.json();
+      expect(processing.synthetic_only).toBe(true);
+      expect(processing.authority).toBe('PROCESSOR_VERIFICATION_ONLY');
+      expect(processing.funds_status).toBe('NONCASH_ONLY');
+      expect(Array.isArray(processing.programs)).toBe(true);
+      expect(processing.programs.length).toBeGreaterThan(0);
+    });
+
+    test('Daycare, Extended Care and Camp reject foreign-school and parent staff access', async ({ page }) => {
+      const director = await launchInvitedBuyer(page, 'Diadem Daycare Director');
+      const wrongDaycare = await page.request.get(
+        HOSTED_DEV_API + '/api/v1/aftercare/daycare/sites/', {
+          headers: { ...director, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+        });
+      expect([400, 403, 404]).toContain(wrongDaycare.status());
+
+      const admin = await launchInvitedBuyer(page, 'School Administrator');
+      const endpoints = [
+        '/api/v1/aftercare/roster/today/?care_session=AM',
+        '/api/v1/aftercare/roster/today/?care_session=PM',
+        '/api/v1/summer-camp/programs/',
+      ];
+      for (const endpoint of endpoints) {
+        const foreign = await page.request.get(HOSTED_DEV_API + endpoint, {
+          headers: { ...admin, 'X-School-Id': HERITAGE_SHARED_SCHOOL },
+        });
+        expect([400, 403, 404], endpoint).toContain(foreign.status());
+      }
+
+      const parent = await launchInvitedBuyer(page, 'Parent / Guardian');
+      for (const endpoint of endpoints) {
+        const denied = await page.request.get(HOSTED_DEV_API + endpoint, { headers: parent });
+        expect([403, 404], endpoint).toContain(denied.status());
+      }
+    });
+
     test('AM/PM Extended Care and Camp require real buyer-school scoped reads', async ({ page }) => {
       const admin = await launchInvitedBuyer(page, 'School Administrator');
       for (const session of ['AM', 'PM']) {
