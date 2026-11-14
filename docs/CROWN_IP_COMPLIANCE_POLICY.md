@@ -113,3 +113,11 @@ Exclude only third-party dependency directories, generated caches, virtual envir
 Contributors must understand and follow this policy before making substantive changes.
 
 When uncertain about third-party IP boundaries, stop and obtain owner/legal review.
+
+## 11. Buyer-facing and external presentation (owner direction: 2026-11-12)
+
+Default to **no competitor names or comparisons** in buyer-facing repository orientation, product interfaces, demonstrations, release notes, website copy, proposals, and presentations. Lead with CROWN's own verifiable capabilities, boundaries, and school workflows rather than another vendor's identity or implied weaknesses. Avoid unsupported superiority claims, rankings, exclusivity claims, or another product's branding, screenshots, and trade dress.
+
+Only identify an external vendor when doing so is necessary for factual accuracy, an actual interoperability or migration requirement, a contractual disclosure, a legally required attribution, or a specifically authorized and substantiated comparison. Use the minimum accurate identification in a controlled context. This is **not** blanket permission to place named competitors in the repository: Section 1 remains the default repository rule. Any required exception must receive documented owner and appropriate legal review; do not conceal active dependencies, misstate ownership, or alter authentic historical evidence to achieve neutral language.
+
+A side-by-side competitive assessment, if the owner explicitly authorizes one, belongs in controlled commercial diligence rather than default buyer-facing product or repository content. It must use dated, independently checkable, like-for-like evidence, state important limitations, and avoid implying endorsement or unsupported superiority. Revalidate it before external use.

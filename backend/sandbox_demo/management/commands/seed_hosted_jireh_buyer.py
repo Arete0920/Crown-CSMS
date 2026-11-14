@@ -1,7 +1,8 @@
 """Opt-in, fictional-only Jireh fixture seeding for an EXISTING Azure DEV buyer.
 
 No effect without --apply. A separate authorized operator must invoke it.
-Does not grant real SGO membership or create any payment/award/commitment.
+Creates only fictional policy/budgets and a school-bound aid reviewer role.
+Does not grant real SGO membership or create payment/award/commitment.
 """
 from __future__ import annotations
 
@@ -14,7 +15,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import AcademicYear, Family, Guardian, School, Student, UserAccount
+from aid.models import AidBudgetTracker, AidPolicy
+from core.models import AcademicYear, Family, Guardian, School, Student, UserAccount, UserRole
+from finance.models import ChartAccount
 from households.models import Guardian as PortalGuardian, Household, Student as PortalStudent
 from jireh_sgo.models import (
     SGOFamilyGrant, SGOOrganization, SGOProcessorAssignment, SGOProgram,
@@ -54,8 +57,8 @@ class Command(BaseCommand):
         if workspace is None or not workspace.invite.is_usable():
             raise CommandError("Existing authorized workspace required.")
         roles = _validate_invite(workspace.invite)
-        if "parent" not in roles:
-            raise CommandError("The invitation has no fictional family role.")
+        if "parent" not in roles or "finance_director" not in roles:
+            raise CommandError("Fictional Jireh requires parent and finance director roles.")
         if workspace.source_sha != options["expected_sha"] or str(workspace.school_id) == SANDBOX_SCHOOLS["heritage-core"].id:
             raise CommandError("Workspace source or historical school is invalid.")
         if not workspace.school.is_active:
@@ -74,6 +77,9 @@ class Command(BaseCommand):
             or Guardian.objects.filter(school=workspace.school).exists()
             or Student.objects.filter(school=workspace.school).exists()
             or Household.objects.filter(school_id=workspace.school_id).exists()
+            or AidPolicy.objects.filter(school=workspace.school).exists()
+            or AidBudgetTracker.objects.filter(school=workspace.school).exists()
+            or ChartAccount.objects.filter(school=workspace.school).exists()
         ):
             raise CommandError("Not an empty fictional buyer workspace; no reset or overwrite allowed.")
         if not options["apply"]:
@@ -95,6 +101,9 @@ class Command(BaseCommand):
                 or Student.objects.filter(school=workspace.school).exists()
                 or AcademicYear.objects.filter(school=workspace.school).exists()
                 or Household.objects.filter(school_id=workspace.school_id).exists()
+                or AidPolicy.objects.filter(school=workspace.school).exists()
+                or AidBudgetTracker.objects.filter(school=workspace.school).exists()
+                or ChartAccount.objects.filter(school=workspace.school).exists()
             ):
                 raise CommandError("Existing buyer module records are never overwritten.")
 
@@ -104,12 +113,35 @@ class Command(BaseCommand):
             )
             if parent.guardian_id:
                 raise CommandError("Parent account is already linked to a guardian.")
+            officer = UserAccount.objects.select_for_update().get(
+                username=buyer_username(workspace.school_id, "finance_director"),
+                school=workspace.school, is_active=True,
+                is_staff=False, is_superuser=False,
+            )
+            # Role membership is scoped to THIS synthetic school only. Reuse
+            # existing AID_DIRECTOR policy grants; never create global grants.
+            UserRole.objects.create(
+                user=officer, school=workspace.school, role_code="AID_DIRECTOR",
+            )
             year = AcademicYear.objects.create(
                 school=workspace.school,
                 name="2026-2027 (invented buyer scenario)",
                 start_date=date(2026, 8, 1),
                 end_date=date(2027, 6, 30),
                 is_current=True,
+            )
+            # This is a fictitious funding envelope, not a disbursement or award.
+            # Five bucket rows let the real policy/approval engine run without
+            # granting access to real schools or a payment provider.
+            AidPolicy.objects.create(school=workspace.school, academic_year=year)
+            for bucket, _label in AidBudgetTracker.BUCKET_CHOICES:
+                AidBudgetTracker.objects.create(
+                    school=workspace.school, academic_year=year,
+                    bucket=bucket, allocated_cents=2_000_000, awarded_cents=0,
+                )
+            ChartAccount.objects.create(
+                school=workspace.school, code="AID",
+                name="Fictional Institutional Aid Credits", account_type="INCOME",
             )
             family = Family.objects.create(
                 school=workspace.school, family_name="Fictional Buyer Household",
@@ -179,6 +211,7 @@ class Command(BaseCommand):
                             program=program, user=processor, active=True,
                         )
         self.stdout.write(
-            "FICTIONAL_JIREH_FIXTURES_CREATED: buyer school, one household, "
+            "FICTIONAL_JIREH_FIXTURES_CREATED: one household, five aid budgets, "
+            "fictional aid policy and noncash AID chart, school-bound officer role, "
             "two independent external partners and programs; release_certified=false"
         )

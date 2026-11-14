@@ -9,14 +9,15 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 from textwrap import dedent
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github" / "workflows" / "deploy-dev.yml"
 SHA = "a" * 40
-GUARD = "Require reviewed24 owner authority before any Azure credential"
-STAGE = "Apply separately owner-authorized reviewed24 DEV schema stage"
+GUARD = "Require reviewed migration owner authority before any Azure credential"
+STAGE = "Apply separately owner-authorized reviewed DEV schema stage"
 
 
 def step_body(source, name):
@@ -29,6 +30,7 @@ def step_body(source, name):
 def values(**overrides):
     result = dict(os.environ, APPLY_REVIEWED24="true",
                   CONFIRM_REVIEWED24="migrate-dev-reviewed-24",
+                  APPLY_FINANCE="false", CONFIRM_FINANCE="",
                   SYNTHETIC="true", RECOVERABLE="true", MAINTENANCE="true",
                   RESTORE_RUN="42273955790", RESTORE_ARTIFACT="13532038006",
                   GITHUB_RUN_ID="42290000000",
@@ -49,11 +51,12 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
     def run_guard(self, **override):
         if not shutil.which("bash"):
             self.skipTest("Bash not available on runner")
-        return subprocess.run(
-            ["bash", "-e", "-c", self.guard],
-            env=values(**override), capture_output=True, text=True,
-            check=False, timeout=5,
-        )
+        with tempfile.TemporaryDirectory() as directory:
+            return subprocess.run(
+                ["bash", "-e", "-c", self.guard],
+                env=values(GITHUB_ENV=str(Path(directory) / "environment"), **override),
+                capture_output=True, text=True, check=False, timeout=5,
+            )
 
     def test_canonical_deployment_only_manual_and_serialized(self):
         src = self.source
@@ -66,16 +69,17 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
         self.assertIn("  id-token: write\n", src)
         self.assertEqual(src.count("\n  build-and-deploy:\n"), 1)
 
-    def test_only_eight_manual_inputs_and_new_action_default_off(self):
+    def test_only_ten_manual_inputs_and_both_migration_actions_default_off(self):
         source = self.source.split("  workflow_dispatch:\n    inputs:\n",1)[1].split("\nconcurrency:\n",1)[0]
         names = re.findall(r"(?m)^      ([a-z][a-z0-9_]+):\s*$", source)
         self.assertEqual(set(names), {
             "ref", "apply_reviewed_heritage24", "confirm_dev_reviewed24",
+            "apply_finance_setup_0003", "confirm_finance_setup_0003",
             "synthetic_dev_confirmed", "backup_recovery_verified",
             "maintenance_window_confirmed", "rehearsal_run_id",
             "rehearsal_artifact_id",
         })
-        for name in ("apply_reviewed_heritage24", "synthetic_dev_confirmed",
+        for name in ("apply_reviewed_heritage24", "apply_finance_setup_0003", "synthetic_dev_confirmed",
                      "backup_recovery_verified", "maintenance_window_confirmed"):
             match = re.search(
                 r"(?ms)^      " + re.escape(name) +
@@ -90,6 +94,8 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
         for invalid in (
             dict(CONFIRM_REVIEWED24=""),
             dict(CONFIRM_REVIEWED24="not-reviewed"),
+            dict(APPLY_FINANCE="true", CONFIRM_FINANCE="migrate-dev-finance-setup-0003"),
+            dict(CONFIRM_FINANCE="migrate-dev-finance-setup-0003"),
             dict(SYNTHETIC="false"),
             dict(RECOVERABLE="false"),
             dict(MAINTENANCE="false"),
@@ -108,6 +114,7 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
                      MAINTENANCE="false", RESTORE_RUN="", RESTORE_ARTIFACT="")
         self.assertEqual(self.run_guard(**clean).returncode, 0)
         for invalid in (dict(CONFIRM_REVIEWED24="migrate-dev-reviewed-24"),
+                        dict(CONFIRM_FINANCE="migrate-dev-finance-setup-0003"),
                         dict(SYNTHETIC="true"), dict(RECOVERABLE="true"),
                         dict(MAINTENANCE="true"),
                         dict(RESTORE_RUN="42273955790"),
@@ -127,16 +134,16 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
                         src.index("      - name: Build and push Docker image"))
         self.assertNotIn("az ", self.guard)
         self.assertNotIn("stage_dev_heritage_graph.py", self.guard)
-        self.assertIn("if: inputs.apply_reviewed_heritage24 == true", self.stage)
+        self.assertIn("if: inputs.apply_reviewed_heritage24 == true || inputs.apply_finance_setup_0003 == true", self.stage)
         self.assertIn("CROWN_STAGE_GITHUB_TOKEN: ${{ github.token }}",self.stage)
-        for arg in ("--expected-sha", "--confirmation", "--synthetic-dev-confirmed",
+        for arg in ("--expected-sha", "--profile", "--confirmation", "--synthetic-dev-confirmed",
                     "--backup-recovery-verified","--maintenance-window-confirmed",
                     "--rehearsal-run-id","--rehearsal-artifact-id"):
             self.assertIn(arg,self.stage)
 
     def test_evidence_and_existing_release_guards_retained(self):
-        evidence = step_body(self.source,"Preserve audited reviewed24 DEV schema receipt")
-        self.assertIn("if: always() && inputs.apply_reviewed_heritage24 == true",evidence)
+        evidence = step_body(self.source,"Preserve audited reviewed DEV schema receipt")
+        self.assertIn("if: always() && (inputs.apply_reviewed_heritage24 == true || inputs.apply_finance_setup_0003 == true)",evidence)
         self.assertIn("retention-days: 7",evidence)
         self.assertIn("reviewed-dev-schema-stage.json",evidence)
         for name in (
