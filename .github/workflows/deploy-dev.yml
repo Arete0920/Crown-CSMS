@@ -16,7 +16,7 @@ on:
         type: boolean
         default: false
       confirm_dev_reviewed24:
-        description: "For reviewed24 stage only, type migrate-dev-reviewed-24"
+        description: "Reviewed24: migrate-dev-reviewed-24; or protected automatic code-only mode: auto-code-only"
         required: false
         type: string
         default: ""
@@ -138,7 +138,9 @@ jobs:
             test "$GITHUB_REPOSITORY_ID" = 1339719218
           else
             test "$APPLY_REVIEWED24" = false
-            test -z "$CONFIRM_REVIEWED24"
+            if [[ "$CONFIRM_REVIEWED24" != auto-code-only ]]; then
+              test -z "$CONFIRM_REVIEWED24"
+            fi
             test -z "$CONFIRM_FINANCE"
             test "$SYNTHETIC" != true
             test "$RECOVERABLE" != true
@@ -179,6 +181,27 @@ jobs:
           echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
           echo "DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
           echo "DEPLOY_SHA_SHORT=${SOURCE_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Guard automatic code-only owner authorization before credentials
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        shell: bash
+        env:
+          AUTO_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
+          APPLY_FINANCE: ${{ inputs.apply_finance_setup_0003 }}
+        run: |
+          set -euo pipefail
+          test "$AUTO_ENABLED" = true
+          test "$APPLY_REVIEWED24" = false
+          test "$APPLY_FINANCE" = false
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          policy = json.loads(Path("scripts/ops/dev_auto_release_policy.json").read_text())
+          if policy != {"schema_version": 1, "enabled": True, "target": "dev",
+                        "automatic_schema_changes": False}:
+              raise SystemExit("BLOCKED: explicit governed automatic code-only source opt-in required")
+          PY
 
       - name: Azure Login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
@@ -253,16 +276,74 @@ jobs:
             exit 1
           fi
 
-      - name: Apply only reviewed DEV inquiry migration before deployment
+      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection
+        shell: bash
         env:
           EXPECTED_SOURCE_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SOURCE_SHA"
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dev-pending-migration-inventory.json"
+          # Inventory enforces default_transaction_read_only=on in PostgreSQL.
+          # Ordinary image deployment is NEVER migration approval.
+          python scripts/ops/run_dev_inquiry_migration.py \
+            --expected-sha "$EXPECTED_SOURCE_SHA" \
+            --inspect-all-migrations > "$report"
+          python - "$report" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if (result.get("status") != "COLLECTED"
+                  or result.get("mode") != "inventory_all_read_only"
+                  or result.get("source_sha") != __import__("os").environ.get("EXPECTED_SOURCE_SHA")
+                  or result.get("inventory_scope") != "enabled_django_app_graph"
+                  or result.get("schema_change_authorized") is not False
+                  or result.get("operational_certified") is not False
+                  or type(result.get("remaining_pending")) is not int
+                  or result["remaining_pending"] != 0):
+              raise SystemExit("BLOCKED: DEV schema pending/unknown; separately reviewed migration required")
+          print("PASS: zero pending migrations in enabled DEV Django graph; schema unchanged")
+          PY
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to Azure Container Registry
         run: az acr login --name crownregistry --only-show-errors
+
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
+          echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
+
+      - name: Reverify protected main before DEV image push
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main changed: refusing DEV image push" >&2
+            exit 1
+          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          push: true
+          # Explicitly target linux/amd64  multi-platform OCI index manifests
+          # (produced without this setting) cause ContainerCreateFailure on
+          # Azure App Service because it cannot resolve the platform from an
+          # OCI index containing unknown/unknown cache entries.
+          platforms: linux/amd64
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build allowed appsettings JSON
         shell: pwsh
@@ -299,6 +380,23 @@ jobs:
             exit 1
           fi
 
+      - name: Capture current healthy immutable DEV release before automatic mutation
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/ops/dev_release_rollback.py capture \
+            --receipt "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+
+      - name: Mark automatic release mutation boundary
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          printf 'mutation-attempted\n' > "$RUNNER_TEMP/crown-dev-auto-mutation-attempted"
+
       - name: Apply appsettings (allowlisted only)
         shell: pwsh
         run: |
@@ -309,39 +407,6 @@ jobs:
             --output none `
             --only-show-errors
           echo " BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
-
-      - name: Bake BUILD_SHA into artifact
-        run: |
-          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
-          echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
-
-      - name: Reverify protected main before DEV image push
-        shell: bash
-        env:
-          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
-            echo "::error::Protected main changed: refusing DEV image push" >&2
-            exit 1
-          fi
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
-        with:
-          context: .
-          push: true
-          # Explicitly target linux/amd64  multi-platform OCI index manifests
-          # (produced without this setting) cause ContainerCreateFailure on
-          # Azure App Service because it cannot resolve the platform from an
-          # OCI index containing unknown/unknown cache entries.
-          platforms: linux/amd64
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Reverify protected main before DEV container deployment
         shell: bash
@@ -443,4 +508,26 @@ jobs:
           echo " crown-api-dev deployed successfully"
           echo "   SHA: ${{ env.DEPLOY_SHA }}"
           echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
+
+      - name: Restore prior immutable DEV image after failed automatic mutation
+        if: failure() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "$RUNNER_TEMP/crown-dev-auto-mutation-attempted" ]]; then
+            test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+            python scripts/ops/dev_release_rollback.py restore \
+              --receipt "$RUNNER_TEMP/crown-dev-auto-rollback.json"
+          else
+            echo "Automatic DEV release stopped before runtime mutation; no image rollback required."
+          fi
+
+      - name: Record sanitized automatic rollback evidence
+        if: always() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: auto-dev-prior-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/crown-dev-auto-rollback.json
+          if-no-files-found: ignore
+          retention-days: 7
 
