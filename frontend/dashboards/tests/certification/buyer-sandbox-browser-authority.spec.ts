@@ -32,6 +32,28 @@ function slug(value: string) {
     .replace(/^-|-$/g, '') || 'root';
 }
 
+function hostedBuyerEntryRoute() {
+  // Hosted Azure personas must use the bound invitation owned by an isolated
+  // fictional buyer school. Never emulate the local Heritage open-session path.
+  // The Windows Heritage runner reuses the live Playwright mode to target its
+  // already-running preview server. Its launcher sets the local runtime
+  // markers before the first buyer suite; presenter-only flags are set later.
+  // A hosted/nonloopback browser still requires an invited buyer workspace.
+  const localHeritagePreview =
+    process.env.CROWN_LIVE_FRONTEND_URL === 'http://localhost:4173' &&
+    process.env.CROWN_ENV === 'local' &&
+    process.env.DJANGO_ENV === 'local' &&
+    process.env.VITE_LOCAL_DEMO === '1';
+  if (process.env.CROWN_CERTIFICATION_LIVE_RUNTIME !== '1' || localHeritagePreview) {
+    return BUYER_WALKTHROUGH.entryRoute;
+  }
+  const inviteId = String(process.env.CROWN_LIVE_SANDBOX_INVITE_ID || '').trim();
+  if (!/^sbx_inv_[A-Za-z0-9]{1,24}$/.test(inviteId)) {
+    throw new Error('Live buyer certification requires a valid DEV invitation and isolated workspace.');
+  }
+  return `${BUYER_WALKTHROUGH.entryRoute}?invite=${encodeURIComponent(inviteId)}`;
+}
+
 async function assertCrownVisualAuthority(page: Page) {
   const tokens = await page.evaluate(() => {
     const styles = getComputedStyle(document.documentElement);
@@ -60,7 +82,7 @@ async function assertNoHorizontalOverflow(page: Page) {
 }
 
 async function launchPersona(page: Page, label: string) {
-  const entry = await page.goto(BUYER_WALKTHROUGH.entryRoute, { waitUntil: 'networkidle' });
+  const entry = await page.goto(hostedBuyerEntryRoute(), { waitUntil: 'networkidle' });
   expect(entry?.status() ?? 200).toBeLessThan(400);
   await expect(page).not.toHaveURL(/\/login(?:[/?#]|$)/i);
   await expect(page.getByText('No buyer password')).toBeVisible();
@@ -411,7 +433,7 @@ test.describe('CROWN buyer sandbox live browser authority', () => {
 
   test('buyer entry remains usable at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    const response = await page.goto(BUYER_WALKTHROUGH.entryRoute, { waitUntil: 'networkidle' });
+    const response = await page.goto(hostedBuyerEntryRoute(), { waitUntil: 'networkidle' });
     expect(response?.status() ?? 200).toBeLessThan(400);
     await expect(page.getByText('No buyer password')).toBeVisible();
     await assertCrownVisualAuthority(page);
