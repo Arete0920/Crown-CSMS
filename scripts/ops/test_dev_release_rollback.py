@@ -22,6 +22,10 @@ def fake_azure(*args, **kwargs):
         return [{"name": "BUILD_SHA", "value": SHA},
                 {"name": "DEPLOY_RUN_ID", "value": "1234567890"},
                 {"name": "DEPLOY_WORKFLOW", "value": "DEV Deploy (protected main)"},
+                {"name": "WEBSITES_PORT", "value": "8000"},
+                {"name": "CROWN_ENV", "value": "dev"},
+                {"name": "DJANGO_ENV", "value": "development"},
+                {"name": "ENVIRONMENT", "value": "dev"},
                 {"name": "DATABASE_URL", "value": "SENSITIVE_NOT_TO_BE_WRITTEN"}]
     if args[:3] == ("webapp", "config", "show"):
         return {"linuxFxVersion": "DOCKER|" + IMAGE}
@@ -59,6 +63,20 @@ class DevRollbackContracts(unittest.TestCase):
              patch.object(rollback, "az", side_effect=wrong_image), \
              patch.object(rollback, "health", return_value=healthy()):
             with self.assertRaisesRegex(rollback.Unsafe, "prior_immutable_app_image_unverified"):
+                rollback.capture(Path(directory) / "receipt.json")
+
+    def test_prior_runtime_configuration_drift_blocks_before_mutation(self):
+        def unsafe_config(*args, **kwargs):
+            values = fake_azure(*args, **kwargs)
+            if args[:4] == ("webapp", "config", "appsettings", "list"):
+                for row in values:
+                    if row["name"] == "WEBSITES_PORT":
+                        row["value"] = "9000"
+            return values
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(rollback, "az", side_effect=unsafe_config), \
+             patch.object(rollback, "health", return_value=healthy()):
+            with self.assertRaisesRegex(rollback.Unsafe, "prior_runtime_settings_not_rollback_compatible"):
                 rollback.capture(Path(directory) / "receipt.json")
 
     def test_unhealthy_previous_artifact_fails_closed(self):
