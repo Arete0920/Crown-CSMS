@@ -50,6 +50,8 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_dev_deploy_exact_main.py -v
           python -m unittest discover -s scripts/ops -p test_dev_frontend_deploy_only.py -v
           python -m unittest discover -s scripts/ops -p test_dev_auto_release_eligibility.py -v
+          python -m unittest discover -s scripts/ops -p test_dev_auto_release_controller.py -v
+          python -m unittest discover -s scripts/ops -p test_dev_release_rollback.py -v
 
       - name: Run tenant fixture regression tests
         shell: bash

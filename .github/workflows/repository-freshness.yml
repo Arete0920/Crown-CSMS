@@ -21,7 +21,8 @@ permissions:
 
 concurrency:
   group: repository-freshness-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Never cancel an in-flight credential-bearing DEV release on a new push.
+  cancel-in-progress: false
 
 jobs:
   release-authority:
@@ -234,6 +235,54 @@ jobs:
           set -euo pipefail
           python3 scripts/ops/dev_auto_release_eligibility.py --expected-sha "${{ github.sha }}"
           echo "Eligibility proof only. No DEV deployment, schema changes, or hosted certification were authorized." >> "$GITHUB_STEP_SUMMARY"
+
+  dev-automatic-code-only-release:
+    # Separate privileged orchestration lane: the existing public freshness
+    # and eligibility jobs remain read-only. Both owner activation keys are OFF.
+    name: Guarded automatic DEV backend then frontend (default OFF)
+    if: >-
+      (github.event_name == 'push' ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 6 * * *')) &&
+      vars.CROWN_AUTO_DEV_CD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 120
+    concurrency:
+      group: crown-dev-auto-release
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      checks: read
+      actions: write
+    steps:
+      - name: Checkout accepted protected-main source without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Enforce source opt-in before any permitted workflow dispatch
+        shell: bash
+        env:
+          CROWN_AUTO_DEV_CD_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          source = json.loads(Path("scripts/ops/dev_auto_release_policy.json").read_text())
+          expected = {"schema_version": 1, "enabled": True,
+                      "target": "dev", "automatic_schema_changes": False}
+          if source != expected or os.environ.get("CROWN_AUTO_DEV_CD_ENABLED") != "true":
+              raise SystemExit("BLOCKED: automatic release requires both explicit activation keys")
+          PY
+      - name: Verify source and dispatch bounded existing code-only DEV workflows
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CROWN_AUTO_DEV_CD_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/dev_auto_release_controller.py --expected-sha "${{ github.sha }}"
 
   report-stale-branches:
     name: Report stale branches (last commit over 60 days old)

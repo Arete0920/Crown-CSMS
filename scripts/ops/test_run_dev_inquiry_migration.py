@@ -581,13 +581,32 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
         ):
             index = names.index(mutation)
-            self.assertEqual(names[index - 1], "Reverify protected main before " + check)
-            self.assertEqual(steps[index - 1]["env"]["EXPECTED_DEV_SHA"],
+            guard_index = names.index("Reverify protected main before " + check)
+            if mutation == "Apply appsettings (allowlisted only)":
+                self.assertEqual(
+                    names[guard_index + 1:index],
+                    [
+                        "Capture current healthy immutable DEV release before automatic mutation",
+                        "Mark automatic release mutation boundary",
+                    ],
+                )
+                self.assertIn("inputs.confirm_dev_reviewed24 == 'auto-code-only'",
+                              steps[guard_index + 1]["if"])
+                self.assertIn("inputs.confirm_dev_reviewed24 == 'auto-code-only'",
+                              steps[guard_index + 2]["if"])
+                self.assertIn("dev_release_rollback.py capture",
+                              steps[guard_index + 1]["run"])
+                self.assertIn("crown-dev-auto-mutation-attempted",
+                              steps[guard_index + 2]["run"])
+            else:
+                self.assertEqual(guard_index, index - 1)
+            self.assertLess(guard_index, index)
+            self.assertEqual(steps[guard_index]["env"]["EXPECTED_DEV_SHA"],
                              "$" + "{{ steps.vars.outputs.deploy_sha }}")
             self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"',
-                          steps[index - 1]["run"])
-            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
-            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
+                          steps[guard_index]["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[guard_index]["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[guard_index]["run"])
 
 
     def test_inventory_plan_is_observation_only_and_normal_apply_still_rejects_diadem(self):
