@@ -105,6 +105,26 @@ class DevAutoReleaseEligibilityTests(unittest.TestCase):
         arguments["check_data"]["total_count"] += 1
         self.assertEqual(eligibility.assess(**arguments)["status"], "BLOCKED")
 
+    def test_existing_freshness_workflow_is_read_only_and_opted_out(self):
+        workflow = (MODULE.parents[2] / ".github" / "workflows" /
+                    "repository-freshness.yml").read_text(encoding="utf-8")
+        self.assertEqual(workflow.count("  dev-auto-delivery-eligibility:"), 1)
+        candidate = workflow.split("  dev-auto-delivery-eligibility:", 1)[1].split(
+            "  report-stale-branches:", 1,
+        )[0]
+        self.assertIn("vars.CROWN_AUTO_DEV_CD_ENABLED == 'true'", candidate)
+        self.assertIn("github.event_name == 'push'", candidate)
+        self.assertIn("github.event.schedule == '17 6 * * *'", candidate)
+        self.assertIn("      checks: read", candidate)
+        self.assertIn("      contents: read", candidate)
+        self.assertIn("persist-credentials: false", candidate)
+        self.assertIn("dev_auto_release_eligibility.py --expected-sha", candidate)
+        for forbidden in ("id-token: write", "azure/login@", "az webapp",
+                          "az acr", "workflow_dispatch:", "curl -X POST",
+                          "secrets.", "create-deployment", "git push"):
+            self.assertNotIn(forbidden, candidate, forbidden)
+        self.assertIs(json.loads(eligibility.POLICY.read_text())["enabled"], False)
+
     def test_main_does_not_contact_github_when_source_policy_is_off(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "policy.json"
