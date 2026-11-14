@@ -253,16 +253,74 @@ jobs:
             exit 1
           fi
 
-      - name: Apply only reviewed DEV inquiry migration before deployment
+      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection
+        shell: bash
         env:
           EXPECTED_SOURCE_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: python scripts/ops/run_dev_inquiry_migration.py --expected-sha "$EXPECTED_SOURCE_SHA"
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/dev-pending-migration-inventory.json"
+          # Inventory enforces default_transaction_read_only=on in PostgreSQL.
+          # Ordinary image deployment is NEVER migration approval.
+          python scripts/ops/run_dev_inquiry_migration.py \
+            --expected-sha "$EXPECTED_SOURCE_SHA" \
+            --inspect-all-migrations > "$report"
+          python - "$report" <<'PY'
+          import json
+          from pathlib import Path
+          import sys
+
+          result = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if (result.get("status") != "COLLECTED"
+                  or result.get("mode") != "inventory_all_read_only"
+                  or result.get("source_sha") is None
+                  or result.get("inventory_scope") != "enabled_django_app_graph"
+                  or result.get("schema_change_authorized") is not False
+                  or result.get("operational_certified") is not False
+                  or type(result.get("remaining_pending")) is not int
+                  or result["remaining_pending"] != 0):
+              raise SystemExit("BLOCKED: DEV schema pending/unknown; separately reviewed migration required")
+          print("PASS: zero pending migrations in enabled DEV Django graph; schema unchanged")
+          PY
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Log in to Azure Container Registry
         run: az acr login --name crownregistry --only-show-errors
+
+      - name: Bake BUILD_SHA into artifact
+        run: |
+          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
+          echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
+
+      - name: Reverify protected main before DEV image push
+        shell: bash
+        env:
+          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
+            echo "::error::Protected main changed: refusing DEV image push" >&2
+            exit 1
+          fi
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          push: true
+          # Explicitly target linux/amd64  multi-platform OCI index manifests
+          # (produced without this setting) cause ContainerCreateFailure on
+          # Azure App Service because it cannot resolve the platform from an
+          # OCI index containing unknown/unknown cache entries.
+          platforms: linux/amd64
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build allowed appsettings JSON
         shell: pwsh
@@ -309,39 +367,6 @@ jobs:
             --output none `
             --only-show-errors
           echo " BUILD_SHA=${{ env.DEPLOY_SHA }} set (before image deploy)"
-
-      - name: Bake BUILD_SHA into artifact
-        run: |
-          echo "BUILD_SHA = \"${{ env.DEPLOY_SHA }}\"" > backend/crown_api/build_info.py
-          echo " build_info.py written with SHA: ${{ env.DEPLOY_SHA }}"
-
-      - name: Reverify protected main before DEV image push
-        shell: bash
-        env:
-          EXPECTED_DEV_SHA: ${{ steps.vars.outputs.deploy_sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
-          if [[ "$GITHUB_REF" != "refs/heads/main" || "$GITHUB_SHA" != "$EXPECTED_DEV_SHA" || "$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA" || "$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA" ]]; then
-            echo "::error::Protected main changed: refusing DEV image push" >&2
-            exit 1
-          fi
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
-        with:
-          context: .
-          push: true
-          # Explicitly target linux/amd64  multi-platform OCI index manifests
-          # (produced without this setting) cause ContainerCreateFailure on
-          # Azure App Service because it cannot resolve the platform from an
-          # OCI index containing unknown/unknown cache entries.
-          platforms: linux/amd64
-          provenance: false
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-${{ env.DEPLOY_SHA }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Reverify protected main before DEV container deployment
         shell: bash
