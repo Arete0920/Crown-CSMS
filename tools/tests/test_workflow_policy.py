@@ -302,8 +302,28 @@ class WorkflowPolicyTests(unittest.TestCase):
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
         ):
             idx = names.index(mutation)
-            self.assertEqual(names[idx - 1], "Reverify protected main before " + gate)
-            check = steps[idx - 1]
+            guard_idx = names.index("Reverify protected main before " + gate)
+            if mutation == "Apply appsettings (allowlisted only)":
+                self.assertEqual(
+                    names[guard_idx + 1:idx],
+                    [
+                        "Capture current healthy immutable DEV release before automatic mutation",
+                        "Mark automatic release mutation boundary",
+                    ],
+                )
+                for extra in (guard_idx + 1, guard_idx + 2):
+                    self.assertEqual(
+                        steps[extra]["if"],
+                        "inputs.confirm_dev_reviewed24 == 'auto-code-only'",
+                    )
+                self.assertIn("dev_release_rollback.py capture",
+                              steps[guard_idx + 1]["run"])
+                self.assertIn("crown-dev-auto-mutation-attempted",
+                              steps[guard_idx + 2]["run"])
+            else:
+                self.assertEqual(guard_idx, idx - 1)
+            self.assertLess(guard_idx, idx)
+            check = steps[guard_idx]
             self.assertEqual(check["env"]["EXPECTED_DEV_SHA"], "$" + "{{ steps.vars.outputs.deploy_sha }}")
             self.assertIn('git fetch --no-tags origin refs/heads/main:', check["run"])
             self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"', check["run"])
