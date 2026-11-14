@@ -123,7 +123,7 @@ if (isRemoteLive) {
     throw new Error('Hosted browser proof requires an exact source and active buyer invitation.');
   }
 
-  async function launchInvitedBuyer(page, label) {
+  async function launchInvitedBuyer(page: Page, label: string) {
     const entry = await page.goto('/sandbox?invite=' + encodeURIComponent(invitedId), { waitUntil: 'networkidle' });
     expect(entry?.status()).toBe(200);
     await expect(page.getByText('No buyer password')).toBeVisible();
