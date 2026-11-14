@@ -206,6 +206,35 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  dev-auto-delivery-eligibility:
+    # Pure check gate. Neither this job nor its script invokes Azure or
+    # dispatches a deployment. Disabled unless the repo switch is true,
+    # AND the committed policy also opts in (currently false).
+    name: DEV automatic delivery eligibility (read-only, default OFF)
+    if: >-
+      (github.event_name == 'push' ||
+      (github.event_name == 'schedule' && github.event.schedule == '17 6 * * *')) &&
+      vars.CROWN_AUTO_DEV_CD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - name: Checkout accepted source without persistent credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Verify exact protected main, all required checks and two-key opt-in
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CROWN_AUTO_DEV_CD_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/dev_auto_release_eligibility.py --expected-sha "${{ github.sha }}"
+          echo "Eligibility proof only. No DEV deployment, schema changes, or hosted certification were authorized." >> "$GITHUB_STEP_SUMMARY"
+
   report-stale-branches:
     name: Report stale branches (last commit over 60 days old)
     if: >-
