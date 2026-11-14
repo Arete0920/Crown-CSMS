@@ -1,6 +1,7 @@
 """Offline proof of fail-closed DEV code-only automation. No cloud calls."""
 import copy
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -172,6 +173,52 @@ class ReleaseControllerContracts(unittest.TestCase):
                     controller.run_controller(SHA, client=client, eligibility_check=eligible,
                                               probe=lambda _: observed(), sleep=lambda _: None)
                 self.assertEqual([wf for wf, _ in client.dispatched], [B])
+
+
+    def test_automatic_orchestration_isolated_and_both_keys_disabled(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github/workflows/repository-freshness.yml").read_text()
+        self.assertEqual(workflow.count("  dev-automatic-code-only-release:"), 1)
+        job = workflow.split("  dev-automatic-code-only-release:", 1)[1].split(
+            "  report-stale-branches:", 1)[0]
+        self.assertIn("vars.CROWN_AUTO_DEV_CD_ENABLED == 'true'", job)
+        self.assertIn("      group: crown-dev-auto-release", job)
+        self.assertIn("      cancel-in-progress: false", job)
+        self.assertIn("    environment: dev", job)
+        self.assertIn("      actions: write", job)
+        self.assertIn("      contents: read", job)
+        self.assertIn("      checks: read", job)
+        self.assertIn("persist-credentials: false", job)
+        self.assertIn("dev_auto_release_controller.py --expected-sha", job)
+        self.assertNotIn("azure/login@", job)
+        self.assertNotIn("id-token: write", job)
+        self.assertNotIn("secrets.", job)
+        policy = json.loads((root / "scripts/ops/dev_auto_release_policy.json").read_text())
+        self.assertIs(policy["enabled"], False)
+        self.assertIs(policy["automatic_schema_changes"], False)
+
+    def test_backend_mutation_requires_prior_capture_and_failed_auto_rolls_back(self):
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github/workflows/deploy-dev.yml").read_text()
+        def order(name):
+            return workflow.index("      - name: " + name)
+        self.assertLess(
+            order("Capture current healthy immutable DEV release before automatic mutation"),
+            order("Mark automatic release mutation boundary"))
+        self.assertLess(
+            order("Mark automatic release mutation boundary"),
+            order("Apply appsettings (allowlisted only)"))
+        self.assertLess(
+            order("Apply appsettings (allowlisted only)"),
+            order("Restore prior immutable DEV image after failed automatic mutation"))
+        self.assertIn("if: failure() && inputs.auto_code_only == true", workflow)
+        self.assertIn("test \"$AUTO_ENABLED\" = true", workflow)
+        self.assertIn("test \"$APPLY_REVIEWED24\" = false", workflow)
+        self.assertIn("test \"$APPLY_FINANCE\" = false", workflow)
+        self.assertIn("python scripts/ops/dev_release_rollback.py capture", workflow)
+        self.assertIn("python scripts/ops/dev_release_rollback.py restore", workflow)
+        self.assertIn("  workflow_dispatch:", workflow)
+        self.assertNotIn("  schedule:", workflow)
 
 
 if __name__ == "__main__":
