@@ -88,6 +88,7 @@ class ReleaseControllerContracts(unittest.TestCase):
         self.assertEqual(backend["ref"], "main")
         self.assertIs(backend["return_run_details"], True)
         self.assertEqual(backend["inputs"]["ref"], SHA)
+        self.assertEqual(backend["inputs"]["confirm_dev_reviewed24"], "auto-code-only")
         for key in ("apply_reviewed_heritage24", "apply_finance_setup_0003",
                     "synthetic_dev_confirmed", "backup_recovery_verified",
                     "maintenance_window_confirmed"):
@@ -211,7 +212,7 @@ class ReleaseControllerContracts(unittest.TestCase):
         self.assertLess(
             order("Apply appsettings (allowlisted only)"),
             order("Restore prior immutable DEV image after failed automatic mutation"))
-        self.assertIn("if: failure() && inputs.auto_code_only == true", workflow)
+        self.assertIn("if: failure() && inputs.confirm_dev_reviewed24 == 'auto-code-only'", workflow)
         self.assertIn("test \"$AUTO_ENABLED\" = true", workflow)
         self.assertIn("test \"$APPLY_REVIEWED24\" = false", workflow)
         self.assertIn("test \"$APPLY_FINANCE\" = false", workflow)
