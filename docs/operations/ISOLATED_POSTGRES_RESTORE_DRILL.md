@@ -17,11 +17,54 @@ Use it only with `dev_operational_restore=true`, the exact current `expected_dev
 DEV attestation. It uses the pinned PostgreSQL 15 service matching the observed
 DEV major version. The ordinary PostgreSQL 16 recovery mode remains unchanged.
 
+The `reviewed_migration_profile` choice defaults to `heritage24`, preserving
+the historical pinned 24-node contract. Select `finance_setup_0003` only for
+a separately authorized operational restore/rehearsal whose complete pending
+graph is exactly Finance Setup migration 0003. It rejects additional, missing,
+duplicate or backward nodes and verifies the checked-in migration digest.
+This profile cannot run the prior-image probe or authorize the existing live
+reviewed24 stage. Its receipt reports one migration and its distinct profile.
+
+The Finance Setup profile preserves raw pre-migration baseline fingerprints.
+For row-preservation comparison only, it normalizes the reviewed `school_id`
+integer-to-text representation; all other column values, all existing rows,
+table counts and migration history remain checked. It verifies an integer
+source column and text result, and rolls back numeric legacy INSERT and UUID
+INSERT/read probes. This proves neither reverse migration with UUID policies
+nor full prior-application rollback. Retained current-baseline recovery remains
+a separate gate; a disposable snapshot is not a retained operational backup.
+
+### Separately authorized DEV Finance Setup stage
+
+The existing `deploy-dev.yml` keeps both migration switches default-OFF.
+For a separately authorized Finance Setup release, select only
+`apply_finance_setup_0003=true`, set
+`confirm_finance_setup_0003=migrate-dev-finance-setup-0003`, and leave
+`apply_reviewed_heritage24=false` with its confirmation blank. Both profiles
+cannot run together. Ordinary deployment still rejects unreviewed migrations.
+
+Before Azure credentials are read, the stage requires explicit synthetic-data,
+verified durable-recovery, and maintenance-window attestations. Supply the exact
+prior successful Finance rehearsal run and artifact IDs for the same protected
+main SHA. The stage authenticates GitHub artifact provenance and digest, rejects
+legacy or mismatched-profile receipts, checks the live database's exact raw
+baseline, and permits only the pinned single forward migration. Under the
+existing migration lock and one PostgreSQL transaction, it verifies the integer
+source column, varchar(36) result, exact history increment, zero pending nodes,
+and preservation of every existing row, including locks and policy children.
+Only the reviewed school identifier representation is normalized for comparison.
+Validation failure rolls back the schema and data changes.
+
+Source availability and a passing disposable test do not authorize this stage,
+deployment, feature configuration, invitations, or buyer certification. A receipt
+continues to record full application rollback as `NOT_TESTED`. Revalidate the
+current exact source and recovery evidence before requesting release authority.
+
 The source snapshot and dump remain read-only. After the restored copy's table
 counts, column definitions and migration history match, the optional rehearsal:
 
 1. verifies the copy's unique database, local port, cluster identity and PG15;
-2. verifies all twenty-one migration file hashes (nineteen observed plus two compatibility fixes) recorded in the reviewed source;
+2. verifies every migration file hash in the explicitly selected, pinned profile;
 3. rejects extra, missing, duplicate or backward migration nodes;
 4. applies that graph only to the disposable copy;
 5. verifies zero pending nodes and the exact migration-history increment;

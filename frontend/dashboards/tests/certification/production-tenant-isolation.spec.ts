@@ -91,10 +91,22 @@ for (const school of schools) {
   // a schoolless, active platform superuser, regardless of UI navigation.
   test(school.school_id + " school personas denied platform owner APIs", async ({ request }) => {
     for (const role of ["school_admin", "board", "parent"] as const) {
-      const headers = { Authorization: "Bearer " + school.actors[role].token, "X-School-Id": school.school_id };
+      const authorization = "Bearer " + school.actors[role].token;
       for (const route of ["/api/platform/overview", "/api/platform/schools/list"]) {
-        const denied = await request.get(api + route, { headers });
-        expect(denied.status(), role + " " + route).toBe(403);
+        // A school selector on an owner-only route is rejected before the
+        // view's role authorization, even for a platform superuser.
+        const selected = await request.get(api + route, {
+          headers: { Authorization: authorization, "X-School-Id": school.school_id },
+        });
+        expect(selected.status(), role + " " + route + " tenant selector").toBe(400);
+        expect((await selected.json()).code).toBe("platform_tenant_selector_forbidden");
+
+        // Without a school selector, the owner-only view itself must still
+        // deny ordinary school principals. Both boundaries are required.
+        const denied = await request.get(api + route, {
+          headers: { Authorization: authorization },
+        });
+        expect(denied.status(), role + " " + route + " platform permission").toBe(403);
       }
     }
   });
@@ -110,6 +122,12 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
     expect(health.env).toBe('dev');
     expect(health.build_sha).toBe(health.artifact_build_sha);
     expect(health.db).toBe('ok');
+    // Unlike the loopback Heritage helper, hosted Azure is strictly
+    // invite/workspace-bound. No uninvited Board session is acceptable.
+    const inviteId = String(process.env.CROWN_LIVE_SANDBOX_INVITE_ID || '').trim();
+    if (!/^sbx_inv_[A-Za-z0-9]{1,24}$/.test(inviteId)) {
+      throw new Error('Hosted Board renewal requires an existing authorized DEV buyer invitation.');
+    }
     let schoolId: string | undefined;
     const sessions: { access: string; school_id: string }[] = [];
     for (let renewal = 0; renewal < 2; renewal++) {
@@ -117,7 +135,7 @@ test('Heritage Board renewal preserves least privilege and tenant isolation', as
       let session;
       try {
         const response = await issuer.post(`${api}/api/v1/sandbox/session/`, {
-          data: { role: 'board', school: 'heritage-core', track: 'school' },
+          data: { role: 'board', school: 'heritage-core', track: 'school', invite_id: inviteId },
         });
         expect(response.status(), 'authorized Heritage Board session').toBe(201);
         session = await response.json();

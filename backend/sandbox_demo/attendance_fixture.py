@@ -12,6 +12,28 @@ from households.models import Household, Student as CompatibilityStudent
 ATTENDANCE_SANDBOX_NAMESPACE = uuid.UUID("f7fca0f4-1541-420f-910e-4f4bf75e285a")
 
 
+def ensure_fixture_record(model, *, defaults, create_defaults=None, **lookup):
+    """Repair fixture drift without taking write locks for unchanged reads."""
+    try:
+        record = model.objects.get(**lookup)
+    except model.DoesNotExist:
+        record = None
+    if record is not None:
+        for name, expected in defaults.items():
+            field = model._meta.get_field(name)
+            if field.is_relation and expected is not None:
+                expected = getattr(expected, "pk", expected)
+            if getattr(record, field.attname) != expected:
+                break
+        else:
+            return record, False
+    return model.objects.update_or_create(
+        defaults=defaults,
+        create_defaults={**defaults, **(create_defaults or {})},
+        **lookup,
+    )
+
+
 def ensure_section_attendance_identity(
     *,
     core_student: CoreStudent,
@@ -47,7 +69,8 @@ def ensure_section_attendance_identity(
         f"section:{school_id}:{course_code}:{term_code}",
     )
 
-    household, _ = Household.objects.update_or_create(
+    household, _ = ensure_fixture_record(
+        Household,
         id=household_id,
         defaults={
             "school_id": school_id,
@@ -55,7 +78,8 @@ def ensure_section_attendance_identity(
             "is_active": True,
         },
     )
-    compatibility_student, _ = CompatibilityStudent.objects.update_or_create(
+    compatibility_student, _ = ensure_fixture_record(
+        CompatibilityStudent,
         id=compatibility_id,
         defaults={
             "school_id": school_id,
@@ -68,7 +92,8 @@ def ensure_section_attendance_identity(
         },
     )
 
-    StudentIdentityLink.objects.update_or_create(
+    ensure_fixture_record(
+        StudentIdentityLink,
         core_student=core_student,
         defaults={
             "school": school,
@@ -79,12 +104,14 @@ def ensure_section_attendance_identity(
         },
     )
 
-    course, _ = AcademicCourse.objects.update_or_create(
+    course, _ = ensure_fixture_record(
+        AcademicCourse,
         school_id=school_id,
         code=course_code,
         defaults={"name": course_name},
     )
-    section, _ = AcademicSection.objects.update_or_create(
+    section, _ = ensure_fixture_record(
+        AcademicSection,
         id=section_id,
         defaults={
             "school_id": school_id,
@@ -96,7 +123,8 @@ def ensure_section_attendance_identity(
             "grade_band": grade_band,
         },
     )
-    AcademicEnrollment.objects.update_or_create(
+    ensure_fixture_record(
+        AcademicEnrollment,
         school_id=school_id,
         section=section,
         student=compatibility_student,

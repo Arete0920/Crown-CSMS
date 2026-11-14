@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -15,12 +16,16 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
       - "scripts/ops/probe_dev_prior_image.py"
       - "scripts/ops/test_probe_dev_prior_image.py"
   push:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -31,6 +36,9 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
       - "scripts/ops/probe_dev_prior_image.py"
       - "scripts/ops/test_probe_dev_prior_image.py"
   workflow_dispatch:
@@ -59,6 +67,11 @@ on:
         description: "Opt-in fixed-digest old-image probe on migrated disposable PG15 only; not full rollback certification"
         type: boolean
         default: false
+      reviewed_migration_profile:
+        description: "Exact disposable-copy graph; Finance Setup does not authorize live DDL or old-image proof"
+        type: choice
+        options: [heritage24, finance_setup_0003]
+        default: heritage24
       confirm_prior_image:
         description: "For prior-image probe, type test-prior-image-on-disposable-copy"
         type: string
@@ -99,7 +112,19 @@ jobs:
         env:
           REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
           OPERATIONAL: ${{ inputs.dev_operational_restore }}
-        run: test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
+          PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
+        run: |
+          set -euo pipefail
+          test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          case "$PROFILE" in
+            heritage24|'') ;;
+            finance_setup_0003)
+              test "$REHEARSE" = true
+              test "$OPERATIONAL" = true
+              test "$PRIOR_IMAGE" != true ;;
+            *) exit 1 ;;
+          esac
       - name: Require explicit disposable prior-image probe authority
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -159,6 +184,12 @@ jobs:
         env:
           CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
+      - name: Verify Finance stage preservation and rollback on disposable PG15
+        env:
+          CROWN_STAGE_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          python -m unittest discover -s scripts/ops -p test_dev_reviewed24_workflow.py -v
+          python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
 
   dev-operational-restore:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_operational_restore == true
@@ -236,10 +267,12 @@ jobs:
           PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
           PRIOR_CONFIRMATION: ${{ inputs.confirm_prior_image }}
           DOCKER_CONFIG: ${{ runner.temp }}/crown-prior-image-docker
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
         run: |
           umask 077
           rehearsal_args=()
           if [[ "$REHEARSE" == true ]]; then rehearsal_args+=(--rehearse-reviewed-migrations); fi
+          rehearsal_args+=(--reviewed-migration-profile "${PROFILE:-heritage24}")
           if [[ "$PRIOR_IMAGE" == true ]]; then
             rehearsal_args+=(--verify-prior-image --confirm-prior-image "$PRIOR_CONFIRMATION")
           fi
