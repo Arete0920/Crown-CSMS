@@ -10,7 +10,10 @@ from admissions.models import AdmissionsApplication, AdmissionsAuditEvent
 from applications.models import Application, Applicant, ApplicationEvent, EnrollmentContract, EnrollmentContractStatus
 from applications.services import has_verified_student_enrollments
 from enrollment_conversion_wizard.models import EnrollmentConversionWizardSession
-from core.models import AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family, RolePermission, Student as CoreStudent, StudentIdentityLink
+from core.models import (
+    AcademicYear, CrownPermission, Enrollment as CoreEnrollment, Family,
+    RolePermission, School, Student as CoreStudent, StudentIdentityLink,
+)
 from households.models import Household, Student
 
 from sandbox_demo.catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
@@ -420,7 +423,10 @@ def test_reset_blocks_cross_year_student_deletion_and_rolls_back():
     assert CoreEnrollment.objects.filter(pk=original.pk).exists()
 
 @override_settings(CROWN_SANDBOX_ALLOW_OPEN_SESSION=True)
-def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enrollment(settings, monkeypatch):
+@pytest.mark.parametrize("authentication", ["forced", "bearer"])
+def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enrollment(
+    settings, monkeypatch, authentication,
+):
     """A real parent -> registrar handoff must preserve the same verified SIS identity."""
     _dev_parent_overview_runtime(settings, monkeypatch)
     school, parent, application_id = _setup()
@@ -430,8 +436,24 @@ def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enroll
     )
     RolePermission.objects.get_or_create(role_code="REGISTRAR", permission=permission)
 
-    parent_client = _client(parent, school)
-    registrar_client = _client(registrar, school)
+    def authenticated_client(user, role, selected_school=school):
+        if authentication == "forced":
+            return _client(user, selected_school)
+        from crown_api.jwt_utils import build_access_token
+
+        token = build_access_token(
+            user_id=str(user.pk), email=user.email, role=role,
+            school_id=str(school.pk), ttl_seconds=900,
+        )
+        client = APIClient()
+        client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_SCHOOL_ID=str(selected_school.pk),
+        )
+        return client
+
+    parent_client = authenticated_client(parent, "parent")
+    registrar_client = authenticated_client(registrar, "admissions_director")
     before = parent_client.get(
         f"/api/v1/sandbox/parent/enrollment/?application_id={application_id}"
     )
@@ -469,6 +491,16 @@ def test_one_parent_application_replayed_by_registrar_keeps_one_canonical_enroll
     payload = {"application_id": legacy.id}
     denied = parent_client.post("/api/admissions/enroll/", payload, format="json")
     assert denied.status_code == 403, denied.data
+
+    foreign_school = School.objects.create(
+        name="Unrelated fictional enrollment school", timezone="America/New_York",
+        is_active=True,
+    )
+    foreign_client = authenticated_client(
+        registrar, "admissions_director", selected_school=foreign_school,
+    )
+    foreign = foreign_client.post("/api/admissions/enroll/", payload, format="json")
+    assert foreign.status_code == 404, foreign.data
 
     for _ in range(2):
         replay = registrar_client.post("/api/admissions/enroll/", payload, format="json")
