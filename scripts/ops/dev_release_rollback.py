@@ -114,6 +114,15 @@ def capture(path):
             if key in values:
                 raise Unsafe("duplicate_prior_app_identity")
             values[key] = row.get("value")
+    # The DEV workflow also overwrites these four non-secret runtime markers.
+    # If they are absent or differ, rollback of three identity keys alone
+    # could not re-create the previous configuration. Fail before any write.
+    fixed_dev = {"WEBSITES_PORT": "8000", "CROWN_ENV": "dev",
+                 "DJANGO_ENV": "development", "ENVIRONMENT": "dev"}
+    observed_fixed = {row["name"]: row.get("value") for row in rows
+                      if isinstance(row, dict) and row.get("name") in fixed_dev}
+    if observed_fixed != fixed_dev:
+        raise Unsafe("prior_runtime_settings_not_rollback_compatible")
     sha = values.get("BUILD_SHA")
     if not isinstance(sha, str) or not SHA.fullmatch(sha):
         raise Unsafe("prior_build_sha_unavailable")
