@@ -64,7 +64,7 @@ Use a disposable runtime with the repository dependencies and existing schema
 already prepared. This assignment adds no migration files and does not apply
 migrations or provision schools in Azure. The command checks the **actual**
 Django connection pathname:
-`backend/.local-backups/universal-demo/universal.sqlite3`.
+`.local-backups/universal-demo/universal.sqlite3` from the repository root.
 It requires `CROWN_ENV=local`, `DEBUG=True`, `CROWN_DEMO_MODE=False`,
 `CROWN_SANDBOX_ALLOW_OPEN_SESSION=False`, and
 `CROWN_SANDBOX_OUTBOUND_DISABLED=True`. Conflicting environment/host identities
