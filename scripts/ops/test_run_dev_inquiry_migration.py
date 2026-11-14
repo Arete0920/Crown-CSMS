@@ -546,7 +546,9 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertEqual(job["environment"], "dev")
         steps = job["steps"]
         source = next(i for i, step in enumerate(steps) if step.get("name") == "Verify accepted DEV source")
-        gate = next(i for i, step in enumerate(steps) if "run_dev_inquiry_migration.py --expected-sha" in step.get("run", ""))
+        gate = next(i for i, step in enumerate(steps) if step.get("name") == "Verify zero pending DEV migrations using read-only PostgreSQL connection")
+        self.assertIn("--inspect-all-migrations", steps[gate]["run"])
+        self.assertNotIn("--apply-reviewed", steps[gate]["run"])
         self.assertIn("git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main", steps[source]["run"])
         source_script = steps[source]["run"]
         self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
@@ -574,7 +576,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         names = [step.get("name") for step in steps]
         for mutation, check in (
             ("Build and push Docker image", "DEV image push"),
-            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Verify zero pending DEV migrations using read-only PostgreSQL connection", "DEV migration"),
             ("Apply appsettings (allowlisted only)", "DEV appsettings"),
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
         ):
