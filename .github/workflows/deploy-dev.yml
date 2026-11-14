@@ -104,27 +104,6 @@ jobs:
             exit 1
           fi
 
-      - name: Guard automatic code-only owner authorization before credentials
-        if: inputs.auto_code_only == true
-        shell: bash
-        env:
-          AUTO_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
-          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
-          APPLY_FINANCE: ${{ inputs.apply_finance_setup_0003 }}
-        run: |
-          set -euo pipefail
-          test "$AUTO_ENABLED" = true
-          test "$APPLY_REVIEWED24" = false
-          test "$APPLY_FINANCE" = false
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          policy = json.loads(Path("scripts/ops/dev_auto_release_policy.json").read_text())
-          if policy != {"schema_version": 1, "enabled": True, "target": "dev",
-                        "automatic_schema_changes": False}:
-              raise SystemExit("BLOCKED: explicit governed automatic code-only source opt-in required")
-          PY
-
       - name: Require reviewed migration owner authority before any Azure credential
         shell: bash
         env:
@@ -205,6 +184,27 @@ jobs:
           echo "deploy_sha_short=${SOURCE_SHA:0:7}" >> "$GITHUB_OUTPUT"
           echo "DEPLOY_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
           echo "DEPLOY_SHA_SHORT=${SOURCE_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Guard automatic code-only owner authorization before credentials
+        if: inputs.auto_code_only == true
+        shell: bash
+        env:
+          AUTO_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
+          APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
+          APPLY_FINANCE: ${{ inputs.apply_finance_setup_0003 }}
+        run: |
+          set -euo pipefail
+          test "$AUTO_ENABLED" = true
+          test "$APPLY_REVIEWED24" = false
+          test "$APPLY_FINANCE" = false
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          policy = json.loads(Path("scripts/ops/dev_auto_release_policy.json").read_text())
+          if policy != {"schema_version": 1, "enabled": True, "target": "dev",
+                        "automatic_schema_changes": False}:
+              raise SystemExit("BLOCKED: explicit governed automatic code-only source opt-in required")
+          PY
 
       - name: Azure Login
         uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
