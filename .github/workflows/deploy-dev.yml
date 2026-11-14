@@ -10,18 +10,13 @@ on:
         description: "Full 40-character protected-main commit SHA (required)"
         required: true
         type: string
-      auto_code_only:
-        description: "Guarded automatic code-only DEV run; requires source+repo opt-in and verified prior rollback"
-        required: false
-        type: boolean
-        default: false
       apply_reviewed_heritage24:
         description: "Explicitly stage exact reviewed DEV 24-migration graph before backend deploy"
         required: false
         type: boolean
         default: false
       confirm_dev_reviewed24:
-        description: "For reviewed24 stage only, type migrate-dev-reviewed-24"
+        description: "Reviewed24: migrate-dev-reviewed-24; or protected automatic code-only mode: auto-code-only"
         required: false
         type: string
         default: ""
@@ -143,7 +138,9 @@ jobs:
             test "$GITHUB_REPOSITORY_ID" = 1339719218
           else
             test "$APPLY_REVIEWED24" = false
-            test -z "$CONFIRM_REVIEWED24"
+            if [[ "$CONFIRM_REVIEWED24" != auto-code-only ]]; then
+              test -z "$CONFIRM_REVIEWED24"
+            fi
             test -z "$CONFIRM_FINANCE"
             test "$SYNTHETIC" != true
             test "$RECOVERABLE" != true
@@ -186,7 +183,7 @@ jobs:
           echo "DEPLOY_SHA_SHORT=${SOURCE_SHA:0:7}" >> "$GITHUB_ENV"
 
       - name: Guard automatic code-only owner authorization before credentials
-        if: inputs.auto_code_only == true
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
         shell: bash
         env:
           AUTO_ENABLED: ${{ vars.CROWN_AUTO_DEV_CD_ENABLED }}
@@ -384,7 +381,7 @@ jobs:
           fi
 
       - name: Capture current healthy immutable DEV release before automatic mutation
-        if: inputs.auto_code_only == true
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
         shell: bash
         run: |
           set -euo pipefail
@@ -393,7 +390,7 @@ jobs:
           test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
 
       - name: Mark automatic release mutation boundary
-        if: inputs.auto_code_only == true
+        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
         shell: bash
         run: |
           set -euo pipefail
@@ -513,7 +510,7 @@ jobs:
           echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
 
       - name: Restore prior immutable DEV image after failed automatic mutation
-        if: failure() && inputs.auto_code_only == true
+        if: failure() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
         shell: bash
         run: |
           set -euo pipefail
@@ -526,7 +523,7 @@ jobs:
           fi
 
       - name: Record sanitized automatic rollback evidence
-        if: always() && inputs.auto_code_only == true
+        if: always() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: auto-dev-prior-image-${{ github.run_id }}-${{ github.run_attempt }}
