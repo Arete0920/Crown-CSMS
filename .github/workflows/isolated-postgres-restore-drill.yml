@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -15,10 +16,16 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
+      - "scripts/ops/probe_dev_prior_image.py"
+      - "scripts/ops/test_probe_dev_prior_image.py"
   push:
     branches: [main]
     paths:
       - ".github/workflows/isolated-postgres-restore-drill.yml"
+      - ".github/workflows/deploy-dev.yml"
       - "backend/crown_api/management/commands/verify_backup_restore.py"
       - "backend/tests/test_verify_backup_restore_command.py"
       - "backend/crm_marketing/models.py"
@@ -29,6 +36,11 @@ on:
       - "scripts/ops/test_dev_backup_restore.py"
       - "scripts/ops/rehearse_dev_heritage_migrations.py"
       - "scripts/ops/test_rehearse_dev_heritage_migrations.py"
+      - "scripts/ops/stage_dev_heritage_graph.py"
+      - "scripts/ops/test_stage_dev_heritage_graph.py"
+      - "scripts/ops/test_dev_reviewed24_workflow.py"
+      - "scripts/ops/probe_dev_prior_image.py"
+      - "scripts/ops/test_probe_dev_prior_image.py"
   workflow_dispatch:
     inputs:
       dev_operational_restore:
@@ -51,6 +63,19 @@ on:
         description: "Rehearse the reviewed migration graph on a disposable PG15 restore only; never DEV"
         type: boolean
         default: false
+      verify_prior_image:
+        description: "Opt-in fixed-digest old-image probe on migrated disposable PG15 only; not full rollback certification"
+        type: boolean
+        default: false
+      reviewed_migration_profile:
+        description: "Exact disposable-copy graph; Finance Setup does not authorize live DDL or old-image proof"
+        type: choice
+        options: [heritage24, finance_setup_0003]
+        default: heritage24
+      confirm_prior_image:
+        description: "For prior-image probe, type test-prior-image-on-disposable-copy"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -80,18 +105,50 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
         with:
           python-version: '3.12'
+      - name: Install pinned test-only YAML parser
+        run: python -m pip install pyyaml==6.0.3
       - name: Refuse rehearsal without explicit operational restore mode
         if: github.event_name == 'workflow_dispatch'
         env:
           REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
           OPERATIONAL: ${{ inputs.dev_operational_restore }}
-        run: test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
+          PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
+        run: |
+          set -euo pipefail
+          test "$REHEARSE" != true || test "$OPERATIONAL" = true
+          case "$PROFILE" in
+            heritage24|'') ;;
+            finance_setup_0003)
+              test "$REHEARSE" = true
+              test "$OPERATIONAL" = true
+              test "$PRIOR_IMAGE" != true ;;
+            *) exit 1 ;;
+          esac
+      - name: Require explicit disposable prior-image probe authority
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
+          OPERATIONAL: ${{ inputs.dev_operational_restore }}
+          PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
+          PRIOR_CONFIRMATION: ${{ inputs.confirm_prior_image }}
+        run: |
+          set -euo pipefail
+          if [[ "$PRIOR_IMAGE" == true ]]; then
+            test "$REHEARSE" = true
+            test "$OPERATIONAL" = true
+            test "$PRIOR_CONFIRMATION" = test-prior-image-on-disposable-copy
+          else
+            test -z "$PRIOR_CONFIRMATION"
+          fi
       - name: Verify operational recovery privacy and target boundaries offline
         env:
           CROWN_RESTORE_TEST_CONTAINER: ${{ job.services.postgres.id }}
         run: python -m unittest discover -s scripts/ops -p test_dev_backup_restore.py -v
       - name: Verify restored-copy migration deny and privacy contracts
         run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
+      - name: Verify fixed-image disposable-only probe contracts
+        run: python -m unittest discover -s scripts/ops -p test_probe_dev_prior_image.py -v
 
   reviewed-migration-pg15-contracts:
     runs-on: ubuntu-latest
@@ -116,11 +173,23 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install accepted dependencies for synthetic PG15 migration fixture
-        run: python -m pip install -r backend/requirements.txt
+        run: |
+          python -m pip install -r backend/requirements.txt
+          python -m pip install pyyaml==6.0.3
+      - name: Verify prior-image target boundary on actual disposable PG15
+        env:
+          CROWN_PRIOR_IMAGE_TEST_CONTAINER: ${{ job.services.postgres.id }}
+        run: python -m unittest discover -s scripts/ops -p test_probe_dev_prior_image.py -v
       - name: Verify the reviewed graph and legacy INSERTs on populated PG15
         env:
           CROWN_REHEARSAL_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
         run: python -m unittest discover -s scripts/ops -p test_rehearse_dev_heritage_migrations.py -v
+      - name: Verify Finance stage preservation and rollback on disposable PG15
+        env:
+          CROWN_STAGE_TEST_PORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          python -m unittest discover -s scripts/ops -p test_dev_reviewed24_workflow.py -v
+          python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
 
   dev-operational-restore:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.dev_operational_restore == true
@@ -178,6 +247,15 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Authenticate pull of recorded prior image (explicit probe only)
+        if: inputs.verify_prior_image == true
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/crown-prior-image-docker
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir "$DOCKER_CONFIG"
+          az acr login --name crownregistry --only-show-errors --output none
       - name: Restore authorized DEV snapshot only inside the job service
         env:
           EXPECTED_SHA: ${{ inputs.expected_dev_sha }}
@@ -186,10 +264,18 @@ jobs:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
           CROWN_REHEARSAL_PG_PORT: ${{ job.services.postgres.ports['5432'] }}
           REHEARSE: ${{ inputs.rehearse_reviewed_migrations }}
+          PRIOR_IMAGE: ${{ inputs.verify_prior_image }}
+          PRIOR_CONFIRMATION: ${{ inputs.confirm_prior_image }}
+          DOCKER_CONFIG: ${{ runner.temp }}/crown-prior-image-docker
+          PROFILE: ${{ inputs.reviewed_migration_profile }}
         run: |
           umask 077
           rehearsal_args=()
           if [[ "$REHEARSE" == true ]]; then rehearsal_args+=(--rehearse-reviewed-migrations); fi
+          rehearsal_args+=(--reviewed-migration-profile "${PROFILE:-heritage24}")
+          if [[ "$PRIOR_IMAGE" == true ]]; then
+            rehearsal_args+=(--verify-prior-image --confirm-prior-image "$PRIOR_CONFIRMATION")
+          fi
           python scripts/ops/dev_backup_restore.py \
             --expected-sha "$EXPECTED_SHA" \
             --confirmation "$CONFIRMATION" \
@@ -204,6 +290,17 @@ jobs:
           path: ${{ runner.temp }}/dev-restore-evidence.json
           if-no-files-found: warn
           retention-days: 7
+      - name: Discard ephemeral prior-image registry credential
+        if: always() && inputs.verify_prior_image == true
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/crown-prior-image-docker
+        run: |
+          set -euo pipefail
+          if [[ -d "$DOCKER_CONFIG" ]]; then
+            docker logout crownregistry.azurecr.io
+            rm -f "$DOCKER_CONFIG/config.json"
+            rmdir "$DOCKER_CONFIG"
+          fi
       - name: Logout Azure
         if: always() && steps.azure_login.outcome == 'success'
         run: az logout

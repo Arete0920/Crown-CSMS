@@ -83,6 +83,44 @@ def test_verified_parent_sees_only_linked_family(people, prefix, resource):
 
 
 @pytest.mark.parametrize("prefix", ["/api/", "/api/v1/"])
+def test_real_bearer_parent_preserves_uuid_school_scope(people, prefix):
+    """Exercise real bearer auth, not force_authenticate's native UUID user."""
+    from crown_api.jwt_utils import build_access_token
+
+    school, user = people["school"], people["linked"]
+    token = build_access_token(
+        user_id=str(user.pk), email=user.email, role="parent",
+        school_id=str(school.pk), ttl_seconds=900,
+    )
+    client = APIClient()
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {token}",
+        HTTP_X_SCHOOL_ID=str(school.pk),
+    )
+    targets = (
+        ("households", people["home"], people["other"]),
+        (
+            "guardians",
+            Guardian.objects.get(household=people["home"]),
+            Guardian.objects.get(household=people["other"]),
+        ),
+        (
+            "students",
+            people["child"],
+            Student.objects.get(household=people["other"]),
+        ),
+    )
+    for resource, own, denied in targets:
+        response = client.get(f"{prefix}{resource}/")
+        assert response.status_code == 200
+        visible_ids = {str(row["id"]) for row in response.json()}
+        assert str(own.pk) in visible_ids
+        assert str(denied.pk) not in visible_ids
+        assert client.get(f"{prefix}{resource}/{own.pk}/").status_code == 200
+        assert client.get(f"{prefix}{resource}/{denied.pk}/").status_code == 404
+
+
+@pytest.mark.parametrize("prefix", ["/api/", "/api/v1/"])
 def test_parent_email_match_is_not_verified_identity(people, prefix):
     user = people["unlinked"]
     user.email = "unlinked@example.invalid"

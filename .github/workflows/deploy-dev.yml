@@ -20,6 +20,16 @@ on:
         required: false
         type: string
         default: ""
+      apply_finance_setup_0003:
+        description: "Explicitly stage only Finance Setup 0003 before backend deploy"
+        required: false
+        type: boolean
+        default: false
+      confirm_finance_setup_0003:
+        description: "For Finance Setup only, type migrate-dev-finance-setup-0003"
+        required: false
+        type: string
+        default: ""
       synthetic_dev_confirmed:
         description: "Owner attests existing DEV contains synthetic data only"
         required: false
@@ -89,11 +99,13 @@ jobs:
             exit 1
           fi
 
-      - name: Require reviewed24 owner authority before any Azure credential
+      - name: Require reviewed migration owner authority before any Azure credential
         shell: bash
         env:
           APPLY_REVIEWED24: ${{ inputs.apply_reviewed_heritage24 }}
           CONFIRM_REVIEWED24: ${{ inputs.confirm_dev_reviewed24 }}
+          APPLY_FINANCE: ${{ inputs.apply_finance_setup_0003 }}
+          CONFIRM_FINANCE: ${{ inputs.confirm_finance_setup_0003 }}
           SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
           RECOVERABLE: ${{ inputs.backup_recovery_verified }}
           MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
@@ -101,8 +113,21 @@ jobs:
           RESTORE_ARTIFACT: ${{ inputs.rehearsal_artifact_id }}
         run: |
           set -euo pipefail
-          if [[ "$APPLY_REVIEWED24" == "true" ]]; then
-            test "$CONFIRM_REVIEWED24" = migrate-dev-reviewed-24
+          test "$APPLY_REVIEWED24" = true || test "$APPLY_REVIEWED24" = false
+          test "$APPLY_FINANCE" = true || test "$APPLY_FINANCE" = false
+          if [[ "$APPLY_REVIEWED24" == true && "$APPLY_FINANCE" == true ]]; then exit 1; fi
+          if [[ "$APPLY_REVIEWED24" == true || "$APPLY_FINANCE" == true ]]; then
+            if [[ "$APPLY_FINANCE" == true ]]; then
+              test "$CONFIRM_FINANCE" = migrate-dev-finance-setup-0003
+              test -z "$CONFIRM_REVIEWED24"
+              echo "REVIEWED_MIGRATION_PROFILE=finance_setup_0003" >> "$GITHUB_ENV"
+              echo "REVIEWED_MIGRATION_CONFIRMATION=$CONFIRM_FINANCE" >> "$GITHUB_ENV"
+            else
+              test "$CONFIRM_REVIEWED24" = migrate-dev-reviewed-24
+              test -z "$CONFIRM_FINANCE"
+              echo "REVIEWED_MIGRATION_PROFILE=heritage24" >> "$GITHUB_ENV"
+              echo "REVIEWED_MIGRATION_CONFIRMATION=$CONFIRM_REVIEWED24" >> "$GITHUB_ENV"
+            fi
             test "$SYNTHETIC" = true
             test "$RECOVERABLE" = true
             test "$MAINTENANCE" = true
@@ -114,6 +139,7 @@ jobs:
           else
             test "$APPLY_REVIEWED24" = false
             test -z "$CONFIRM_REVIEWED24"
+            test -z "$CONFIRM_FINANCE"
             test "$SYNTHETIC" != true
             test "$RECOVERABLE" != true
             test "$MAINTENANCE" != true
@@ -167,7 +193,9 @@ jobs:
           python-version: '3.12'
 
       - name: Install accepted backend dependencies
-        run: python -m pip install -r backend/requirements.txt
+        run: |
+          python -m pip install -r backend/requirements.txt
+          python -m pip install pyyaml==6.0.3
 
       - name: Verify DEV migration boundary without database execution
         run: python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
@@ -175,16 +203,15 @@ jobs:
       - name: Verify SimpleJWT migration allowlist without database access
         run: python -m unittest discover -s scripts/ops -p test_reviewed_blacklist_migrations.py -v
 
-      - name: Verify reviewed24 source-only authority and evidence contracts
-        if: inputs.apply_reviewed_heritage24 == true
+      - name: Verify reviewed source-only authority and evidence contracts
+        if: inputs.apply_reviewed_heritage24 == true || inputs.apply_finance_setup_0003 == true
         run: python -m unittest discover -s scripts/ops -p test_stage_dev_heritage_graph.py -v
 
-      - name: Apply separately owner-authorized reviewed24 DEV schema stage
-        if: inputs.apply_reviewed_heritage24 == true
+      - name: Apply separately owner-authorized reviewed DEV schema stage
+        if: inputs.apply_reviewed_heritage24 == true || inputs.apply_finance_setup_0003 == true
         shell: bash
         env:
           EXPECTED_SHA: ${{ steps.vars.outputs.deploy_sha }}
-          CONFIRMATION: ${{ inputs.confirm_dev_reviewed24 }}
           SYNTHETIC: ${{ inputs.synthetic_dev_confirmed }}
           RECOVERABLE: ${{ inputs.backup_recovery_verified }}
           MAINTENANCE: ${{ inputs.maintenance_window_confirmed }}
@@ -196,7 +223,8 @@ jobs:
           umask 077
           python scripts/ops/stage_dev_heritage_graph.py \
             --expected-sha "$EXPECTED_SHA" \
-            --confirmation "$CONFIRMATION" \
+            --profile "$REVIEWED_MIGRATION_PROFILE" \
+            --confirmation "$REVIEWED_MIGRATION_CONFIRMATION" \
             --synthetic-dev-confirmed "$SYNTHETIC" \
             --backup-recovery-verified "$RECOVERABLE" \
             --maintenance-window-confirmed "$MAINTENANCE" \
@@ -204,8 +232,8 @@ jobs:
             --rehearsal-artifact-id "$RESTORE_ARTIFACT" \
             --evidence-path "$RUNNER_TEMP/reviewed-dev-schema-stage.json"
 
-      - name: Preserve audited reviewed24 DEV schema receipt
-        if: always() && inputs.apply_reviewed_heritage24 == true
+      - name: Preserve audited reviewed DEV schema receipt
+        if: always() && (inputs.apply_reviewed_heritage24 == true || inputs.apply_finance_setup_0003 == true)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reviewed-dev-schema-stage-${{ github.run_id }}
