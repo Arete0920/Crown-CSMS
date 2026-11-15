@@ -15,7 +15,7 @@ try {
     expect((await (await page.request.get(front + '/build.json')).json()).build_sha).toBe(f.source_sha);
     expect((await (await page.request.get(api + '/api/health/')).json()).build_sha).toBe(f.source_sha);
     await page.goto(front + '/login');
-    await page.getByLabel('Role', { exact: true }).selectOption(role);
+    await page.getByLabel('Role', { exact: true }).selectOption(role === 'school_admin' ? 'head_of_school' : role);
     await page.getByLabel('Email', { exact: true }).fill(f.usernames[role]);
     await page.getByLabel('Password', { exact: true }).fill(f.passwords[role]);
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
