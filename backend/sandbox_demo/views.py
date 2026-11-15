@@ -471,6 +471,13 @@ class SandboxEventView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        # Presenter reset provenance is written only by the guarded operator
+        # command. Public telemetry must never be able to forge that authority.
+        if str(request.data.get("event") or "").startswith("universal_presenter_"):
+            return Response(
+                {"detail": "Reserved operator event.", "code": "sandbox_event_reserved"},
+                status=400,
+            )
         if DISALLOWED_EVENT_FIELDS.intersection(set(request.data.keys())):
             return Response(
                 {

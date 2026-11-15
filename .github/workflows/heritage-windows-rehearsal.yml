@@ -209,12 +209,29 @@ jobs:
             .local-backups/heritage-sales/heritage-five-module-candidate-audit.json
           if-no-files-found: error
           retention-days: 7
+      - name: Verify isolated presenter normal-login transactions and retained-history reset
+        shell: pwsh
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:8004
+          VITE_DEMO_MODE: production
+          VITE_SANDBOX_MODE: '0'
+          VITE_BUILD_SHA: ${{ github.sha }}
+          CROWN_RUN_UNIVERSAL_BROWSER: '1'
+        run: |
+          Push-Location frontend/dashboards
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Presenter frontend build failed' }
+          Pop-Location
+          .\.venv\Scripts\python.exe -m pytest -q --liveserver=127.0.0.1:8004 backend/sandbox_demo/test_universal_family.py::test_normal_browser_workflow --junitxml=.local-backups/universal-demo/browser-junit.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Presenter transactional browser acceptance failed' }
       - name: Upload local rehearsal evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: heritage-windows-rehearsal
           path: |
+            .local-backups/universal-demo/browser-evidence.json
+            .local-backups/universal-demo/browser-junit.xml
             .local-backups/heritage-demo/*.log
             .local-backups/heritage-demo/five-module-source-preflight.json
             .local-backups/heritage-demo/five-module-preflight.json

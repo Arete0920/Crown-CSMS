@@ -297,7 +297,41 @@ def _clear_flagship_data(school: School) -> None:
 
 @transaction.atomic
 def seed_heritage_flagship(*, reset: bool = False) -> dict:
-    school_spec = SANDBOX_SCHOOLS["heritage-core"]
+    return seed_fictional_school(
+        school_spec=SANDBOX_SCHOOLS["heritage-core"],
+        personas={key: SANDBOX_PERSONAS[key] for key in DEFAULT_SANDBOX_INVITE_ROLES},
+        reset=reset,
+    )
+
+
+_PRESENTER_BOOTSTRAP_CAPABILITY = object()
+
+
+@transaction.atomic
+def seed_fictional_school(*, school_spec: SandboxSchool,
+                         personas: dict[str, SandboxPersona], reset: bool = False,
+                         _presenter_bootstrap_capability=None,
+                         _presenter_rebuild=False) -> dict:
+    """Shared synthetic generator; callers own environment/provenance guards.
+
+    Tenant identity and principal names are explicit inputs. Never replace the
+    global Heritage catalog to seed another school.
+    """
+    from .universal_identity import UNIVERSAL_SCHOOL
+
+    if school_spec not in (SANDBOX_SCHOOLS["heritage-core"], UNIVERSAL_SCHOOL):
+        raise RuntimeError("Fictional generator refuses an unregistered school identity.")
+    if school_spec == UNIVERSAL_SCHOOL:
+        # The generic helper is importable. It cannot bypass the presenter's
+        # environment/provenance checks or its separately reviewed reset path.
+        from .universal_demo import require_local_presenter, _owned_school
+        require_local_presenter()
+        if reset:
+            raise RuntimeError("Use the controlled presenter reset command.")
+        if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
+            raise RuntimeError("Presenter initialization requires the guarded presenter command.")
+        if _owned_school() is not None and not _presenter_rebuild:
+            raise RuntimeError("Presenter already exists; direct reseed would invalidate credentials or audit history.")
     school = ensure_demo_school(school_spec)
 
     if reset:
@@ -454,12 +488,11 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
             )
             student_index += 1
 
-    for persona_key in DEFAULT_SANDBOX_INVITE_ROLES:
-        persona = SANDBOX_PERSONAS[persona_key]
+    for persona in personas.values():
         ensure_persona_user(school, persona)
 
     parent_user = UserAccount.objects.filter(
-        username="parent.reed@heritage.example.org", school=school
+        username=personas["parent"].email, school=school
     ).first()
     if parent_user:
         for n in range(1, 13):
