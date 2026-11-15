@@ -139,6 +139,7 @@ urlpatterns = [
     path("api/v1/little-lambs/", include("aftercare.urls")),
     path("api/little-lambs/", include("aftercare.urls")),
     # Canonical API. Specific dashboard routes must precede each broad alias.
+    path("api/v1/presenter/admin/", include("sandbox_demo.universal_admin")),
     path("api/v1/presenter/jireh/", include("sandbox_demo.presenter_jireh_urls")),
     path("api/v1/buyer-demo/jireh/aid/family/", hosted_aid_family, name="hosted-buyer-aid-family"),
     path("api/v1/buyer-demo/jireh/sgo/family/programs/", hosted_family_programs, name="hosted-buyer-sgo-family-programs"),

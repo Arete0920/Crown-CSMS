@@ -1,4 +1,5 @@
 """Bounded owned-generation rollover, preserving immutable history and customer scopes."""
+from sandbox_demo.universal_admin import prepare_presenter_admin
 from dataclasses import replace
 from uuid import UUID
 from django.core.management.base import CommandError
@@ -110,5 +111,6 @@ def rollover_presenter(*, expected_current, request_key, apply=False, enable_pas
         care = prepare_presenter_care(apply=True)
         prepare_presenter_jireh(apply=True)
         admissions = prepare_presenter_admissions(apply=True)
+        prepare_presenter_admin(apply=True)
         return {**result, **proof_metrics(new_school), "mode": "ROLLED_OVER", "care": care, "admissions": admissions,
                 "usernames": {key: presenter_username(key, new_school.pk) for key in SANDBOX_PERSONAS}}
