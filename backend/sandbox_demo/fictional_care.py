@@ -16,8 +16,9 @@ def require_fictional_care_scope(school, workspace=None, *, custody=False):
     # Recheck authority even when these helpers are called directly. Caller
     # transactions keep the exact-school locks through the fixture commit.
     if workspace is None:
-        from .universal_demo import require_local_presenter, _owned_school
-        require_local_presenter()
+        from .universal_demo import _owned_school
+        from .universal_runtime import require_presenter_runtime
+        require_presenter_runtime()
         owned = _owned_school()
         if owned is None or owned.pk != school.pk:
             raise CommandError("Care fixtures require the owned local presenter school.")

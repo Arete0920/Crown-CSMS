@@ -10,9 +10,10 @@ from .universal_identity import presenter_username
 
 
 def seed_presenter_family(school):
-    from .universal_demo import require_local_presenter, _owned_school
+    from .universal_demo import _owned_school
+    from .universal_runtime import require_presenter_runtime
     from django.core.management.base import CommandError
-    require_local_presenter()
+    require_presenter_runtime()
     owned = _owned_school()
     if owned is None or owned.pk != school.pk:
         raise CommandError("Presenter family requires its owned fictional school.")
@@ -59,8 +60,9 @@ def archive_presenter_classroom():
     from django.db import transaction
     from academics.models import Assignment
     from .models import SandboxEvent
-    from .universal_demo import require_local_presenter, _owned_school
-    require_local_presenter()
+    from .universal_demo import _owned_school
+    from .universal_runtime import require_presenter_runtime
+    require_presenter_runtime()
     with transaction.atomic():
         school = _owned_school()
         if school is None:

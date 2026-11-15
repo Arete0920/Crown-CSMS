@@ -319,8 +319,9 @@ def seed_fictional_school(*, school_spec: SandboxSchool,
     if school_spec == UNIVERSAL_SCHOOL:
         # The generic helper is importable. It cannot bypass the presenter's
         # environment/provenance checks or its separately reviewed reset path.
-        from .universal_demo import require_local_presenter, _owned_school
-        require_local_presenter()
+        from .universal_demo import _owned_school
+        from .universal_runtime import require_presenter_runtime
+        require_presenter_runtime()
         _owned_school()
         if reset:
             raise RuntimeError("Use the controlled presenter reset command.")

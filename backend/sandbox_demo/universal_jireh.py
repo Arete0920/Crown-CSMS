@@ -4,14 +4,15 @@ from django.db import transaction
 from core.models import AcademicYear, StudentIdentityLink, UserAccount, UserRole, RolePermission
 from aid.models import AidPolicy
 from jireh_sgo.models import SGOOrganization, SGOProgram, SGOFamilyGrant, SGOProcessorAssignment
-from .universal_demo import require_local_presenter, _owned_school
+from .universal_demo import _owned_school
+from .universal_runtime import require_presenter_runtime
 from .universal_identity import presenter_username
 from .models import SandboxEvent
 from .management.commands.seed_hosted_jireh_buyer import _seed_fictional_aid_policy
 
 
 def prepare_presenter_jireh(*, apply=False):
-    require_local_presenter()
+    require_presenter_runtime()
     with transaction.atomic():
         school = _owned_school()
         if school is None:
