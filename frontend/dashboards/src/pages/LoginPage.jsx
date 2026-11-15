@@ -42,9 +42,13 @@ const PROD_ROLES = [
   { value: "teacher", label: "Teacher", route: "/teacher" },
   { value: "parent", label: "Parent", route: "/parent" },
   { value: "student", label: "Student/Learner", route: "/student" },
+  { value: "board", label: "School Board", route: "/board" },
+  { value: "daycare_director", label: "Diadem Daycare Director", route: "/diadem/daycare/setup" },
+  { value: "daycare_staff", label: "Diadem Daycare Staff", route: "/diadem/daycare" },
 ];
 
 const PROD_ROLE_SERVER_ALIASES = {
+  board: new Set(["board", "board_member"]),
   head_of_school: new Set(["head_of_school", "school_admin", "admin"]),
   finance_director: new Set(["finance_director", "finance_admin", "finance", "biz_office"]),
   admissions_director: new Set(["admissions_director", "admissions_manager", "admissions", "registrar"]),

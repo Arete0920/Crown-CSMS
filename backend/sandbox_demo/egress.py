@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 
 from django.conf import settings
+from .universal_identity import UNIVERSAL_SCHOOL_ID
 
 HERITAGE_SCHOOL_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
 SUPPRESSED_REASON = "sandbox_external_egress_suppressed"
@@ -30,7 +31,7 @@ def _school_id(value) -> str:
 
 def _is_heritage_school(school_id: str) -> bool:
     configured = str(getattr(settings, "CROWN_DEMO_SCHOOL_ID", "") or "").strip().lower()
-    return bool(school_id) and school_id in {HERITAGE_SCHOOL_ID, configured}
+    return bool(school_id) and school_id in {HERITAGE_SCHOOL_ID, configured, str(UNIVERSAL_SCHOOL_ID)}
 
 
 def _unscoped_heritage_user(value) -> bool:
@@ -45,7 +46,7 @@ def _unscoped_heritage_user(value) -> bool:
     if not isinstance(value, UserAccount) or value.pk is None:
         return False
     configured = str(getattr(settings, "CROWN_DEMO_SCHOOL_ID", "") or "").strip().lower()
-    school_ids = [HERITAGE_SCHOOL_ID]
+    school_ids = [HERITAGE_SCHOOL_ID, str(UNIVERSAL_SCHOOL_ID)]
     if configured and configured != HERITAGE_SCHOOL_ID:
         school_ids.append(configured)
     # Database errors propagate: a failed ownership check must not allow I/O.

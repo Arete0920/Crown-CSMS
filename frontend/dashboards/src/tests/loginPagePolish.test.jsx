@@ -222,7 +222,7 @@ describe("login page polish", () => {
     ).toBeTruthy();
   });
 
-  it("rejects a production role selection that the server did not assign", async () => {
+  it.each(["head_of_school", "board", "daycare_director", "daycare_staff"])("rejects an unassigned production role: %s", async (role) => {
     vi.unstubAllEnvs();
     vi.stubEnv("VITE_DEMO_MODE", "production");
     vi.stubEnv("VITE_SANDBOX_MODE", "0");
@@ -260,7 +260,7 @@ describe("login page polish", () => {
     const { default: LoginPage } = await import("../pages/LoginPage.jsx");
     render(<LoginPage />);
 
-    fireEvent.change(screen.getByLabelText("Role"), { target: { value: "head_of_school" } });
+    fireEvent.change(screen.getByLabelText("Role"), { target: { value: role } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "teacher@example.test" } });
     fireEvent.change(screen.getByLabelText("Password"), { target: { value: "ValidPass1!" } });
     fireEvent.click(screen.getByRole("button", { name: "Sign In" }));

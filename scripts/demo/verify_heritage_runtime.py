@@ -43,6 +43,7 @@ GUIDED_LINK_COUNTS = {
 
 UPSTREAM_BROWSER_CHECKS = (
     "six_role_buyer_browser_routes_and_mobile",
+    "parent_registrar_same_application_browser_readback",
     "teacher_attendance_and_classwork_persist_after_reload",
     "summer_camp_authenticated_browser_save_readback",
     "diadem_signed_staff_browser_release_and_denials",
@@ -305,6 +306,17 @@ def main() -> int:
             # another preview on the occupied port and fails before testing.
             browser_env["CROWN_CERTIFICATION_LIVE_RUNTIME"] = "1"
             browser_env["CROWN_EXPECTED_FRONTEND_SHA"] = evidence["source_sha"]
+            # Separate authenticated parent and registrar browser contexts must
+            # independently read the identical canonical application UUID.
+            subprocess.run(
+                launcher.npm_command() + [
+                    "run", "test:e2e", "--",
+                    "tests/e2e/sandbox-parent-registrar-continuity.spec.ts",
+                    "--workers=1", "--reporter=line",
+                ],
+                cwd=launcher.FRONTEND, env=browser_env, timeout=600, check=True,
+            )
+            evidence["checks"]["parent_registrar_same_application_browser_readback"] = True
             subprocess.run(
                 launcher.npm_command() + [
                     "run", "test:e2e", "--",

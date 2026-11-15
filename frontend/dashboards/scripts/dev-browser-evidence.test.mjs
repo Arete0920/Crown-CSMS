@@ -5,6 +5,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdir
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { createContext, EvidenceCollector, EXPORTER_FILES, PHASES, validateReport } from './browser-evidence-schema.mjs';
@@ -290,4 +291,48 @@ test('actual empty Playwright collection cannot publish a success report', async
   const result = await executeSuite({ suite: 'buyer', env: f.env, projectDirectory: f.projectDirectory });
   assert.equal(result.evidenceValid, false); assert.notEqual(result.exitCode, 0);
   assert.doesNotMatch(readFileSync(f.env.GITHUB_OUTPUT, 'utf8'), /evidence_valid=true|evidence_path=/);
+});
+
+
+test('buyer browser registration keeps hosted and Heritage collections disjoint', () => {
+  // Playwright --list collects tests without starting a browser, creating an
+  // invited session, or sending requests to DEV. This is not runtime proof.
+  const require = createRequire(import.meta.url);
+  const cli = path.join(path.dirname(require.resolve('playwright/package.json')), 'cli.js');
+  const spec = 'tests/certification/buyer-sandbox-browser-authority.spec.ts';
+  const azure = {
+    CROWN_CERTIFICATION_LIVE_RUNTIME: '1',
+    CROWN_LIVE_FRONTEND_URL: 'https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net',
+    CROWN_LIVE_API_BASE_URL: 'https://crown-api-dev.azurewebsites.net',
+    CROWN_LIVE_SANDBOX_INVITE_ID: 'sbx_inv_DiscoveryOnly',
+    CROWN_EVIDENCE_RUNTIME_SHA: 'a'.repeat(40),
+  };
+  const list = (overrides) => execFileSync(process.execPath, [
+    cli, 'test', '--list', spec, '--config=playwright.config.ts',
+  ], {
+    cwd: PROJECT,
+    env: { ...process.env, CI: '1', ...overrides },
+    encoding: 'utf8', timeout: 30_000, maxBuffer: 1024 * 1024,
+  });
+  const hosted = list(azure);
+  assert.match(hosted, /pins source identities and rejects uninvited sessions/);
+  assert.match(hosted, /Jireh parent submits or independently rechecks/);
+  assert.match(hosted, /Jireh SGO verifies invited partner submission/);
+  assert.match(hosted, /Daycare staff identity and school-scoped roster/);
+  assert.match(hosted, /AM\/PM Extended Care and Camp require/);
+  assert.doesNotMatch(hosted, /student workspace shows school data and denies finance/);
+
+  const heritage = list({
+    ...azure,
+    CROWN_CERTIFICATION_LIVE_RUNTIME: '0',
+    CROWN_LIVE_FRONTEND_URL: '',
+    CROWN_LIVE_SANDBOX_INVITE_ID: '',
+    CROWN_EVIDENCE_RUNTIME_SHA: '',
+  });
+  assert.match(heritage, /student workspace shows school data and denies finance/);
+  assert.doesNotMatch(heritage, /pins source identities and rejects uninvited sessions/);
+  assert.throws(
+    () => list({ ...azure, CROWN_LIVE_SANDBOX_INVITE_ID: '' }),
+    /Command failed/,
+  );
 });
