@@ -72,7 +72,7 @@ def test_normal_roles_submit_grade_and_read_the_same_persisted_family_record(loc
 
 @pytest.mark.skipif(os.environ.get('CROWN_RUN_UNIVERSAL_BROWSER') != '1', reason='Explicit disposable local browser harness only')
 @pytest.mark.django_db(transaction=True)
-def test_normal_browser_workflow(live_server, local_runtime, operator_secrets, settings, tmp_path):
+def test_normal_browser_workflow(live_server, local_runtime, operator_secrets, settings, tmp_path, monkeypatch):
     import json
     from pathlib import Path
     import subprocess
@@ -94,7 +94,7 @@ def test_normal_browser_workflow(live_server, local_runtime, operator_secrets, s
     output.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
     source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
-    settings.BUILD_SHA = source
+    monkeypatch.setenv("BUILD_SHA", source)
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
     fixture = {'synthetic': True, 'api': live_server.url, 'frontend': 'http://127.0.0.1:4178',
                'school_id': data['school_id'], 'foreign_school_id': str(foreign.pk),
