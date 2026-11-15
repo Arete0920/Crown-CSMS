@@ -26,10 +26,11 @@ def hosted_guard(settings, monkeypatch):
     settings.CROWN_SANDBOX_OUTBOUND_DISABLED = True
     settings.CROWN_UNIVERSAL_PRESENTER_ENABLED = True
     settings.CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA = SHA
+    settings.CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME = "synthetic_test_only"
     for key in ("ENVIRONMENT", "APP_ENV", "CROWN_ENV", "DJANGO_ENV", "AZURE_ENVIRONMENT", "CROWN_SANDBOX_OUTBOUND_DISABLED"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-dev.azurewebsites.net")
-    conn = SimpleNamespace(vendor="postgresql", settings_dict={"NAME": "synthetic_test_only", "HOST": "synthetic-test.postgres.database.azure.com"})
+    conn = SimpleNamespace(vendor="postgresql", settings_dict={"NAME": "synthetic_test_only", "HOST": "crown-pg-dev.postgres.database.azure.com", "PORT": "5432"})
     with patch("sandbox_demo.universal_runtime.connection", conn), patch(
         "sandbox_demo.management.commands.provision_hosted_buyer_workspace.connection", conn):
         yield conn
@@ -41,6 +42,7 @@ def test_exact_owner_enabled_existing_dev_guard_is_source_only(hosted_guard):
 
 @pytest.mark.parametrize("setting,value", [
     ("CROWN_UNIVERSAL_PRESENTER_ENABLED", False), ("CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA", "b" * 40),
+    ("CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME", ""),
     ("BUILD_SHA", "b" * 40), ("CROWN_ENV", "production"), ("DEBUG", True),
     ("CROWN_SANDBOX_ALLOW_OPEN_SESSION", True), ("CROWN_DEMO_MODE", True),
     ("CROWN_SANDBOX_OUTBOUND_DISABLED", False), ("APP_ENV", "staging"),
@@ -51,14 +53,18 @@ def test_unsafe_activation_settings_deny_before_queries(hosted_guard, settings, 
         require_hosted_presenter(SHA)
 
 
-@pytest.mark.parametrize("mutation", ["vendor", "host", "database", "webhost"])
+@pytest.mark.parametrize("mutation", ["vendor", "host", "alternate_azure_host", "database", "wrong_database", "webhost"])
 def test_unsafe_database_or_host_is_denied(hosted_guard, monkeypatch, mutation):
     if mutation == "vendor":
         hosted_guard.vendor = "sqlite"
     elif mutation == "host":
         hosted_guard.settings_dict["HOST"] = "customer-db.example.invalid"
+    elif mutation == "alternate_azure_host":
+        hosted_guard.settings_dict["HOST"] = "other.postgres.database.azure.com"
     elif mutation == "database":
         hosted_guard.settings_dict["NAME"] = ""
+    elif mutation == "wrong_database":
+        hosted_guard.settings_dict["NAME"] = "wrong_dev_database"
     else:
         monkeypatch.setenv("WEBSITE_HOSTNAME", "crown-api-prod.azurewebsites.net")
     with pytest.raises(CommandError):

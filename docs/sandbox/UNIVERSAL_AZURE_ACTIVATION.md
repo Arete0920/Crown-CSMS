@@ -48,9 +48,14 @@ SandboxBuyerWorkspace is created. Prospect workspaces remain a separate lane.
 5. Confirm owner-approved existing backup/recovery coverage and current live
    tenant isolation. Do not point this command at another host/database or a
    production database. Verify actual runtime identity and database hostname.
-6. Owner-enable both `CROWN_UNIVERSAL_PRESENTER_ENABLED=true` and
-   `CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA=<exact approved deployed SHA>` on every
-   participating existing DEV app/worker process. Preserve DEBUG=false,
+6. Separately owner-approve and set all three values on every participating
+   existing DEV app/worker process: `CROWN_UNIVERSAL_PRESENTER_ENABLED=true`,
+   `CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA=<exact approved deployed SHA>`, and
+   `CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME=<exact verified existing DEV database name>`.
+   The runtime independently requires `crown-pg-dev.postgres.database.azure.com`
+   and the expected database name. Never substitute a database name inferred from
+   docs or guess it: read it from the reviewed current DEV inventory and approve
+   explicitly. Preserve DEBUG=false,
    CROWN_ENV=dev, CROWN_DEMO_MODE=false, CROWN_SANDBOX_ALLOW_OPEN_SESSION=false,
    and CROWN_SANDBOX_OUTBOUND_DISABLED=true. This is a separately authorized
    configuration change, not something this assignment executes.
