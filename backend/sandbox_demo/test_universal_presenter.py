@@ -284,3 +284,21 @@ def test_generic_presenter_seeder_cannot_bypass_setup_or_disable_existing_logins
         "username": user.username, "password": password,
     }, format="json")
     assert response.status_code == 200
+
+
+@pytest.mark.django_db(transaction=True)
+def test_owned_presenter_reader_avoids_autocommit_for_update(local_runtime):
+    """PostgreSQL rejects FOR UPDATE in autocommit; normal presenter reads cannot request it."""
+    from django.db import connection, transaction
+    from sandbox_demo.universal_demo import _owned_school
+
+    prepare_presenter(apply=True)
+    assert connection.in_atomic_block is False
+    with patch.object(School.objects, "select_for_update", side_effect=AssertionError("FOR UPDATE on autocommit read")):
+        assert _owned_school().pk == UNIVERSAL_SCHOOL_ID
+
+    # Mutation callers still request the protected row lock inside atomic.
+    with transaction.atomic():
+        with patch.object(School.objects, "select_for_update", wraps=School.objects.select_for_update) as locked:
+            assert _owned_school().pk == UNIVERSAL_SCHOOL_ID
+            assert locked.call_count == 1
