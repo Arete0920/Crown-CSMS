@@ -1,5 +1,6 @@
 """Closed local presenter realm using the existing Jireh transaction services."""
-from uuid import UUID
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from django.core.management.base import CommandError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -54,6 +55,7 @@ def application_scope(request, application_id, *, processor=False):
     program_scope(request, row.application.program_id, processor=processor)
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def aid_family(request):
@@ -64,6 +66,7 @@ def aid_family(request):
     return fictional_family_response(request, family, school.pk, source="fictional_universal_presenter")
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def sgo_programs(request):
@@ -80,6 +83,7 @@ def sgo_programs(request):
     return private({"programs": result, "synthetic_only": True, "funds_status": "NONCASH_ONLY"})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sgo_submit(request):
@@ -95,6 +99,7 @@ def sgo_submit(request):
     return response
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def sgo_application(request, application_id):
@@ -103,6 +108,7 @@ def sgo_application(request, application_id):
     return private({"application": serialize_intake(get_family_application(user=request.user, application_id=application_id))})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sgo_correct(request, application_id):
@@ -114,6 +120,7 @@ def sgo_correct(request, application_id):
     return private({"application": serialize_intake(intake), "changed": changed})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def sgo_processor_programs(request):
@@ -127,6 +134,7 @@ def sgo_processor_programs(request):
     return private({"programs": result, "authority": "PROCESSOR_VERIFICATION_ONLY", "funds_status": "NONCASH_ONLY"})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def sgo_queue(request, program_id):
@@ -136,6 +144,7 @@ def sgo_queue(request, program_id):
         "program_id": str(program_id), "authority": "PROCESSOR_VERIFICATION_ONLY", "funds_status": "NONCASH_ONLY"})
 
 
+@extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def sgo_request_correction(request, application_id):
