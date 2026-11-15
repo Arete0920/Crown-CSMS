@@ -126,6 +126,11 @@ def hosted_aid_family(request):
     workspace, _ = require_hosted_workspace(request, ("parent",))
     family = demo_aid_family(workspace, request.user)
     school_id = workspace.school_id
+    return fictional_family_response(request, family, school_id)
+
+
+def fictional_family_response(request, family, school_id, *, source="fictional_hosted_school_buyer"):
+    """Shared fixed-scenario transactions after the calling realm authorizes the family."""
     if request.method == "GET":
         response = Response(_readback(family, school_id))
         response["Cache-Control"] = "private, no-store"
@@ -190,7 +195,7 @@ def hosted_aid_family(request):
         app.set_status(
             AidApplication.STATUS_SUBMITTED, actor_user=request.user,
             details={
-                "source": "fictional_hosted_school_buyer",
+                "source": source,
                 "fictional": True,
                 "student_count": len(students),
             },

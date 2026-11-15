@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
+import { authenticatedFetch, clearBrowserAuthState, getAccessToken, getSelectedSchoolId } from "../utils/authClient.js";
+const presenterDemo = () => getSelectedSchoolId() === "cd216908-b692-5fa7-997b-743f811f1ea9";
 const hostedDemo = () => import.meta.env.VITE_LOCAL_DEMO !== "1" && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 const reasons = [
@@ -14,9 +15,10 @@ const card = {
 };
 async function sgoRequest(path, { method = "GET", data } = {}) {
   const hosted = hostedDemo();
-  const base = hosted ? "/api/v1/buyer-demo/jireh/sgo" : "/api/v1/jireh-sgo";
+  const presenter = presenterDemo();
+  const base = presenter ? "/api/v1/presenter/jireh/sgo" : hosted ? "/api/v1/buyer-demo/jireh/sgo" : "/api/v1/jireh-sgo";
   const response = await authenticatedFetch(base + path, {
-    method, omitSchoolContext: !hosted, cache: "no-store",
+    method, omitSchoolContext: !hosted && !presenter, cache: "no-store",
     ...(data === undefined ? {} : {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -28,7 +30,7 @@ export default function JirehSGOIntakePage() {
   const token = getAccessToken();
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
   const hosted = hostedDemo();
-  const enabled = local || hosted;
+  const enabled = local || hosted || presenterDemo();
   const [loadedToken, setLoadedToken] = useState(null);
   const [families, setFamilies] = useState([]), [processors, setProcessors] = useState([]);
   const [familyProgram, setFamilyProgram] = useState("");
