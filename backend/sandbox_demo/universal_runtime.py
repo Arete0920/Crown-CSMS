@@ -20,7 +20,7 @@ def require_hosted_presenter(expected_sha):
         or str(db.get("NAME") or "") != approved_db
         or str(db.get("HOST") or "").strip().lower() != "crown-pg-dev.postgres.database.azure.com"
         or str(db.get("PORT") or "5432") != "5432"
-        getattr(settings, "CROWN_UNIVERSAL_PRESENTER_ENABLED", False) is not True
+        or getattr(settings, "CROWN_UNIVERSAL_PRESENTER_ENABLED", False) is not True
         or getattr(settings, "CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA", "") != expected_sha
         or not (getattr(settings, "CROWN_SANDBOX_OUTBOUND_DISABLED", False) is True
                 or os.environ.get("CROWN_SANDBOX_OUTBOUND_DISABLED", "").strip().lower() in {"1", "true", "yes", "on"})
