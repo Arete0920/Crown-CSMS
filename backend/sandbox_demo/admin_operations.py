@@ -69,14 +69,17 @@ def _student() -> Student:
         raise SandboxAdminError("demo_student_not_seeded") from exc
 
 def seed_heritage_admin_context() -> dict[str, str]:
-    student = _student()
+    return seed_admin_context(_student())
+
+def seed_admin_context(student: Student) -> dict[str, str]:
     grade_band = student.current_grade_level.code if student.current_grade_level else ""
     _, section = ensure_section_attendance_identity(
         core_student=student,
         course_code="HCA-ADMIN-ATTENDANCE",
         course_name="Administrator Attendance Review",
         grade_band=grade_band,
-        evidence_reference=f"sandbox:heritage:admin-operations:{STUDENT_NUMBER}",
+        evidence_reference=(f"sandbox:heritage:admin-operations:{STUDENT_NUMBER}" if str(student.school_id) == str(SCHOOL_ID)
+                            else f"sandbox:fictional:admin-operations:{student.school_id}:{student.student_number}"),
     )
     AttendanceRecord.objects.filter(student=student, date=DEMO_DATE, section__isnull=True).delete()
     attendance, _ = AttendanceRecord.objects.update_or_create(
@@ -109,36 +112,45 @@ def _academic_context(student: Student) -> GradeRecord:
 def _communication_exists(student: Student) -> bool:
     return MessageThread.objects.filter(student=student, subject=COMMUNICATION_SUBJECT).exists()
 
-def _create_admin_communication(student: Student, admin: UserAccount) -> None:
-    household, _ = CommsHousehold.objects.update_or_create(household_name=f"{student.family.family_name} Admin Communication", defaults={"primary_address_line1": student.family.address_line1, "primary_city": student.family.city, "primary_state": student.family.state, "primary_postal_code": student.family.zip_code})
-    sender, _ = Person.objects.update_or_create(email=admin.email, defaults={"first_name": admin.first_name or "Grace", "last_name": admin.last_name or "Whitaker"})
+def _create_admin_communication(student: Student, admin: UserAccount, *, household=None, sender=None) -> None:
+    if household is None:
+        household, _ = CommsHousehold.objects.update_or_create(household_name=f"{student.family.family_name} Admin Communication", defaults={"primary_address_line1": student.family.address_line1, "primary_city": student.family.city, "primary_state": student.family.state, "primary_postal_code": student.family.zip_code})
+    if sender is None:
+        sender, _ = Person.objects.update_or_create(email=admin.email, defaults={"first_name": admin.first_name or "Grace", "last_name": admin.last_name or "Whitaker"})
     thread, _ = MessageThread.objects.update_or_create(household=household, student=student, subject=COMMUNICATION_SUBJECT, defaults={"thread_type": "ATTENDANCE_FOLLOW_UP", "created_by": sender, "last_message_at": timezone.now()})
     Message.objects.update_or_create(thread=thread, sender_person=sender, body="The attendance exception was reviewed and resolved. No further family action is required for this demo record.", defaults={"sent_at": timezone.now()})
 
 def serialize_admin_state(user) -> SandboxAdminState:
     admin = _require_admin(user)
-    student = _student()
+    return serialize_admin_student_state(_student(), admin)
+
+def serialize_admin_student_state(student: Student, admin: UserAccount) -> SandboxAdminState:
     attendance = _attendance(student)
     grade = _academic_context(student)
-    enrollment = Enrollment.objects.filter(school_id=SCHOOL_ID, student=student).select_related("grade_level").order_by("-academic_year__start_date").first()
-    tuition = StudentTuition.objects.filter(school_id=SCHOOL_ID, student=student).order_by("-academic_year__start_date").first()
-    open_obligations = FinanceObligation.objects.filter(school_id=SCHOOL_ID, status=MoneyStatus.OPEN)
+    enrollment = Enrollment.objects.filter(school_id=student.school_id, student=student).select_related("grade_level").order_by("-academic_year__start_date").first()
+    tuition = StudentTuition.objects.filter(school_id=student.school_id, student=student).order_by("-academic_year__start_date").first()
+    open_obligations = FinanceObligation.objects.filter(school_id=student.school_id, status=MoneyStatus.OPEN)
     finance_open_cents = sum(int(value) for value in open_obligations.values_list("amount_cents", flat=True))
     return SandboxAdminState(student_id=str(student.id), student_number=student.student_number, student_name=f"{student.first_name} {student.last_name}".strip(), family_name=student.family.family_name, household_note=student.family.address_line2 or "", enrollment_status=enrollment.status if enrollment else "NOT ENROLLED", roster_grade=(enrollment.grade_level.code if enrollment and enrollment.grade_level else (student.current_grade_level.code if student.current_grade_level else "")), tuition_context_cents=int(tuition.net_annual_cents) if tuition else 0, academic_context=f"{grade.assignment_name}: {grade.letter_grade} ({grade.score}/{grade.score_max})", finance_open_obligation_count=open_obligations.count(), finance_open_obligation_cents=finance_open_cents, attendance_date=attendance.date.isoformat(), attendance_status=attendance.status, exception_status="resolved" if attendance.status == AttendanceRecord.STATUS_EXCUSED else "open", communication_status="sent" if _communication_exists(student) else "pending", is_platform_superuser=bool(admin.is_superuser), is_django_staff=bool(admin.is_staff))
 
 @transaction.atomic
 def resolve_admin_demo_workflow(user) -> dict:
     admin = _require_admin(user)
-    student = _student()
+    return resolve_admin_student_workflow(_student(), admin)
+
+@transaction.atomic
+def resolve_admin_student_workflow(student: Student, admin: UserAccount, *, household=None, sender=None) -> dict:
     family = student.family
     family.address_line2 = VERIFIED_ADDRESS_LINE2
     family.save(update_fields=["address_line2", "updated_at"])
     attendance = _attendance(student)
     attendance.status = AttendanceRecord.STATUS_EXCUSED
-    attendance.notes_public = "Attendance exception reviewed and excused by Heritage sandbox school administrator."
+    attendance.notes_public = ("Attendance exception reviewed and excused by Heritage sandbox school administrator."
+                               if str(student.school_id) == str(SCHOOL_ID) else
+                               "Attendance exception reviewed and excused by the fictional school administrator.")
     attendance.save(update_fields=["status", "notes_public", "updated_at"])
-    _create_admin_communication(student, admin)
-    state = serialize_admin_state(admin)
+    _create_admin_communication(student, admin, household=household, sender=sender)
+    state = serialize_admin_student_state(student, admin)
     if state.exception_status != "resolved" or state.household_note != VERIFIED_ADDRESS_LINE2:
         raise SandboxAdminError("administrator_transaction_failed")
     if state.communication_status != "sent":

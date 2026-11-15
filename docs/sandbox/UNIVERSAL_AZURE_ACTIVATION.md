@@ -9,7 +9,7 @@ or unsupported-workflow acceptance remain unresolved.
 
 | Workflow | Implemented source acceptance | Remaining release evidence |
 |---|---|---|
-| Administration | Reused 704 fictional students, families, school/year/rosters and finance samples; ordinary principals | Owner presenter dashboard transactions and hosted readback |
+| Administration | 704 fictional students; real admin household verification, attendance resolution and internal follow-up using normal login; persisted reload/retry | Surrounding dashboard tiles remain illustrative; general KPI certification and hosted acceptance incomplete |
 | Aid | Parent submit; canonical profile; officer review/wizard offer; real noncash approval, budget and ledger; idempotency; parent readback | Exact deployed browser/reload and PostgreSQL evidence |
 | SGO | Explicit fictional program applicant/processor grants; submit/retry/correction/resubmit; immutable audits | Exact deployed scope/revocation acceptance; no SGO funds or membership authority |
 | Daycare | Existing fictional policy/staff/custody seed; real admission API, roster and release; role/tenant/expiry denial | Presenter browser and PostgreSQL custody concurrency acceptance |
@@ -103,7 +103,7 @@ python manage.py provision_universal_presenter \
   --enable-password-login --apply
 ```
 
-All school/persona/family, care and Jireh fixture writes commit in one database
+All school/persona/family, care, Jireh, admissions and administrative fixture writes commit in one database
 transaction. Failure rolls them all back. Repeated apply refuses an existing
 presenter. Without `--enable-password-login`, new credentials remain unusable;
 there is no public demo token issuer or automatic password reset. The command

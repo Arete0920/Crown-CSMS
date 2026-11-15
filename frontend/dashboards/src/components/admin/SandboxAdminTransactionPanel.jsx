@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { isUniversalPresenterSchool } from "../../utils/universalPresenterScope";
 import { authenticatedJson } from "../../utils/authClient";
 
 const sandboxEnabled = String(import.meta.env.VITE_SANDBOX_MODE || "") === "1";
@@ -8,28 +9,31 @@ function dollars(cents) {
 }
 
 export default function SandboxAdminTransactionPanel() {
+  const presenter = isUniversalPresenterSchool();
+  const enabled = sandboxEnabled || presenter;
+  const base = presenter ? "/api/v1/presenter/admin/" : "/api/v1/sandbox/admin/";
   const [state, setState] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!sandboxEnabled) return;
+    if (!enabled) return;
     setError("");
     try {
-      setState(await authenticatedJson("/api/v1/sandbox/admin/state/"));
+      setState(await authenticatedJson(base + "state/"));
     } catch (err) {
       setError(err?.response?.data?.detail || err?.message || "Unable to load administrator transaction state.");
     }
-  }, []);
+  }, [base, enabled]);
 
   useEffect(() => { void load(); }, [load]);
-  if (!sandboxEnabled) return null;
+  if (!enabled) return null;
 
   async function resolveException() {
     setSaving(true);
     setError("");
     try {
-      setState(await authenticatedJson("/api/v1/sandbox/admin/resolve-operational-exception/", {
+      setState(await authenticatedJson(base + "resolve-operational-exception/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -46,7 +50,7 @@ export default function SandboxAdminTransactionPanel() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Administrator Operational Workflow</h2>
-          <p style={{ margin: "6px 0 0", fontSize: "0.875rem" }}>Review student, enrollment, academic, tuition and school finance context; verify the household; resolve an attendance exception; and send the follow-up.</p>
+          <p style={{ margin: "6px 0 0", fontSize: "0.875rem" }}>Review student, enrollment, academic, tuition and school finance context; verify the household; resolve an attendance exception; and record an internal follow-up. No external message is delivered.</p>
         </div>
         <button type="button" onClick={resolveException} disabled={saving || state?.exception_status === "resolved"} className="crown-btn crown-btn-primary">
           {saving ? "Resolving..." : state?.exception_status === "resolved" ? "Workflow Completed" : "Verify + Resolve + Send Follow-up"}
