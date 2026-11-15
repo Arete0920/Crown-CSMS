@@ -212,7 +212,7 @@ class ReleaseControllerContracts(unittest.TestCase):
         self.assertLess(
             order("Apply appsettings (allowlisted only)"),
             order("Restore prior immutable DEV image after failed automatic mutation"))
-        self.assertIn("if: failure() && inputs.confirm_dev_reviewed24 == 'auto-code-only'", workflow)
+        self.assertIn("if: failure() && inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true", workflow)
         self.assertIn("test \"$AUTO_ENABLED\" = true", workflow)
         self.assertIn("test \"$APPLY_REVIEWED24\" = false", workflow)
         self.assertIn("test \"$APPLY_FINANCE\" = false", workflow)
@@ -221,6 +221,34 @@ class ReleaseControllerContracts(unittest.TestCase):
         self.assertIn("  workflow_dispatch:", workflow)
         self.assertNotIn("  schedule:", workflow)
 
+
+
+    def test_dev_code_only_recovery_conditions_cover_manual_and_auto(self):
+        """Both code-only entry points must capture before writes; migration modes excluded."""
+        import yaml
+        root = Path(__file__).resolve().parents[2]
+        source = (root / ".github/workflows/deploy-dev.yml").read_text(encoding="utf-8")
+        job = yaml.safe_load(source)["jobs"]["build-and-deploy"]
+        steps = {step.get("name"): step for step in job["steps"] if step.get("name")}
+        guard = "inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true"
+        capture = steps["Capture current healthy immutable DEV release before automatic mutation"]
+        mark = steps["Mark automatic release mutation boundary"]
+        restore = steps["Restore prior immutable DEV image after failed automatic mutation"]
+        evidence = steps["Record sanitized automatic rollback evidence"]
+        self.assertEqual(capture["if"], guard)
+        self.assertEqual(mark["if"], guard)
+        self.assertEqual(restore["if"], "failure() && " + guard)
+        self.assertEqual(evidence["if"], "always() && " + guard)
+        self.assertIn("dev_release_rollback.py capture", capture["run"])
+        self.assertIn("dev_release_rollback.py restore", restore["run"])
+        self.assertIn("mutation-attempted", mark["run"])
+        self.assertLess(source.index("      - name: Capture current healthy immutable DEV release before automatic mutation"),
+                        source.index("      - name: Apply appsettings (allowlisted only)"))
+        for reviewed24, finance0003, expected in (
+            (False, False, True), (True, False, False), (False, True, False), (True, True, False)
+        ):
+            effective = (not reviewed24) and (not finance0003)
+            self.assertIs(effective, expected)
 
 if __name__ == "__main__":
     unittest.main()

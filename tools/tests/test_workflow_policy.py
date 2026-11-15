@@ -314,7 +314,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                 for extra in (guard_idx + 1, guard_idx + 2):
                     self.assertEqual(
                         steps[extra]["if"],
-                        "inputs.confirm_dev_reviewed24 == 'auto-code-only'",
+                        "inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true",
                     )
                 self.assertIn("dev_release_rollback.py capture",
                               steps[guard_idx + 1]["run"])

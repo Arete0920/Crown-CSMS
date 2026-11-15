@@ -381,7 +381,7 @@ jobs:
           fi
 
       - name: Capture current healthy immutable DEV release before automatic mutation
-        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        if: inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true
         shell: bash
         run: |
           set -euo pipefail
@@ -390,7 +390,7 @@ jobs:
           test -s "$RUNNER_TEMP/crown-dev-auto-rollback.json"
 
       - name: Mark automatic release mutation boundary
-        if: inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        if: inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true
         shell: bash
         run: |
           set -euo pipefail
@@ -510,7 +510,7 @@ jobs:
           echo "   URL: https://${{ env.WEBAPP_NAME }}.azurewebsites.net"
 
       - name: Restore prior immutable DEV image after failed automatic mutation
-        if: failure() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        if: failure() && inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true
         shell: bash
         run: |
           set -euo pipefail
@@ -523,7 +523,7 @@ jobs:
           fi
 
       - name: Record sanitized automatic rollback evidence
-        if: always() && inputs.confirm_dev_reviewed24 == 'auto-code-only'
+        if: always() && inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: auto-dev-prior-image-${{ github.run_id }}-${{ github.run_attempt }}
