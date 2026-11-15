@@ -629,8 +629,8 @@ def seed_local_heritage_camp() -> dict[str, int]:
 
 
 @transaction.atomic
-def _seed_fictional_camp(school, camper):
-    """Reuse Camp samples only for canonical local Heritage or owned presenter."""
+def _seed_fictional_camp(school, camper, *, workspace=None):
+    """Reuse Camp records in authorized local or invite-owned fictional schools."""
     from datetime import time, timedelta
     from django.utils import timezone
     from subscriptions.models import SchoolModule
@@ -643,7 +643,7 @@ def _seed_fictional_camp(school, camper):
             raise RuntimeError("Canonical local Heritage Camp authority required.")
     else:
         from .fictional_care import require_fictional_care_scope
-        require_fictional_care_scope(school)
+        require_fictional_care_scope(school, workspace)
     if not school.is_active or camper.school_id != school.pk or camper.household.school_id != school.pk:
         raise RuntimeError("Fictional Camp camper requires an active same-school household.")
     camp_module, _ = SchoolModule.objects.get_or_create(
