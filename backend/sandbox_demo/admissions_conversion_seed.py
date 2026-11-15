@@ -317,6 +317,26 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
     ensure_sandbox_role_permissions(SANDBOX_PERSONAS["admissions_director"].role_code)
     reset_heritage_admissions_conversion_scenario()
 
+    return seed_fictional_admissions_conversion(school, director)
+
+
+@transaction.atomic
+def seed_fictional_admissions_conversion(school, director):
+    """Shared invented fixture, without widening historical reset or role grants."""
+    presenter = str(school.pk) != str(SCHOOL_ID)
+    if presenter:
+        from .universal_runtime import require_presenter_runtime
+        from .universal_demo import _owned_school
+        from .universal_identity import presenter_username
+        from core.permissions import user_has_permission
+        require_presenter_runtime()
+        owned = _owned_school()
+        if owned is None or owned.pk != school.pk or director.username != presenter_username("admissions_director"):
+            raise ValueError("Owned fictional presenter and exact registrar required.")
+        if director.school_id != school.pk or not director.is_active or director.is_staff or director.is_superuser or not user_has_permission(director, "admissions.edit", school=school):
+            raise ValueError("Existing same-school admissions authority required; no grants changed.")
+    elif school.name != SANDBOX_SCHOOLS["heritage-core"].name:
+        raise ValueError("Canonical fictional Heritage identity required.")
     # Legacy fixtures created before marker-based cleanup are never claimed by
     # name; require a new isolated sandbox rather than deleting those records.
     if (
@@ -415,7 +435,7 @@ def seed_heritage_admissions_conversion_scenario() -> dict[str, str]:
     ApplicationEvent.objects.create(
         school_id=school.pk, application=canonical, event_type="enrollment_state_updated",
         payload={
-            "contract_status": "countersigned", "deposit_status": "paid",
+            "contract_status": "countersigned", "deposit_status": "waived" if presenter else "paid",
             "note": "Fictional readiness; no payment provider transaction.",
             "transition_reason": "sandbox_admissions_conversion_seed",
             "updated_by": director.email, "demo_payment_processed": False,
