@@ -27,7 +27,13 @@ provenance, role, tenant, family and learner checks. Historical Heritage and
 hosted buyer runtime/invitation gates remain unchanged. Administrative review and
 the Aid wizard use existing ordinary permissions and produce offered awards.
 Ordinary approval records a noncash institutional credit and budget allocation;
-repeat approval does not duplicate either. Existing family status reads the
+repeat approval does not duplicate either. The presenter uses the existing
+HouseholdFamilyLink to project the accepted award into the canonical Student
+Accounts ledger as one financial-aid Credit. The finance principal can reload
+the account and see its negative $250 balance with no Payment records. The
+ordinary finance endpoint denies parent access; parent award status remains
+available through the existing family endpoint. Parent balance-card presentation
+of this canonical credit and broader receivables workflows are NOT VERIFIED. Existing family status reads the
 result independently. No payment provider or funds transfer is involved.
 
 The existing SGO intake page uses `/api/v1/presenter/jireh/sgo/` for the reserved

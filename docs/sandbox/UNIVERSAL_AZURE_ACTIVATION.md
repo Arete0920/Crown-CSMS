@@ -17,7 +17,7 @@ or unsupported-workflow acceptance remain unresolved.
 | Camp | Real configuration create/update; existing registration; blocked admission and parent readback | Full forms/health/pickup clearance has no complete public mutation path; READY custody unsupported |
 | Academics/portals | Normal teacher/student/parent login; assignment, draft/submit, feedback, reload, retained-history classroom archive | Hosted exact-source acceptance |
 | Admissions/enrollment | Reused accepted-applicant fixture, verified identities, waived deposit; real registrar conversion/retry and downstream persistence | Initial parent intake, signatures and browser lifecycle remain unverified; see UNIVERSAL_ADMISSIONS.md |
-| Finance | Fictional obligations/invoices and real noncash Aid credit/budget transactions | Wider receivables/finance presenter acceptance incomplete; no live payments |
+| Finance | Fictional obligations/invoices; real noncash Aid credit/budget transactions; canonical household mapping and idempotent Student Accounts credit with finance-role readback | Parent balance-card projection and wider receivables acceptance incomplete; no live payments |
 
 The reserved school is `cd216908-b692-5fa7-997b-743f811f1ea9`, absent from the
 public catalog. Usernames are `presenter.<school UUID without dashes>.<persona>
@@ -130,10 +130,10 @@ terms. Existing normal application authorization remains authoritative.
 
 ## Reset and retention contract
 
-The only implemented repeat/reset boundaries are guarded bootstrap reset before
-protected module state exists and academic classroom archive retaining immutable
-submissions, grades, principal IDs and credentials. For owner-approved hosted
-academic replay:
+Implemented source boundaries are guarded bootstrap reset before protected
+module state exists, academic classroom archive retaining immutable submissions
+and grades, and bounded retained-generation rollover described below. For
+separately owner-approved hosted academic replay:
 
 ```sh
 python manage.py provision_universal_presenter \

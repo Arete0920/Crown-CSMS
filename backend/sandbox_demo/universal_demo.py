@@ -26,7 +26,7 @@ PROVENANCE = "universal_presenter_created_v1"
 # Explicit reset inventory, children before parents. Unknown future module data
 # blocks reset until its lifecycle and custody/audit retention are reviewed.
 RESET_MODELS = (
-    "core.StudentIdentityLink", "academics.Grade", "academics.Submission",
+    "core.HouseholdFamilyLink", "core.StudentIdentityLink", "academics.Grade", "academics.Submission",
     "academics.LessonResource", "academics.LessonPlan", "academics.Assignment",
     "academics.AssignmentCategory", "academics.Enrollment", "academics.TeacherAssignment",
     "crown_api.AttendanceRecord", "academics.Section", "academics.Lesson", "academics.Unit", "academics.Course",
