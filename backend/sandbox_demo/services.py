@@ -607,6 +607,27 @@ def seed_local_heritage_camp() -> dict[str, int]:
     if camper.school_id != school.id or camper.household.school_id != school.id:
         raise RuntimeError("Fictional Camp camper and household have inconsistent school scope.")
 
+    return _seed_fictional_camp(school, camper)
+
+
+@transaction.atomic
+def _seed_fictional_camp(school, camper):
+    """Reuse Camp samples only for canonical local Heritage or owned presenter."""
+    from datetime import time, timedelta
+    from django.utils import timezone
+    from subscriptions.models import SchoolModule
+    from summer_camp.models import SummerCampEnrollment, SummerCampProgram, SummerCampSession
+    from summer_camp.services import camp_school_local_date
+    if str(school.pk) == str(SANDBOX_SCHOOLS["heritage-core"].id):
+        from sandbox_demo.management.commands.five_module_demo_preflight import _require_isolated_local_database
+        _require_isolated_local_database()
+        if not getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False) or school.name != SANDBOX_SCHOOLS["heritage-core"].name:
+            raise RuntimeError("Canonical local Heritage Camp authority required.")
+    else:
+        from .fictional_care import require_fictional_care_scope
+        require_fictional_care_scope(school)
+    if not school.is_active or camper.school_id != school.pk or camper.household.school_id != school.pk:
+        raise RuntimeError("Fictional Camp camper requires an active same-school household.")
     camp_module, _ = SchoolModule.objects.get_or_create(
         school=school, module_key="little_lambs",
         defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=365)},
