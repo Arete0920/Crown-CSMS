@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
-import { authenticatedFetch, clearBrowserAuthState, getAccessToken, getSelectedSchoolId } from "../utils/authClient.js";
-const presenterDemo = () => getSelectedSchoolId() === "cd216908-b692-5fa7-997b-743f811f1ea9";
+import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
+import { isUniversalPresenterSchool } from "../utils/universalPresenterScope";
+const presenterDemo = isUniversalPresenterSchool;
 const hostedDemo = () => import.meta.env.VITE_LOCAL_DEMO !== "1" && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 const reasons = [

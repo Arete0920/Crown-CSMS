@@ -226,6 +226,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Presenter transactional browser acceptance failed' }
           .\.venv\Scripts\python.exe -m pytest -q --liveserver=127.0.0.1:8004 backend/sandbox_demo/test_universal_module_browser.py::test_actual_module_browser_transactions --junitxml=.local-backups/universal-demo/module-browser-junit.xml
           if ($LASTEXITCODE -ne 0) { throw 'Presenter module transaction acceptance failed' }
+          $env:CROWN_UNIVERSAL_BROWSER_GENERATION = '1'
+          .\.venv\Scripts\python.exe -m pytest -q --liveserver=127.0.0.1:8004 backend/sandbox_demo/test_universal_module_browser.py::test_actual_module_browser_transactions --junitxml=.local-backups/universal-demo/reset-browser-junit.xml
+          if ($LASTEXITCODE -ne 0) { throw 'Retained-generation browser transactions failed' }
       - name: Upload local rehearsal evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -236,6 +239,8 @@ jobs:
             .local-backups/universal-demo/browser-junit.xml
             .local-backups/universal-demo/module-browser-evidence.json
             .local-backups/universal-demo/module-browser-junit.xml
+            .local-backups/universal-demo/reset-browser-evidence.json
+            .local-backups/universal-demo/reset-browser-junit.xml
             .local-backups/heritage-demo/*.log
             .local-backups/heritage-demo/five-module-source-preflight.json
             .local-backups/heritage-demo/five-module-preflight.json

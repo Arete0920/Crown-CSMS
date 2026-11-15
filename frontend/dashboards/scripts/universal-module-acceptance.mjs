@@ -95,7 +95,7 @@ try {
     headers: admin.headers, data: { student_id: f.care.care_student_id, session_id: f.camp_session_id } });
   expect(denied.status()).toBe(400); checks.push(step);
   writeFileSync(process.env.CROWN_UNIVERSAL_BROWSER_OUTPUT, JSON.stringify({ source_sha: f.source_sha,
-    source_dirty: f.source_dirty, checks, camp_full_clearance_supported: false, release_certified: false }, null, 2));
+    source_dirty: f.source_dirty, school_id: f.school_id, generation: f.generation || 0, checks, camp_full_clearance_supported: false, release_certified: false }, null, 2));
 } catch (error) {
   let message = String(error?.stack || error);
   for (const value of hidden) if (value) message = message.split(value).join('[redacted]');

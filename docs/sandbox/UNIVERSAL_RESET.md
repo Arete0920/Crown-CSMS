@@ -49,8 +49,9 @@ another generation. A stale current ID, reused key from another/superseded reset
 reserved-ID collision or ambiguous provenance refuses without writes. Capture
 the returned new school ID and fictional usernames; use normal login with those
 new identities. Existing usernames/password hashes remain unchanged and inactive.
-Frontend generation routing is a separate required source dependency; do not
-activate a backend-only reset release.
+The accompanying frontend source uses a closed list of the five reserved
+identities and retains tenant context on every request. Its compiled-browser
+acceptance must pass after rollover; never activate a backend-only reset release.
 
 ## Atomicity, isolation and custody
 
