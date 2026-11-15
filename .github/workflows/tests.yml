@@ -4,7 +4,7 @@ permissions:
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'feat/universal-*']
   push:
     branches:
       - main
@@ -375,7 +375,7 @@ jobs:
               proc = subprocess.run(['git', 'diff', '--name-only', '-z', base, 'HEAD'], capture_output=True)
               if proc.returncode == 0:
                   changed = proc.stdout.decode('utf-8', errors='replace').split('\0')
-                  roots = ('backend/aftercare/', 'backend/summer_camp/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
+                  roots = ('backend/sandbox_demo/', 'backend/aftercare/', 'backend/summer_camp/', 'backend/core/', 'backend/tenants/', 'backend/subscriptions/', 'backend/households/', 'backend/audit/', 'backend/crown_api/')
                   exact = {'backend/requirements.txt', 'backend/conftest.py', 'backend/tests/conftest.py', 'pytest.ini', '.github/workflows/tests.yml',
                            'backend/sandbox_demo/management/commands/seed_hosted_buyer_daycare.py',
                            'backend/sandbox_demo/test_seed_hosted_buyer_daycare.py'}
@@ -464,6 +464,7 @@ jobs:
             backend/aftercare/tests/test_daycare_setup.py \
             backend/aftercare/tests/test_daycare_staff_proposals.py \
             backend/sandbox_demo/test_seed_hosted_buyer_daycare.py \
+            backend/sandbox_demo/test_universal_reset.py::test_postgresql_admission_and_reset_serialize \
             backend/summer_camp/tests/test_seat_locking_postgresql.py \
             --junitxml=diadem-postgresql-junit.xml
       - name: Enforce executed (not skipped) PostgreSQL concurrency tests

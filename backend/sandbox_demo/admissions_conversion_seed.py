@@ -331,7 +331,7 @@ def seed_fictional_admissions_conversion(school, director):
         from core.permissions import user_has_permission
         require_presenter_runtime()
         owned = _owned_school()
-        if owned is None or owned.pk != school.pk or director.username != presenter_username("admissions_director"):
+        if owned is None or owned.pk != school.pk or director.username != presenter_username("admissions_director", school.pk):
             raise ValueError("Owned fictional presenter and exact registrar required.")
         if director.school_id != school.pk or not director.is_active or director.is_staff or director.is_superuser or not user_has_permission(director, "admissions.edit", school=school):
             raise ValueError("Existing same-school admissions authority required; no grants changed.")

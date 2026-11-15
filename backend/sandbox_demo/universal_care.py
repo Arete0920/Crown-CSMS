@@ -28,10 +28,10 @@ def prepare_presenter_care(*, apply=False):
         _empty_synthetic_care(school)
         if AftercareEnrollment.objects.filter(school_fk=school).exists() or AftercareProgramConfig.objects.filter(school_fk=school).exists():
             raise CommandError("Existing care configuration cannot be overwritten.")
-        actors = {key: UserAccount.objects.get(school=school, username=presenter_username(key),
+        actors = {key: UserAccount.objects.get(school=school, username=presenter_username(key, school.pk),
             is_active=True, is_staff=False, is_superuser=False)
             for key in ("daycare_director", "daycare_staff")}
-        learner = UserAccount.objects.get(school=school, username=presenter_username("student"))
+        learner = UserAccount.objects.get(school=school, username=presenter_username("student", school.pk))
         link = StudentIdentityLink.objects.select_related("compatibility_student__household").get(
             school=school, compatibility_student__account=learner,
             verification_status=StudentIdentityLink.STATUS_VERIFIED)

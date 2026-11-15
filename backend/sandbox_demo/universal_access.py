@@ -37,7 +37,7 @@ def initialize_presenter_passwords(school, passwords):
         if owned is None or owned.pk != school.pk:
             raise CommandError("Presenter credential initialization requires its owned school and validated operator secrets.")
         for key, password in passwords.items():
-            account = UserAccount.objects.get(school=school, username=presenter_username(key))
+            account = UserAccount.objects.get(school=school, username=presenter_username(key, school.pk))
             if account.has_usable_password() or account.is_staff or account.is_superuser:
                 raise CommandError("Presenter credential initialization refused an existing or privileged login.")
             account.set_password(password)

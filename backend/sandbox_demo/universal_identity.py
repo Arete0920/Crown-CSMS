@@ -12,5 +12,27 @@ UNIVERSAL_SCHOOL = replace(
 )
 
 
-def presenter_username(persona_key):
-    return f"presenter.{UNIVERSAL_SCHOOL_ID.hex}.{persona_key}@fictional.crown.invalid"
+def presenter_username(persona_key, school_id=UNIVERSAL_SCHOOL_ID):
+    return f"presenter.{UUID(str(school_id)).hex}.{persona_key}@fictional.crown.invalid"
+
+
+MAX_GENERATION = 4  # Five retained schools total; no unbounded automatic storage growth.
+GENERATION_EVENT = "universal_presenter_generation_created_v1"
+
+
+def generation_school(generation):
+    from uuid import uuid5
+    if type(generation) is not int or not 0 <= generation <= MAX_GENERATION:
+        raise ValueError("Presenter generation is outside the reviewed retention limit.")
+    if generation == 0:
+        return UNIVERSAL_SCHOOL
+    school_id = uuid5(UNIVERSAL_SCHOOL_ID, f"owned-presenter-generation:{generation}:v1")
+    return replace(UNIVERSAL_SCHOOL, id=str(school_id), key=f"arete-universal-g{generation}",
+                   name=f"{UNIVERSAL_SCHOOL.name} (generation {generation})")
+
+
+def generation_number(school_id):
+    for number in range(MAX_GENERATION + 1):
+        if generation_school(number).id == str(school_id):
+            return number
+    raise ValueError("Unregistered presenter school identity.")

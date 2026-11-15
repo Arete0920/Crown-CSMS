@@ -82,7 +82,7 @@ def seed_daycare_records(school, director_and_staff, *, workspace=None):
     require_entitlement(school.pk)
     _empty_synthetic_care(school)
     for key, role in (("daycare_director", "DAYCARE_DIRECTOR"), ("daycare_staff", "DAYCARE_STAFF")):
-        username = presenter_username(key) if workspace is None else buyer_username(school.pk, key)
+        username = presenter_username(key, school.pk) if workspace is None else buyer_username(school.pk, key)
         actor = director_and_staff.get(key)
         if actor is None or not UserAccount.objects.select_for_update().filter(
             pk=actor.pk, school=school, username=username, is_active=True,
