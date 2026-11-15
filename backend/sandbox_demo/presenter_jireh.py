@@ -15,13 +15,14 @@ from jireh_sgo.family_intake_api import _payload, _program_id
 from jireh_sgo.models import SGOFamilyGrant, SGOFamilyIntake
 from jireh_sgo.read_only_api import private
 from .catalog import SANDBOX_PERSONAS
-from .universal_demo import require_local_presenter, _owned_school
+from .universal_demo import _owned_school
+from .universal_runtime import require_presenter_runtime
 from .universal_identity import presenter_username
 
 
 def actor_scope(request, roles):
     try:
-        require_local_presenter()
+        require_presenter_runtime()
         school = _owned_school()
     except CommandError as exc:
         raise NotFound("Not found.") from exc

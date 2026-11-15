@@ -9,12 +9,13 @@ from .fictional_care import seed_care_entitlements, seed_daycare_records
 from .heritage_module_samples import SAMPLE_CARE_DAYS
 from .models import SandboxEvent
 from .services import _seed_fictional_camp
-from .universal_demo import require_local_presenter, _owned_school
+from .universal_demo import _owned_school
+from .universal_runtime import require_presenter_runtime
 from .universal_identity import presenter_username
 
 
 def prepare_presenter_care(*, apply=False):
-    require_local_presenter()
+    require_presenter_runtime()
     with transaction.atomic():
         school = _owned_school()
         if school is None:

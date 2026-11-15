@@ -27,8 +27,9 @@ def initialize_presenter_passwords(school, passwords):
     # Only called inside the initial seed/reset transaction. Never provides a
     # standalone password-rotation command or changes an existing principal.
     from core.models import UserAccount
-    from .universal_demo import require_local_presenter, _owned_school
-    require_local_presenter()
+    from .universal_demo import _owned_school
+    from .universal_runtime import require_presenter_runtime
+    require_presenter_runtime()
     if passwords != presenter_passwords():
         raise CommandError("Presenter credential initialization requires validated operator secrets.")
     with transaction.atomic():

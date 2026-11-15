@@ -16,6 +16,8 @@ class Command(BaseCommand):
                             help="Initialize new fictional accounts with distinct operator secrets from environment variables.")
 
     def handle(self, *args, **options):
+        from sandbox_demo.universal_demo import require_local_presenter
+        require_local_presenter()
         if options["archive_classroom"]:
             if not options["apply"] or options["reset"] or options["enable_password_login"]:
                 raise CommandError("Classroom archive requires --apply alone; credentials and school records are preserved.")

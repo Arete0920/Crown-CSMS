@@ -208,8 +208,9 @@ class Command(BaseCommand):
 @transaction.atomic
 def _seed_fictional_aid_policy(school, year, *, workspace=None):
     if workspace is None:
-        from sandbox_demo.universal_demo import require_local_presenter, _owned_school
-        require_local_presenter()
+        from sandbox_demo.universal_demo import _owned_school
+        from sandbox_demo.universal_runtime import require_presenter_runtime
+        require_presenter_runtime()
         owned = _owned_school()
         if owned is None or owned.pk != school.pk:
             raise CommandError("Owned fictional presenter required.")
