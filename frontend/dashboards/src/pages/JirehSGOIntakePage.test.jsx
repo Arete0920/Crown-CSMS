@@ -255,8 +255,12 @@ it("keeps tenant context on the reserved presenter realm in a normal build", asy
   vi.stubEnv("VITE_LOCAL_DEMO", "0");
   vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
   getSelectedSchoolId.mockReturnValue("cd216908-b692-5fa7-997b-743f811f1ea9");
-  authenticatedFetch.mockResolvedValue(response({ programs: [], synthetic_only: true, funds_status: "NONCASH_ONLY" }));
+  authenticatedFetch.mockImplementation(async (url) => {
+    if (url.endsWith("/processor/programs/")) throw Object.assign(new Error("Not found"), { status: 404 });
+    return response({ programs: [FAMILY], synthetic_only: true, funds_status: "NONCASH_ONLY" });
+  });
   render(<JirehSGOIntakePage />);
+  await screen.findByLabelText("Partner SGO and program");
   await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledWith(
     "/api/v1/presenter/jireh/sgo/family/programs/", expect.objectContaining({ omitSchoolContext: false })));
 });
