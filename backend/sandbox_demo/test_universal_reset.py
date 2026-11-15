@@ -235,3 +235,13 @@ def test_retention_capacity_is_a_hard_refusal_not_history_deletion(ready):
     with patch('sandbox_demo.universal_reset.MAX_GENERATION', 0), pytest.raises(CommandError, match='capacity reached'):
         rollover_presenter(expected_current=UNIVERSAL_SCHOOL_ID, request_key=uuid4(), apply=True, enable_password_login=True)
     assert School.objects.count() == 1 and UserAccount.objects.filter(is_active=True).count() == 9
+
+
+def test_frontend_closed_generation_identity_contract():
+    from pathlib import Path
+    import re
+    from sandbox_demo.universal_identity import MAX_GENERATION
+    source = Path(__file__).resolve().parents[2] / 'frontend/dashboards/src/utils/universalPresenterScope.js'
+    listed = set(re.findall(r"'[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}'", source.read_text()))
+    expected = {"'" + generation_school(number).id + "'" for number in range(MAX_GENERATION + 1)}
+    assert listed == expected

@@ -34,14 +34,22 @@ def test_actual_module_browser_transactions(live_server, local_runtime, operator
     data = prepare_presenter(apply=True, enable_password_login=True)
     care = prepare_presenter_care(apply=True)
     prepare_presenter_jireh(apply=True)
+    generation = os.environ.get('CROWN_UNIVERSAL_BROWSER_GENERATION', '0')
+    assert generation in ('0', '1'), 'Only reviewed local browser generations'
+    if generation == '1':
+        from uuid import uuid4
+        from sandbox_demo.universal_reset import rollover_presenter
+        data = rollover_presenter(expected_current=data['school_id'], request_key=uuid4(),
+            apply=True, enable_password_login=True)
+        care = data['care']
     camp = SummerCampEnrollment.objects.get(school_id=data['school_id'])
     source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
     monkeypatch.setenv('BUILD_SHA', source)
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=root, text=True).strip())
     fixture = {'synthetic': True, 'school_id': data['school_id'], 'source_sha': source, 'source_dirty': dirty,
-        'care': care, 'camp_session_id': camp.session_id, 'api': live_server.url, 'frontend': 'http://127.0.0.1:4179',
-        'usernames': {key: presenter_username(key) for key in operator_secrets}, 'passwords': operator_secrets}
-    output = root / '.local-backups/universal-demo/module-browser-evidence.json'
+        'care': care, 'generation': int(generation), 'camp_session_id': camp.session_id, 'api': live_server.url, 'frontend': 'http://127.0.0.1:4179',
+        'usernames': {key: presenter_username(key, data['school_id']) for key in operator_secrets}, 'passwords': operator_secrets}
+    output = root / '.local-backups/universal-demo' / ('reset-browser-evidence.json' if generation == '1' else 'module-browser-evidence.json')
     output.parent.mkdir(parents=True, exist_ok=True)
     output.unlink(missing_ok=True)
     env = {**os.environ, 'CROWN_UNIVERSAL_BROWSER_FIXTURE': json.dumps(fixture), 'CROWN_UNIVERSAL_BROWSER_OUTPUT': str(output)}

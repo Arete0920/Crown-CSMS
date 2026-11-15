@@ -9,6 +9,8 @@ import ParentJourneyOverviewPage from "../features/parentJourney/ParentJourneyOv
 import CrownDashboardShell from "../components/crown-dashboard/CrownDashboardShell.jsx";
 import { getDashboardTemplate } from "../config/dashboardTemplates/index.js";
 
+import { isUniversalPresenterSchool } from "../utils/universalPresenterScope";
+
 const ENDPOINT = "/api/v1/aid/family/demo-intake/";
 // Shared token-change event added by the separate Diadem auth-hardening PR.
 // This listener is compatible with that PR and does not modify shared auth code.
@@ -32,7 +34,7 @@ function errorMessage(error) {
 }
 
 function FictionalFinancialAidPage({ hosted = false }) {
-  const presenter = getSelectedSchoolId() === "cd216908-b692-5fa7-997b-743f811f1ea9";
+  const presenter = isUniversalPresenterSchool();
   const endpoint = presenter ? "/api/v1/presenter/jireh/aid/family/" : hosted ? "/api/v1/buyer-demo/jireh/aid/family/" : ENDPOINT;
   const parentShell = getDashboardTemplate("parent");
   const [record, setRecord] = useState(null);
@@ -392,6 +394,6 @@ function FictionalFinancialAidPage({ hosted = false }) {
 export default function ParentFinancialAidPreparationPage() {
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
   const hosted = !local && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
-  const presenter = getSelectedSchoolId() === "cd216908-b692-5fa7-997b-743f811f1ea9";
+  const presenter = isUniversalPresenterSchool();
   return local || hosted || presenter ? <FictionalFinancialAidPage hosted={hosted || presenter} /> : <ParentJourneyOverviewPage focus="aid" />;
 }
