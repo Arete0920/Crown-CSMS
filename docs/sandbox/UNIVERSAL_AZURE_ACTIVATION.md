@@ -9,14 +9,14 @@ or unsupported-workflow acceptance remain unresolved.
 
 | Workflow | Implemented source acceptance | Remaining release evidence |
 |---|---|---|
-| Administration | Reused 703 fictional students, families, school/year/rosters and finance samples; ordinary principals | Owner presenter dashboard transactions and hosted readback |
+| Administration | Reused 704 fictional students, families, school/year/rosters and finance samples; ordinary principals | Owner presenter dashboard transactions and hosted readback |
 | Aid | Parent submit; canonical profile; officer review/wizard offer; real noncash approval, budget and ledger; idempotency; parent readback | Exact deployed browser/reload and PostgreSQL evidence |
 | SGO | Explicit fictional program applicant/processor grants; submit/retry/correction/resubmit; immutable audits | Exact deployed scope/revocation acceptance; no SGO funds or membership authority |
 | Daycare | Existing fictional policy/staff/custody seed; real admission API, roster and release; role/tenant/expiry denial | Presenter browser and PostgreSQL custody concurrency acceptance |
 | Before/After/Extended Care | Verified Reed household, independent AM/PM records, staff handoff and pickup; zero-priced assessment | Presenter browser and PostgreSQL custody acceptance |
 | Camp | Real configuration create/update; existing registration; blocked admission and parent readback | Full forms/health/pickup clearance has no complete public mutation path; READY custody unsupported |
 | Academics/portals | Normal teacher/student/parent login; assignment, draft/submit, feedback, reload, retained-history classroom archive | Hosted exact-source acceptance |
-| Admissions/enrollment | Existing school enrollment templates and product workflows inventoried | Universal prospect/admission-to-enrollment functional acceptance incomplete |
+| Admissions/enrollment | Reused accepted-applicant fixture, verified identities, waived deposit; real registrar conversion/retry and downstream persistence | Initial parent intake, signatures and browser lifecycle remain unverified; see UNIVERSAL_ADMISSIONS.md |
 | Finance | Fictional obligations/invoices and real noncash Aid credit/budget transactions | Wider receivables/finance presenter acceptance incomplete; no live payments |
 
 The reserved school is `cd216908-b692-5fa7-997b-743f811f1ea9`, absent from the
