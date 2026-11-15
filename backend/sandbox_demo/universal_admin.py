@@ -53,9 +53,10 @@ def prepare_presenter_admin(*, apply=False):
         return {**result, 'mode': 'STAGED'}
 
 
-def _request_context(request):
+def _request_context(request, *, require_director_action=False):
     school = actor_scope(request, ('school_admin',))
-    if not user_has_permission(request.user, 'admin.view', school=school):
+    if (not user_has_permission(request.user, 'admin.view', school=school)
+            or (require_director_action and not user_has_permission(request.user, 'director.actions', school=school))):
         from rest_framework.exceptions import NotFound
         raise NotFound('Not found.')
     if not SandboxEvent.objects.filter(event=STAGED, school=str(school.pk)).exists():
@@ -79,7 +80,7 @@ def admin_resolve(request):
         raise ValidationError({'detail': 'This fixed fictional workflow accepts no selectors.'})
     with transaction.atomic():
         # Root ownership lock serializes this mutation with generation rollover.
-        _, (student, household_id, sender_id) = _request_context(request)
+        _, (student, household_id, sender_id) = _request_context(request, require_director_action=True)
         household = Household.objects.get(pk=household_id)
         sender = Person.objects.get(pk=sender_id)
         return Response(resolve_admin_student_workflow(student, request.user, household=household, sender=sender))

@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError
-from core.models import Family, School, UserRole
+from core.models import Family, School, UserRole, RolePermission
 from crown_api.models import AttendanceRecord
 from crown_api.models_comms_core import Message, MessageThread
 from sandbox_demo.test_universal_access import operator_secrets, login
@@ -53,6 +53,28 @@ def test_normal_admin_resolves_household_attendance_and_internal_followup(ready,
     assert untouched.address_line2 == 'Preserve'
     with pytest.raises(CommandError, match='Existing administrative'):
         prepare_presenter_admin(apply=True)
+
+
+
+def test_admin_view_without_director_action_cannot_mutate(ready, operator_secrets):
+    admin, _ = login('school_admin', operator_secrets)
+    before = admin.get(BASE + 'state/')
+    assert before.status_code == 200, before.content
+    original = before.json()
+    assert original['exception_status'] == 'open' and original['communication_status'] == 'pending'
+    assert original['attendance_status'] == AttendanceRecord.STATUS_ABSENT
+    assert RolePermission.objects.filter(role_code='HEAD_OF_SCHOOL', permission__code='admin.view').exists()
+    action_grant = RolePermission.objects.filter(role_code='HEAD_OF_SCHOOL',
+        permission__code='director.actions')
+    assert action_grant.exists()
+    action_grant.delete()
+
+    readback = admin.get(BASE + 'state/')
+    assert readback.status_code == 200 and readback.json() == original
+    denied = admin.post(BASE + 'resolve-operational-exception/', {}, format='json')
+    assert denied.status_code == 404, denied.content
+    assert admin.get(BASE + 'state/').json() == original
+    assert not Message.objects.exists() and not MessageThread.objects.exists()
 
 
 def test_wrong_roles_foreign_selector_runtime_and_revocation_deny(ready, operator_secrets, settings):
