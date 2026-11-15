@@ -136,58 +136,8 @@ class Command(BaseCommand):
                 )
                 return
 
-            director = director_and_staff["daycare_director"]
-            staff = director_and_staff["daycare_staff"]
-            site = DaycareSite.objects.create(
-                school=school, code="fictional-daycare", name="Fictional Demo Daycare",
-                operating_mode="STANDALONE", jurisdiction="US-DE", is_active=True,
-            )
-            room = DaycareRoom.objects.create(
-                school=school, site=site, code="fictional-room",
-                name="Fictional Demonstration Room", is_active=True,
-                licensed_capacity=4, max_children_per_staff=4,
-                policy_source=_SOURCE, policy_verified_by=director,
-                policy_verified_at=now,
-            )
-            household = Household.objects.create(
-                school_id=school.pk, name=_HOUSEHOLD, is_active=True,
-            )
-            guardian = Guardian.objects.create(
-                school_id=school.pk, household=household,
-                first_name="Fictional", last_name="Guardian", is_primary=True,
-            )
-            child = DaycareChild.objects.create(
-                school=school, site=site, household=household,
-                first_name="Fictional", last_name="Child",
-                date_of_birth=date(2022, 1, 15), is_active=True,
-            )
-            program = DaycareProgram.objects.create(
-                school=school, site=site, code="DAYCARE",
-                name="Fictional Daycare Program", is_active=True,
-            )
-            DaycareEnrollment.objects.create(
-                school=school, site=site, child=child, program=program,
-                room=room, status="ACTIVE", readiness="READY",
-                start_date=care_day - timedelta(days=1),
-                end_date=care_day + timedelta(days=7),
-                weekdays=list(range(7)),
-            )
-            DaycareGuardianAuthority.objects.create(
-                school=school, child=child, guardian=guardian,
-                is_active=True, can_view=True, can_pickup=True,
-                custody_status="CLEAR",
-                verified_by=director, verified_at=now,
-                effective_from=now - timedelta(hours=1),
-                effective_until=now + timedelta(days=7),
-            )
-            DaycareRoomStaffCoverage.objects.create(
-                school=school, site=site, room=room, staff=staff,
-                starts_at=now - timedelta(hours=1),
-                ends_at=now + timedelta(hours=8),
-                is_active=True, is_qualified=True,
-                qualification_evidence=_QUALIFICATION,
-                verified_by=director, verified_at=now,
-            )
+            from sandbox_demo.fictional_care import seed_daycare_records
+            seed_daycare_records(school, director_and_staff, workspace=workspace)
             SandboxEvent.objects.create(
                 invite=workspace.invite, event="fictional_daycare_custody_seeded",
                 track="school", guidance="ops", persona="operator",
