@@ -1,4 +1,5 @@
 """Explicit loopback-only compiled UI acceptance with independent DB persistence checks."""
+from sandbox_demo.universal_admin import prepare_presenter_admin
 import json
 import os
 import subprocess
@@ -34,6 +35,7 @@ def test_actual_module_browser_transactions(live_server, local_runtime, operator
     data = prepare_presenter(apply=True, enable_password_login=True)
     care = prepare_presenter_care(apply=True)
     prepare_presenter_jireh(apply=True)
+    prepare_presenter_admin(apply=True)
     generation = os.environ.get('CROWN_UNIVERSAL_BROWSER_GENERATION', '0')
     assert generation in ('0', '1'), 'Only reviewed local browser generations'
     if generation == '1':
@@ -73,6 +75,10 @@ def test_actual_module_browser_transactions(live_server, local_runtime, operator
         finally:
             preview.terminate()
             preview.wait(timeout=15)
+    from crown_api.models import AttendanceRecord
+    from crown_api.models_comms_core import Message
+    assert AttendanceRecord.objects.get(student__school_id=data['school_id'], student__student_number='HCA-0001').status == 'EXCUSED'
+    assert Message.objects.filter(thread__student__school_id=data['school_id']).count() == 1
     assert AidApplication.objects.get(school_id=data['school_id']).status == 'SUBMITTED'
     assert SGOFamilyIntake.objects.get().revision == 3
     assert DaycareRelease.objects.filter(school_id=data['school_id']).count() == 1

@@ -1,4 +1,5 @@
 """Future owner-authorized existing-DEV activation. Never invokes migrations or Azure APIs."""
+from sandbox_demo.universal_admin import prepare_presenter_admin
 import json
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -46,7 +47,7 @@ class Command(BaseCommand):
         # Never install or broaden global role policy in a shared database.
         required = {"AID_DIRECTOR": ("financial_aid.view", "financial_aid.edit"),
             "REGISTRAR": ("admissions.view", "admissions.edit"),
-            "HEAD_OF_SCHOOL": ("extended_care.view", "extended_care.edit", "summer_camp.view", "summer_camp.edit"),
+            "HEAD_OF_SCHOOL": ("admin.view", "extended_care.view", "extended_care.edit", "summer_camp.view", "summer_camp.edit"),
             "DAYCARE_STAFF": ("diadem.daycare.view", "diadem.daycare.checkin", "diadem.daycare.release")}
         if not all(RolePermission.objects.filter(role_code=role, permission__code=code).exists()
                    for role, codes in required.items() for code in codes):
@@ -58,6 +59,7 @@ class Command(BaseCommand):
                 result["care"] = prepare_presenter_care(apply=True)
                 result["jireh"] = prepare_presenter_jireh(apply=True)
                 result["admissions"] = prepare_presenter_admissions(apply=True)
+                result["admin"] = prepare_presenter_admin(apply=True)
                 result.update(proof_metrics(School.objects.get(pk=UNIVERSAL_SCHOOL_ID)))
             result.update(source_sha=sha, release_certified=False)
         self.stdout.write(json.dumps(result, sort_keys=True))

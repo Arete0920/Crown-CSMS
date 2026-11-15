@@ -67,6 +67,16 @@ try {
   await sp.reload(); await expect(sp.getByText('No open custody records returned for this center.', { exact: true })).toBeVisible();
   checks.push(step);
   const admin = await login('school_admin'); const ap = admin.page;
+  step = 'admin_household_attendance_internal_followup_and_reload';
+  const panel = ap.getByTestId('sandbox-admin-transaction');
+  await expect(panel.getByTestId('admin-exception-status')).toHaveText('open');
+  await panel.getByRole('button', { name: 'Verify + Resolve + Send Follow-up', exact: true }).click();
+  await expect(panel.getByTestId('admin-exception-status')).toHaveText('resolved');
+  await expect(panel.getByTestId('admin-communication-status')).toHaveText('sent');
+  await ap.reload();
+  await expect(panel.getByTestId('admin-exception-status')).toHaveText('resolved');
+  await expect(panel.getByTestId('admin-household-note')).toHaveText('Admin-verified demo household');
+  checks.push(step);
   step = 'am_ui_checkin_handoff_and_reload';
   await ap.goto(front + '/before-care/roster');
   await ap.getByRole('button', { name: 'Check In', exact: true }).click();
