@@ -66,12 +66,7 @@ def require_local_presenter():
 
 
 def _owned_school():
-    # Normal hosted GET requests run in PostgreSQL autocommit. Row locks are
-    # permitted only while a mutation caller owns an explicit transaction.
-    queryset = School.objects
-    if connection.in_atomic_block:
-        queryset = queryset.select_for_update()
-    school = queryset.filter(pk=UNIVERSAL_SCHOOL_ID).first()
+    school = School.objects.select_for_update().filter(pk=UNIVERSAL_SCHOOL_ID).first()
     marker = SandboxEvent.objects.filter(event=PROVENANCE, school=str(UNIVERSAL_SCHOOL_ID), invite=None)
     if school is None:
         if marker.exists():
