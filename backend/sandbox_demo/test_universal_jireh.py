@@ -1,4 +1,5 @@
 """Real Jireh application, offered-award and processor transactions; no live funds."""
+from decimal import Decimal
 from uuid import uuid4
 import pytest
 from django.core.management.base import CommandError
@@ -72,6 +73,32 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     assert AidBudgetTracker.objects.get(school_id=jireh["school_id"], academic_year=application.academic_year,
         bucket=award.award_type).awarded_cents == 25000
     assert LedgerEntry.objects.filter(pk=award.ledger_entry_id, school_id=jireh["school_id"]).count() == 1
+    from aid.models import AidAuditEvent
+    from core.models import HouseholdFamilyLink
+    from ledger.models import Credit, Payment, compute_account_balance
+    link = HouseholdFamilyLink.objects.get(school_id=jireh["school_id"], family=award.student.family)
+    credit = Credit.objects.get(school_id=jireh["school_id"], source=Credit.SOURCE_FINANCIAL_AID,
+        reference=f"aid_award:{award.pk}")
+    assert credit.amount == Decimal("250.00")
+    assert credit.account.school_id == award.school_id
+    assert credit.account.household_id == link.household_id
+    assert compute_account_balance(credit.account) == Decimal("-250.00")
+    assert not Payment.objects.filter(school_id=jireh["school_id"]).exists()
+    audits = AidAuditEvent.objects.filter(school_id=jireh["school_id"], entity_id=str(award.pk))
+    assert audits.filter(action="STUDENT_ACCOUNT_CREDIT_POSTED").count() == 1
+    assert not audits.filter(action="STUDENT_ACCOUNT_CREDIT_DEFERRED").exists()
+    account_url = f"/api/ledger/accounts/{credit.account_id}/"
+    for _ in range(2):
+        account = officer.get(account_url)
+        assert account.status_code == 200, account.content
+        assert account.json()["data"]["household_id"] == str(link.household_id)
+        assert Decimal(account.json()["data"]["balance"]) == Decimal("-250.00")
+        assert account.json()["data"]["payments"] == []
+    assert parent.get(account_url).status_code == 403
+    foreign = School.objects.create(name="Other invented finance tenant")
+    _, tokens = login("finance_director", operator_secrets)
+    officer.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}", HTTP_X_SCHOOL_ID=str(foreign.pk))
+    assert officer.get(account_url).status_code in (403, 404)
     for _ in range(2):
         result = parent.get("/api/v1/aid/family/status/", {"student_id": payload["student_ids"][0],
             "academic_year_id": payload["academic_year_id"]})

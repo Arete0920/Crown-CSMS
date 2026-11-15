@@ -3,7 +3,7 @@ import uuid
 from datetime import date
 
 from academics.models import AssignmentCategory, Course, Enrollment, Section, TeacherAssignment, Term
-from core.models import AcademicYear, Enrollment as CoreEnrollment, GradeLevel, Student, StudentIdentityLink, UserAccount
+from core.models import AcademicYear, Enrollment as CoreEnrollment, GradeLevel, HouseholdFamilyLink, Student, StudentIdentityLink, UserAccount
 from households.models import Guardian, Household, Student as PortalStudent
 from .student_self_service import COURSE_CODE, STUDENT_NUMBER, TERM_CODE
 from .universal_identity import presenter_username
@@ -24,6 +24,8 @@ def seed_presenter_family(school):
     if guardian is None or guardian.school_id != school.pk or guardian.family.school_id != school.pk:
         raise CommandError("Presenter parent requires a same-school canonical family.")
     household = Household.objects.create(school_id=school.pk, name=guardian.family.family_name)
+    HouseholdFamilyLink.objects.create(school=school, household_id=household.pk,
+        family=guardian.family, source=HouseholdFamilyLink.SOURCE_MANUAL)
     Guardian.objects.create(school_id=school.pk, household=household, account=parent,
                             first_name=guardian.first_name, last_name=guardian.last_name,
                             email=parent.email, is_primary=True)
