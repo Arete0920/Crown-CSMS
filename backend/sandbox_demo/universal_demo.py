@@ -66,24 +66,42 @@ def require_local_presenter():
 
 
 def _owned_school():
-    # Hosted API reads run in PostgreSQL autocommit; row locks require an
-    # explicit outer transaction. Preserve locking for mutation callers.
-    queryset = School.objects
+    """Validate the registry; read without locks in autocommit, serialize mutations."""
+    from .universal_identity import GENERATION_EVENT, generation_school, generation_number
+    school_rows = School.objects.all()
+    events = SandboxEvent.objects.all()
     if connection.in_atomic_block:
-        queryset = queryset.select_for_update()
-    school = queryset.filter(pk=UNIVERSAL_SCHOOL_ID).first()
-    marker = SandboxEvent.objects.filter(event=PROVENANCE, school=str(UNIVERSAL_SCHOOL_ID), invite=None)
-    if school is None:
-        if marker.exists():
-            raise CommandError("Presenter provenance exists without its school; manual review required.")
+        school_rows = School.objects.select_for_update(no_key=True)
+        events = events.select_for_update()
+    root = school_rows.filter(pk=UNIVERSAL_SCHOOL_ID).first()
+    markers = list(events.filter(event=PROVENANCE, school=str(UNIVERSAL_SCHOOL_ID), invite=None))
+    generations = list(events.filter(event=GENERATION_EVENT, invite=None).order_by("step", "id"))
+    if root is None:
+        if markers or generations:
+            raise CommandError("Presenter provenance exists without its root school; manual review required.")
         return None
-    if (
-        school.name != UNIVERSAL_SCHOOL.name or not school.is_active
-        or not marker.exists()
-        or SandboxBuyerWorkspace.objects.filter(school=school).exists()
-    ):
+    if len(markers) != 1 or root.name != UNIVERSAL_SCHOOL.name:
         raise CommandError("Reserved presenter identity is not an owned presenter school.")
-    return school
+    schools = [root]
+    seen = {0}
+    for marker in generations:
+        try:
+            number = generation_number(marker.school)
+        except ValueError as exc:
+            raise CommandError("Presenter generation provenance is invalid.") from exc
+        if number == 0 or number in seen or marker.step != number or number != len(seen):
+            raise CommandError("Presenter generation registry is ambiguous or discontinuous.")
+        school = school_rows.filter(pk=marker.school).first()
+        if school is None or school.name != generation_school(number).name:
+            raise CommandError("Presenter generation ownership does not match its reserved identity.")
+        schools.append(school)
+        seen.add(number)
+    if SandboxBuyerWorkspace.objects.filter(school_id__in=[school.pk for school in schools]).exists():
+        raise CommandError("Reserved presenter identity is not an owned presenter school.")
+    active = [school for school in schools if school.is_active]
+    if len(active) != 1 or active[0].pk != schools[-1].pk:
+        raise CommandError("Presenter registry requires exactly one current owned generation.")
+    return active[0]
 
 
 def _scoped(model):
@@ -154,11 +172,13 @@ def _prepare_presenter(*, apply, reset, passwords):
     if reset and (not apply or school is None):
         raise CommandError("Reset requires --apply and an existing owned presenter school.")
     if not apply:
-        return {"school_id": str(UNIVERSAL_SCHOOL_ID), "exists": school is not None,
+        return {"school_id": str(school.pk if school else UNIVERSAL_SCHOOL_ID), "exists": school is not None,
                 "mode": "PRECHECK_ONLY", "release_certified": False}
     if school is not None and not reset:
         raise CommandError("Presenter already exists; use an explicit controlled reset, never silently overwrite transactions.")
     if reset:
+        if school.pk != UNIVERSAL_SCHOOL_ID:
+            raise CommandError("Bootstrap reset cannot reset retained generations; use controlled generation rollover.")
         _reset()
     personas = {
         key: replace(SANDBOX_PERSONAS[key], email=presenter_username(key))

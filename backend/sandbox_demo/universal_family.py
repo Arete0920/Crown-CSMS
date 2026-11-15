@@ -17,9 +17,9 @@ def seed_presenter_family(school):
     owned = _owned_school()
     if owned is None or owned.pk != school.pk:
         raise CommandError("Presenter family requires its owned fictional school.")
-    parent = UserAccount.objects.select_related("guardian__family").get(school=school, username=presenter_username("parent"))
-    learner = UserAccount.objects.get(school=school, username=presenter_username("student"))
-    teacher = UserAccount.objects.get(school=school, username=presenter_username("teacher"))
+    parent = UserAccount.objects.select_related("guardian__family").get(school=school, username=presenter_username("parent", school.pk))
+    learner = UserAccount.objects.get(school=school, username=presenter_username("student", school.pk))
+    teacher = UserAccount.objects.get(school=school, username=presenter_username("teacher", school.pk))
     guardian = parent.guardian
     if guardian is None or guardian.school_id != school.pk or guardian.family.school_id != school.pk:
         raise CommandError("Presenter parent requires a same-school canonical family.")

@@ -28,13 +28,19 @@ class Command(BaseCommand):
         require_hosted_presenter(sha)
         if options["enable_password_login"] and not options["apply"]:
             raise CommandError("Credential initialization requires explicit --apply.")
-        if options["apply"] and options["confirm_school_id"] != str(UNIVERSAL_SCHOOL_ID):
+        if options["apply"] and not options["archive_classroom"] and options["confirm_school_id"] != str(UNIVERSAL_SCHOOL_ID):
             raise CommandError("Explicit reserved presenter school confirmation required.")
         if options["archive_classroom"]:
             if not options["apply"] or options["enable_password_login"]:
                 raise CommandError("Classroom archive requires --apply alone and retains credentials and audit history.")
+            from sandbox_demo.universal_demo import _owned_school
             from sandbox_demo.universal_family import archive_presenter_classroom
-            self.stdout.write(json.dumps({**archive_presenter_classroom(), "source_sha": sha}, sort_keys=True))
+            with transaction.atomic():
+                current = _owned_school()
+                if current is None or options["confirm_school_id"] != str(current.pk):
+                    raise CommandError("Exact current presenter school confirmation required for classroom archive.")
+                archived = archive_presenter_classroom()
+            self.stdout.write(json.dumps({**archived, "source_sha": sha}, sort_keys=True))
             return
         passwords = presenter_passwords() if options["enable_password_login"] else {}
         # Never install or broaden global role policy in a shared database.

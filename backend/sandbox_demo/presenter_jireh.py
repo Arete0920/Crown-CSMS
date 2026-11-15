@@ -32,7 +32,7 @@ def actor_scope(request, roles):
         raise NotFound("Not found.")
     if any(key in request.query_params for key in ("school_id", "family_id", "organization_id", "workspace_id", "invite_id")):
         raise ValidationError({"detail": "Untrusted presenter selector."})
-    if not any(user.username == presenter_username(key) and UserRole.objects.filter(
+    if not any(user.username == presenter_username(key, school.pk) and UserRole.objects.filter(
         school=school, user=user, role_code=SANDBOX_PERSONAS[key].role_code).exists() for key in roles):
         raise NotFound("Not found.")
     return school
@@ -43,7 +43,7 @@ def program_scope(request, program_id, *, processor=False):
     # Partner access requires an explicit grant for this fictional school's
     # parent and a verified canonical learner, in addition to processor assignment.
     grants = SGOFamilyGrant.objects.filter(program_id=program_id,
-        school_key=school.pk, user__school=school, user__username=presenter_username("parent"), active=True)
+        school_key=school.pk, user__school=school, user__username=presenter_username("parent", school.pk), active=True)
     if not grants.exists() or SGOFamilyGrant.objects.filter(program_id=program_id).exclude(school_key=school.pk).exists():
         raise NotFound("Not found.")
     return school

@@ -146,7 +146,10 @@ This unpublishes only the owned presenter's assignments with normal model
 validation; it does not delete care, financial or SGO history. Use new assignment
 names for subsequent exercises. Historical immutable submission revisions remain.
 
-Whole-environment replay is a remaining design/implementation gate. The intended
+The source implementation for bounded retained-history generation rollover is
+now described in UNIVERSAL_RESET.md. It requires its complete frontend source
+dependency and exact-head PostgreSQL/owner acceptance before hosted use.
+The original design requirements follow for traceability. The intended
 retention-safe design is a serialized owned-generation rollover: expected-current
 UUID/source/idempotency key; new deterministic fictional tenant/user IDs generated
 from templates; no copy from the prior database records; refuse unresolved live
@@ -154,8 +157,9 @@ custody; retire only owned principals after checking foreign role associations;
 retain historical financial/custody/SGO records; quarantine every generation; and
 publish the new current-generation binding only after complete atomic success.
 It requires a reviewed registry, race/retry/foreign-reference tests, explicit
-principal/portal routing and deployed PostgreSQL proof. No command here implements
-or claims that rollover. Never truncate shared tables or delete immutable history.
+principal/portal routing and deployed PostgreSQL proof. The separately guarded `reset_universal_presenter` command implements this
+bounded lifecycle; it does not delete history or provision any live environment
+during this assignment. Never truncate shared tables or delete immutable history.
 
 ## Containment and rollback
 

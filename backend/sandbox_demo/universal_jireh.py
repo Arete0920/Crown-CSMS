@@ -22,10 +22,10 @@ def prepare_presenter_jireh(*, apply=False):
         if not all(RolePermission.objects.filter(role_code="AID_DIRECTOR", permission__code=code).exists()
                    for code in ("financial_aid.view", "financial_aid.edit")):
             raise CommandError("Initialize the isolated database's existing seed_permissions catalog before Jireh staging; no grants were changed.")
-        parent = UserAccount.objects.select_related("guardian").get(school=school, username=presenter_username("parent"), is_active=True)
-        officer = UserAccount.objects.get(school=school, username=presenter_username("finance_director"), is_active=True, is_staff=False, is_superuser=False)
+        parent = UserAccount.objects.select_related("guardian").get(school=school, username=presenter_username("parent", school.pk), is_active=True)
+        officer = UserAccount.objects.get(school=school, username=presenter_username("finance_director", school.pk), is_active=True, is_staff=False, is_superuser=False)
         learner = StudentIdentityLink.objects.select_related("core_student").get(
-            school=school, compatibility_student__account__username=presenter_username("student"),
+            school=school, compatibility_student__account__username=presenter_username("student", school.pk),
             verification_status=StudentIdentityLink.STATUS_VERIFIED).core_student
         if parent.guardian is None or learner.family_id != parent.guardian.family_id:
             raise CommandError("Verified canonical fictional parent and learner required.")

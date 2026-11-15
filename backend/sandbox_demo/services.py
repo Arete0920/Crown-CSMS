@@ -317,11 +317,15 @@ def seed_fictional_school(*, school_spec: SandboxSchool,
     Tenant identity and principal names are explicit inputs. Never replace the
     global Heritage catalog to seed another school.
     """
-    from .universal_identity import UNIVERSAL_SCHOOL
+    from .universal_identity import UNIVERSAL_SCHOOL, generation_school, generation_number
 
-    if school_spec not in (SANDBOX_SCHOOLS["heritage-core"], UNIVERSAL_SCHOOL):
+    try:
+        presenter_spec = school_spec == generation_school(generation_number(school_spec.id))
+    except ValueError:
+        presenter_spec = False
+    if school_spec != SANDBOX_SCHOOLS["heritage-core"] and not presenter_spec:
         raise RuntimeError("Fictional generator refuses an unregistered school identity.")
-    if school_spec == UNIVERSAL_SCHOOL:
+    if presenter_spec:
         # The generic helper is importable. It cannot bypass the presenter's
         # environment/provenance checks or its separately reviewed reset path.
         from .universal_demo import _owned_school
@@ -331,8 +335,13 @@ def seed_fictional_school(*, school_spec: SandboxSchool,
             raise RuntimeError("Use the controlled presenter reset command.")
         if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
             raise RuntimeError("Presenter initialization requires the guarded presenter command.")
-        if _owned_school() is not None and not _presenter_rebuild:
+        owned = _owned_school()
+        if (owned is None and school_spec != UNIVERSAL_SCHOOL) or (owned is not None and str(owned.pk) != school_spec.id):
+            raise RuntimeError("Fictional generator requires the current owned presenter generation.")
+        if owned is not None and not _presenter_rebuild:
             raise RuntimeError("Presenter already exists; direct reseed would invalidate credentials or audit history.")
+        if owned is not None and _presenter_rebuild and UserAccount.objects.filter(school=owned).exists():
+            raise RuntimeError("Presenter rebuild requires a cleared principal inventory; existing logins are preserved.")
     school = ensure_demo_school(school_spec)
 
     if reset:

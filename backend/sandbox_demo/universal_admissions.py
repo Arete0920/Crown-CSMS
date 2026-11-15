@@ -18,7 +18,7 @@ def prepare_presenter_admissions(*, apply=False):
             raise CommandError("Prepare the owned fictional presenter first.")
         if AdmissionsApplication.objects.filter(school=school).exists():
             raise CommandError("Existing admissions state is retained; no reset or overwrite allowed.")
-        director = UserAccount.objects.get(school=school, username=presenter_username("admissions_director"),
+        director = UserAccount.objects.get(school=school, username=presenter_username("admissions_director", school.pk),
             is_active=True, is_staff=False, is_superuser=False)
         from core.permissions import user_has_permission
         if not user_has_permission(director, "admissions.edit", school=school):
