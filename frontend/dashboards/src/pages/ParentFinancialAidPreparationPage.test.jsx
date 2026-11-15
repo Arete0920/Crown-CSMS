@@ -294,3 +294,14 @@ describe("Explicit hosted fictional Aid", () => {
     expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
   });
 });
+
+
+it("uses the reserved presenter realm with the normal build and scoped synthetic readback", async () => {
+  vi.stubEnv("VITE_LOCAL_DEMO", "0");
+  vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
+  setSelectedSchoolId("cd216908-b692-5fa7-997b-743f811f1ea9");
+  apiFetch.mockResolvedValue(jsonResponse({ ...snapshot(), synthetic_only: true, household: "Reed Family" }));
+  render(<ParentFinancialAidPreparationPage />);
+  await screen.findByRole("button", { name: "Submit fictional Financial Aid application" });
+  expect(apiFetch).toHaveBeenCalledWith("/api/v1/presenter/jireh/aid/family/");
+});
