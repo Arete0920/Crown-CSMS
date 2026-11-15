@@ -310,7 +310,8 @@ _PRESENTER_BOOTSTRAP_CAPABILITY = object()
 @transaction.atomic
 def seed_fictional_school(*, school_spec: SandboxSchool,
                          personas: dict[str, SandboxPersona], reset: bool = False,
-                         _presenter_bootstrap_capability=None) -> dict:
+                         _presenter_bootstrap_capability=None,
+                         _presenter_rebuild=False) -> dict:
     """Shared synthetic generator; callers own environment/provenance guards.
 
     Tenant identity and principal names are explicit inputs. Never replace the
@@ -329,7 +330,7 @@ def seed_fictional_school(*, school_spec: SandboxSchool,
             raise RuntimeError("Use the controlled presenter reset command.")
         if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
             raise RuntimeError("Presenter initialization requires the guarded presenter command.")
-        if _owned_school() is not None:
+        if _owned_school() is not None and not _presenter_rebuild:
             raise RuntimeError("Presenter already exists; direct reseed would invalidate credentials or audit history.")
     school = ensure_demo_school(school_spec)
 

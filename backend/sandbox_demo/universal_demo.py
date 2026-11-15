@@ -162,6 +162,7 @@ def _prepare_presenter(*, apply, reset, passwords):
     metrics = seed_fictional_school(
         school_spec=UNIVERSAL_SCHOOL, personas=personas,
         _presenter_bootstrap_capability=_PRESENTER_BOOTSTRAP_CAPABILITY,
+        _presenter_rebuild=reset,
     )
     metrics.update(seed_heritage_teacher_academics(
         school_id=UNIVERSAL_SCHOOL_ID, teacher_username=presenter_username("teacher"),
