@@ -328,10 +328,10 @@ def seed_fictional_school(*, school_spec: SandboxSchool,
         require_local_presenter()
         if reset:
             raise RuntimeError("Use the controlled presenter reset command.")
-        if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
-            raise RuntimeError("Presenter initialization requires the guarded presenter command.")
         if _owned_school() is not None and not _presenter_rebuild:
             raise RuntimeError("Presenter already exists; direct reseed would invalidate credentials or audit history.")
+        if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
+            raise RuntimeError("Presenter initialization requires the guarded presenter command.")
     school = ensure_demo_school(school_spec)
 
     if reset:
