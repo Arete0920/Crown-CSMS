@@ -269,8 +269,15 @@ def test_generic_presenter_seeder_cannot_bypass_setup_or_disable_existing_logins
     before_students = set(Student.objects.values_list("pk", "student_number"))
     before_events = set(SandboxEvent.objects.values_list("pk", "event"))
 
-    with pytest.raises(RuntimeError, match="Presenter already exists"):
+    with pytest.raises(RuntimeError, match="guarded presenter command"):
         seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas)
+
+    # Even a caller supplying the internal bootstrap capability cannot reinitialize
+    # an existing presenter outside the guarded reset path.
+    from sandbox_demo.services import _PRESENTER_BOOTSTRAP_CAPABILITY
+    with pytest.raises(RuntimeError, match="Presenter already exists"):
+        seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas,
+            _presenter_bootstrap_capability=_PRESENTER_BOOTSTRAP_CAPABILITY)
 
     assert dict(UserAccount.objects.values_list("pk", "password")) == before_passwords
     assert set(UserRole.objects.values_list("school_id", "user_id", "role_code")) == before_roles
