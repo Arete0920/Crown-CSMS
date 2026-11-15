@@ -2,13 +2,15 @@
 import json
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from core.models import RolePermission
+from core.models import RolePermission, School
+from sandbox_demo.services import proof_metrics
 from sandbox_demo.universal_runtime import require_hosted_presenter
 from sandbox_demo.universal_identity import UNIVERSAL_SCHOOL_ID
 from sandbox_demo.universal_demo import _prepare_presenter
 from sandbox_demo.universal_access import presenter_passwords
 from sandbox_demo.universal_care import prepare_presenter_care
 from sandbox_demo.universal_jireh import prepare_presenter_jireh
+from sandbox_demo.universal_admissions import prepare_presenter_admissions
 
 
 class Command(BaseCommand):
@@ -37,6 +39,7 @@ class Command(BaseCommand):
         passwords = presenter_passwords() if options["enable_password_login"] else {}
         # Never install or broaden global role policy in a shared database.
         required = {"AID_DIRECTOR": ("financial_aid.view", "financial_aid.edit"),
+            "REGISTRAR": ("admissions.view", "admissions.edit"),
             "HEAD_OF_SCHOOL": ("extended_care.view", "extended_care.edit", "summer_camp.view", "summer_camp.edit"),
             "DAYCARE_STAFF": ("diadem.daycare.view", "diadem.daycare.checkin", "diadem.daycare.release")}
         if not all(RolePermission.objects.filter(role_code=role, permission__code=code).exists()
@@ -48,5 +51,7 @@ class Command(BaseCommand):
             if options["apply"]:
                 result["care"] = prepare_presenter_care(apply=True)
                 result["jireh"] = prepare_presenter_jireh(apply=True)
+                result["admissions"] = prepare_presenter_admissions(apply=True)
+                result.update(proof_metrics(School.objects.get(pk=UNIVERSAL_SCHOOL_ID)))
             result.update(source_sha=sha, release_certified=False)
         self.stdout.write(json.dumps(result, sort_keys=True))
