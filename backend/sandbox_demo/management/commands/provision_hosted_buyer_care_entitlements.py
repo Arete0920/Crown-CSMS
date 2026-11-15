@@ -95,31 +95,8 @@ class Command(BaseCommand):
                 )
                 return
 
-            # A buyer-specific plan cannot extend entitlements for other schools.
-            plan = Plan.objects.create(
-                code=f"buyer-care-{school.pk.hex}",
-                name="Fictional buyer childcare evaluation",
-                description="Synthetic Azure DEV demonstration, no commercial billing.",
-                is_active=True,
-            )
-            feature, _ = Feature.objects.get_or_create(
-                key="diadem.daycare", defaults={"name": "Diadem Daycare"}
-            )
-            PlanEntitlement.objects.create(plan=plan, feature=feature, enabled=True)
-            TenantProfile.objects.create(
-                school=school, slug=f"buyer-care-{school.pk.hex}",
-                plan_code="starter", status="active", payment_provider="none",
-            )
-            TenantSubscription.objects.create(
-                school_id=school.pk, plan=plan, started_at=timezone.now(), is_trial=True,
-            )
-            expires_at = timezone.now() + timedelta(days=7)
-            for key in _CARE_KEYS:
-                SchoolModule.objects.create(
-                    school=school, module_key=key, status="active",
-                    expiry_date=expires_at,
-                    notes="Fictional invite-bound DEV proof only; not a license or policy attestation.",
-                )
+            from sandbox_demo.fictional_care import seed_care_entitlements
+            seed_care_entitlements(school, workspace=workspace)
 
         self.stdout.write(
             self.style.SUCCESS(
