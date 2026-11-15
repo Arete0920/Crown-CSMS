@@ -195,3 +195,15 @@ operator sequence after separate owner authorization is:
    boundaries, persisted transactions, independent reload/readback, downstream
    state and negatives. Keep buyer release NO-GO until all required cases pass
    and the owner signs off. Never close #427 or #617 from source tests alone.
+
+
+## Subsequent source increments
+
+The care and Jireh source increments are described in UNIVERSAL_CARE.md and
+UNIVERSAL_JIREH.md. The separately guarded, default-off existing-DEV activation
+command and exact owner handoff are in UNIVERSAL_AZURE_ACTIVATION.md. Historical
+NOT READY findings above describe the foundation boundary; consult the later
+acceptance ledger before making any current readiness claim. Local preparation
+commands still reject Azure and PostgreSQL. No Azure activation was performed
+in this assignment, and complete Camp clearance and whole-environment replay
+remain unverified.
