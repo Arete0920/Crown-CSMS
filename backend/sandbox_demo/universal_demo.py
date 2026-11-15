@@ -17,7 +17,7 @@ from core.models import School
 from .academic_seed import seed_heritage_teacher_academics
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 from .models import SandboxBuyerWorkspace, SandboxEvent
-from .services import proof_metrics, seed_fictional_school
+from .services import _PRESENTER_BOOTSTRAP_CAPABILITY, proof_metrics, seed_fictional_school
 from .universal_identity import UNIVERSAL_SCHOOL, UNIVERSAL_SCHOOL_ID, presenter_username
 
 LOCAL_DB = Path(__file__).resolve().parents[2] / ".local-backups/universal-demo/universal.sqlite3"
@@ -159,7 +159,10 @@ def _prepare_presenter(*, apply, reset, passwords):
         key: replace(SANDBOX_PERSONAS[key], email=presenter_username(key))
         for key in SANDBOX_PERSONAS
     }
-    metrics = seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas)
+    metrics = seed_fictional_school(
+        school_spec=UNIVERSAL_SCHOOL, personas=personas,
+        _presenter_bootstrap_capability=_PRESENTER_BOOTSTRAP_CAPABILITY,
+    )
     metrics.update(seed_heritage_teacher_academics(
         school_id=UNIVERSAL_SCHOOL_ID, teacher_username=presenter_username("teacher"),
     ))

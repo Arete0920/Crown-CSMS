@@ -241,3 +241,46 @@ def test_failed_reset_rebuild_restores_original_principals_and_work(local_runtim
     assert UserAccount.objects.get(username=presenter_username("teacher")).pk == teacher_id
     assert _client().get(url).json()["assignments"][0]["id"] == saved.json()["id"]
     assert not SandboxEvent.objects.filter(event="universal_presenter_reset_v1").exists()
+
+
+def test_generic_presenter_seeder_cannot_bypass_setup_or_disable_existing_logins(local_runtime, monkeypatch):
+    """Direct generic reuse must not override the operator's presenter and credentials."""
+    from dataclasses import replace
+    from core.models import UserRole
+    from sandbox_demo.catalog import SANDBOX_PERSONAS
+    from sandbox_demo.services import seed_fictional_school
+
+    personas = {
+        key: replace(persona, email=presenter_username(key))
+        for key, persona in SANDBOX_PERSONAS.items()
+    }
+    for key in SANDBOX_PERSONAS:
+        monkeypatch.setenv(
+            f"CROWN_PRESENTER_{key.upper()}_PASSWORD",
+            f"OnlyTest!Distinct_secret_for_{key}_9312765",
+        )
+    with pytest.raises(RuntimeError, match="guarded presenter command"):
+        seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas)
+    assert not School.objects.filter(pk=UNIVERSAL_SCHOOL_ID).exists()
+
+    prepare_presenter(apply=True, enable_password_login=True)
+    before_passwords = dict(UserAccount.objects.values_list("pk", "password"))
+    before_roles = set(UserRole.objects.values_list("school_id", "user_id", "role_code"))
+    before_students = set(Student.objects.values_list("pk", "student_number"))
+    before_events = set(SandboxEvent.objects.values_list("pk", "event"))
+
+    with pytest.raises(RuntimeError, match="Presenter already exists"):
+        seed_fictional_school(school_spec=UNIVERSAL_SCHOOL, personas=personas)
+
+    assert dict(UserAccount.objects.values_list("pk", "password")) == before_passwords
+    assert set(UserRole.objects.values_list("school_id", "user_id", "role_code")) == before_roles
+    assert set(Student.objects.values_list("pk", "student_number")) == before_students
+    assert set(SandboxEvent.objects.values_list("pk", "event")) == before_events
+    role = "teacher"
+    user = UserAccount.objects.get(username=presenter_username(role))
+    password = f"OnlyTest!Distinct_secret_for_{role}_9312765"
+    assert user.check_password(password)
+    response = APIClient().post("/api/v1/auth/token/", {
+        "username": user.username, "password": password,
+    }, format="json")
+    assert response.status_code == 200
