@@ -22,13 +22,6 @@ from .daycare_approval_models import (
 )
 
 REVIEW_PERMISSION = "diadem.daycare.safety_review"
-MODELS = {
-    "qualification": DaycareStaffQualificationReview,
-    "policy": DaycareRoomPolicyReview,
-    "assignment": DaycareStaffAssignmentReview,
-}
-
-
 class SafetyReviewConflict(Exception):
     pass
 
@@ -95,6 +88,28 @@ def _existing_or_new(model, school, actor, kind, values):
         ).exists():
             raise SafetyReviewConflict("Existing review lacks an attributable audit event.")
         return existing, False
+    # Exactly one current decision per subject. Corrections must explicitly
+    # supersede the latest decision, preventing contradictory unsuperseded
+    # reviews from later being mistaken for activation-ready evidence.
+    if model is DaycareStaffQualificationReview:
+        subject = model.objects.filter(
+            school=school, site=values["site"], staff=values["staff"],
+            qualification_code=values["qualification_code"],
+        )
+    elif model is DaycareRoomPolicyReview:
+        subject = model.objects.filter(school=school, room=values["room"])
+    else:
+        subject = model.objects.filter(school=school, proposal=values["proposal"])
+    superseded = model.objects.filter(
+        supersedes__isnull=False,
+    ).values_list("supersedes_id", flat=True)
+    current = list(subject.exclude(pk__in=superseded).values_list("pk", flat=True))
+    predecessor_id = values.get("supersedes_id")
+    if len(current) > 1 or (
+        (current and predecessor_id != current[0])
+        or (not current and predecessor_id is not None)
+    ):
+        raise SafetyReviewConflict("A new decision must supersede the current subject review.")
     if values.get("supersedes_id"):
         previous = model.objects.select_for_update().filter(
             pk=values["supersedes_id"], school=school,
