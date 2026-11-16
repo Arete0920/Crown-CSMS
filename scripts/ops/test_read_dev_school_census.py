@@ -123,8 +123,12 @@ class CensusTests(unittest.TestCase):
 
     def test_rejects_invalid_source_before_azure(self):
         out = io.StringIO()
-        with patch.object(subject, "verify_accepted_source") as check, patch.object(
-            subject, "read_dev_database_setting") as azure, contextlib.redirect_stdout(out):
+        with patch.object(
+            subject, "verify_accepted_source",
+            side_effect=subject.EvidenceBlocked("accepted_source_sha_required"),
+        ) as check, patch.object(
+            subject, "read_dev_database_setting"
+        ) as azure, contextlib.redirect_stdout(out):
             self.assertEqual(subject.main(["--expected-sha", "main"]), 1)
         check.assert_called_once_with("main")
         azure.assert_not_called()
