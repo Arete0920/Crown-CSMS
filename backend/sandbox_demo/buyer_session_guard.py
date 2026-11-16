@@ -11,6 +11,7 @@ from django.conf import settings
 from django.http import JsonResponse
 
 from core.models import UserAccount, UserRole
+from .buyer_workspace import hosted_self_service_retired
 from .catalog import SANDBOX_PERSONAS, SANDBOX_SCHOOLS
 from .models import SandboxBuyerWorkspace
 
@@ -23,7 +24,7 @@ def _buyer_session_allowed(request, actor, match) -> bool:
     """Re-read authoritative records; never use a JWT school claim as authority."""
     from .buyer_workspace import hosted_buyer_mode
 
-    if not hosted_buyer_mode():
+    if not hosted_buyer_mode() or hosted_self_service_retired():
         return False
     if (
         not isinstance(actor, UserAccount)

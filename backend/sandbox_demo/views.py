@@ -16,7 +16,10 @@ from core.permissions import IsPlatformOperator
 
 from .catalog import (DEFAULT_SANDBOX_INVITE_ROLES, HOSTED_ONLY_PERSONA_KEYS,
                       SANDBOX_PERSONAS, SANDBOX_SCHOOLS, catalog_payload, get_school)
-from .buyer_workspace import BuyerWorkspaceDenied, hosted_buyer_mode, hosted_buyer_session
+from .buyer_workspace import (
+    BuyerWorkspaceDenied, hosted_buyer_mode, hosted_buyer_session,
+    hosted_self_service_retired,
+)
 from .models import SandboxEvent, SandboxFeedback, SandboxInvite
 from .parent_enrollment import (
     SandboxParentEnrollmentError,
@@ -54,6 +57,13 @@ def _ops_allowed(request) -> bool:
     # School staff (including school-bound superusers) are not platform ops.
     # Reuse the canonical active, schoolless superuser authorization contract.
     return IsPlatformOperator().has_permission(request, None)
+
+
+def _hosted_retirement_denial():
+    return Response({
+        "detail": "CROWN demonstrations are operated by authorized Arete sales staff.",
+        "code": "sandbox_external_demo_retired",
+    }, status=403)
 
 
 def _get_invite(invite_id: str | None):
@@ -183,6 +193,8 @@ class SandboxInviteCreateView(APIView):
 
     def post(self, request):
         """Create an invitation only for an explicit, valid catalog scope."""
+        if hosted_self_service_retired():
+            return _hosted_retirement_denial()
         if not _ops_allowed(request):
             return Response(
                 {
@@ -259,6 +271,8 @@ class SandboxInviteResolveView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, invite_id: str):
+        if hosted_self_service_retired():
+            return _hosted_retirement_denial()
         invite = SandboxInvite.objects.filter(pk=invite_id).first()
         if not invite:
             return Response(
@@ -311,6 +325,8 @@ class SandboxSessionView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        if hosted_self_service_retired():
+            return _hosted_retirement_denial()
         role = request.data.get("role", "school_admin")
         if not isinstance(role, str) or role not in SANDBOX_PERSONAS:
             return Response(
