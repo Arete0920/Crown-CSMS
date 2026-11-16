@@ -69,6 +69,24 @@ def _audit(review, actor, kind):
     )
 
 
+def _review_is_audited(review, kind):
+    """Only an attributable committed review event establishes provenance.
+
+    Direct ORM creation or historical unverified rows must never appear as
+    independently reviewed evidence on the decision/readback path.
+    """
+    return AuditLog.objects.filter(
+        action=f"diadem.daycare.safety_review.{kind}",
+        model=type(review).__name__,
+        object_id=str(review.pk),
+        user_id=review.reviewed_by_id,
+        metadata__school_id=str(review.school_id),
+        metadata__request_key=str(review.request_key),
+        metadata__decision=review.decision,
+        metadata__operational_activation=False,
+    ).exists()
+
+
 def _existing_or_new(model, school, actor, kind, values):
     """One idempotent decision and one audit, or a conflict without partial writes."""
     existing = model.objects.filter(school=school, request_key=values["request_key"]).first()
@@ -80,12 +98,7 @@ def _existing_or_new(model, school, actor, kind, values):
                 raise SafetyReviewConflict("Request key is already used for another review.")
         if existing.reviewed_by_id != actor.pk:
             raise SafetyReviewConflict("Review ownership differs from the original request.")
-        if not AuditLog.objects.filter(
-            action=f"diadem.daycare.safety_review.{kind}",
-            model=model.__name__, object_id=str(existing.pk),
-            metadata__school_id=str(school.pk),
-            metadata__request_key=str(existing.request_key),
-        ).exists():
+        if not _review_is_audited(existing, kind):
             raise SafetyReviewConflict("Existing review lacks an attributable audit event.")
         return existing, False
     # Exactly one current decision per subject. Corrections must explicitly
@@ -190,6 +203,9 @@ def submit_assignment(*, school_id, actor_id, site_id, room_id, values):
         ).first()
         if qualification is None or policy is None:
             raise ValidationError({"detail": "Referenced reviews must match school, staff and room."})
+        if (not _review_is_audited(qualification, "qualification")
+                or not _review_is_audited(policy, "policy")):
+            raise SafetyReviewConflict("Referenced safety reviews lack attributed audit events.")
         if values["decision"] == "APPROVED":
             now = timezone.now()
             if (qualification.decision != "VERIFIED" or policy.decision != "APPROVED"
@@ -220,8 +236,11 @@ def list_reviews(*, school_id, actor_id, site_id, room_id):
     with transaction.atomic():
         school, _actor = require_reviewer(school_id, actor_id)
         site, room = _scope(school, site_id, room_id, lock=False)
+        room_staff = DaycareRoomStaffCoverage.objects.filter(
+            school=school, site=site, room=room,
+        ).values_list("staff_id", flat=True)
         qualifications = DaycareStaffQualificationReview.objects.filter(
-            school=school, site=site,
+            school=school, site=site, staff_id__in=room_staff,
         ).order_by("created_at", "pk")
         policies = DaycareRoomPolicyReview.objects.filter(
             school=school, site=site, room=room,
@@ -266,7 +285,16 @@ def list_reviews(*, school_id, actor_id, site_id, room_id):
             "school_id": str(school.pk), "site_id": str(site.pk),
             "room_id": str(room.pk), "as_of": timezone.now().isoformat(),
             "operational_activation": False,
-            "qualifications": [item(row, row.staff_id) for row in qualifications],
-            "policies": [item(row, row.room_id) for row in policies],
-            "assignments": [item(row, row.proposal_id) for row in assignments],
+            "qualifications": [
+                item(row, row.staff_id) for row in qualifications
+                if _review_is_audited(row, "qualification")
+            ],
+            "policies": [
+                item(row, row.room_id) for row in policies
+                if _review_is_audited(row, "policy")
+            ],
+            "assignments": [
+                item(row, row.proposal_id) for row in assignments
+                if _review_is_audited(row, "assignment")
+            ],
         }
