@@ -22,11 +22,6 @@ on:
         description: Accepted main SHA (40 characters)
         required: true
         type: string
-      run_crown269_metadata:
-        description: 'Issue #269: only two metadata-only DEV Key Vault reference GETs; no migrations or deployment'
-        required: false
-        type: boolean
-        default: false
       compare_rehearsal_baseline:
         description: "Compare live DEV baseline components without writing (issue #427)"
         required: false
@@ -38,7 +33,7 @@ on:
         type: boolean
         default: false
       confirm_dev_support:
-        description: "Type migrate-dev-support for the DEV-only support stage"
+        description: "Type migrate-dev-support for schema changes; or crown269-reference-metadata-only for #269 READ-ONLY"
         required: false
         type: string
         default: ""
@@ -80,7 +75,7 @@ concurrency:
 jobs:
   two-fixed-reference-gets:
     # Never run as part of an existing inventory push/PR, migration stage or DEV deployment.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.run_crown269_metadata == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.confirm_dev_support == 'crown269-reference-metadata-only'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 8
@@ -114,7 +109,7 @@ jobs:
           test "$APPLY_BLACKLIST" = false
           test "$COMPARE_BASELINE" = false
           test "$INSPECT_MIGRATIONS" = false
-          test -z "$CONFIRM_SUPPORT"
+          test "$CONFIRM_SUPPORT" = crown269-reference-metadata-only
           test -z "$CONFIRM_LEGACY"
           test -z "$CONFIRM_BLACKLIST"
           test -z "$DEV_RECOVERY_RECEIPT"
@@ -197,7 +192,7 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
           python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.run_crown269_metadata != true && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
+    if: github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -319,7 +314,7 @@ jobs:
         run: az logout
 
   stage-reviewed-dev-migrations:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.run_crown269_metadata != true && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true)
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 20
