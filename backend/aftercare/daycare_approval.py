@@ -1,0 +1,237 @@
+"""Director-scoped, default-off Diadem evidence reviews (#595).
+
+No action in this service sets is_active/is_qualified, policy_verified_at,
+or the room's operational limits. Independent external determinations remain
+a prerequisite to any future operational activation.
+"""
+from django.core.exceptions import ValidationError as ModelValidationError
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+
+from audit.models import AuditLog
+from core.models import UserAccount, UserRole
+from core.permissions import user_has_permission
+
+from .daycare_checkin_models import DaycareRoomStaffCoverage
+from .daycare_models import DaycareSite, DaycareRoom
+from .daycare_setup import require_configuration
+from .daycare_approval_models import (
+    DaycareStaffQualificationReview, DaycareRoomPolicyReview,
+    DaycareStaffAssignmentReview,
+)
+
+REVIEW_PERMISSION = "diadem.daycare.safety_review"
+MODELS = {
+    "qualification": DaycareStaffQualificationReview,
+    "policy": DaycareRoomPolicyReview,
+    "assignment": DaycareStaffAssignmentReview,
+}
+
+
+class SafetyReviewConflict(Exception):
+    pass
+
+
+def require_reviewer(school_id, actor_id):
+    """No implicit director/superuser grant for safety reviews."""
+    school, actor = require_configuration(school_id, actor_id)
+    if not user_has_permission(actor, REVIEW_PERMISSION, school=school):
+        raise PermissionDenied("Explicit safety-review permission required.")
+    return school, actor
+
+
+def _scope(school, site_id, room_id, *, lock=True):
+    sites = DaycareSite.objects.select_for_update() if lock else DaycareSite.objects
+    rooms = DaycareRoom.objects.select_for_update() if lock else DaycareRoom.objects
+    site = sites.filter(pk=site_id, school=school).first()
+    if site is None:
+        raise NotFound()
+    room = rooms.filter(pk=room_id, site=site, school=school).first()
+    if room is None:
+        raise NotFound()
+    return site, room
+
+
+def _audit(review, actor, kind):
+    AuditLog.objects.create(
+        user_id=actor.pk, action=f"diadem.daycare.safety_review.{kind}",
+        model=type(review).__name__, object_id=str(review.pk),
+        metadata={
+            "school_id": str(review.school_id),
+            "site_id": str(review.site_id) if hasattr(review, "site_id") else str(review.proposal.site_id),
+            "room_id": str(review.room_id) if hasattr(review, "room_id") else (
+                str(review.proposal.room_id) if hasattr(review, "proposal_id") else None
+            ),
+            "subject_id": str(
+                review.staff_id if hasattr(review, "staff_id")
+                else review.room_id if hasattr(review, "room_id")
+                else review.proposal_id
+            ),
+            "decision": review.decision,
+            "request_key": str(review.request_key),
+            "supersedes_id": str(review.supersedes_id) if review.supersedes_id else None,
+            "operational_activation": False,
+        },
+    )
+
+
+def _existing_or_new(model, school, actor, kind, values):
+    """One idempotent decision and one audit, or a conflict without partial writes."""
+    previous = None
+    if values.get("supersedes_id"):
+        previous = model.objects.select_for_update().filter(
+            pk=values["supersedes_id"], school=school,
+        ).first()
+        if previous is None:
+            raise ValidationError({"supersedes_id": "Review to supersede was not found."})
+        if model.objects.filter(supersedes=previous).exists():
+            raise SafetyReviewConflict("This review was already superseded.")
+    existing = model.objects.filter(school=school, request_key=values["request_key"]).first()
+    if existing is not None:
+        for key, value in values.items():
+            if getattr(existing, key) != value:
+                raise SafetyReviewConflict("Request key is already used for another review.")
+        if existing.reviewed_by_id != actor.pk:
+            raise SafetyReviewConflict("Review ownership differs from the original request.")
+        if not AuditLog.objects.filter(
+            action=f"diadem.daycare.safety_review.{kind}",
+            model=model.__name__, object_id=str(existing.pk),
+            metadata__school_id=str(school.pk),
+            metadata__request_key=str(existing.request_key),
+        ).exists():
+            raise SafetyReviewConflict("Existing review lacks an attributable audit event.")
+        return existing, False
+    values = {**values, "school": school, "reviewed_by": actor}
+    try:
+        review = model.objects.create(**values)
+    except (ModelValidationError, IntegrityError) as exc:
+        raise SafetyReviewConflict("Review values conflict with existing safety evidence.") from exc
+    _audit(review, actor, kind)
+    return review, True
+
+
+def submit_qualification(*, school_id, actor_id, site_id, room_id, values):
+    with transaction.atomic():
+        school, actor = require_reviewer(school_id, actor_id)
+        site, _room = _scope(school, site_id, room_id)
+        staff = UserAccount.objects.select_for_update().filter(
+            pk=values["staff_id"], school=school, is_active=True,
+        ).first()
+        if (staff is None or staff.pk == actor.pk or not UserRole.objects.filter(
+                user=staff, school=school, role_code="DAYCARE_STAFF",
+        ).exists()):
+            raise ValidationError({"staff_id": "Independently reviewed school-bound staff required."})
+        return _existing_or_new(
+            DaycareStaffQualificationReview, school, actor, "qualification",
+            {**values, "site": site, "staff": staff, "staff_id": staff.pk,
+             "reviewed_at": timezone.now()},
+        )
+
+
+def submit_policy(*, school_id, actor_id, site_id, room_id, values):
+    with transaction.atomic():
+        school, actor = require_reviewer(school_id, actor_id)
+        site, room = _scope(school, site_id, room_id)
+        if values["jurisdiction"] != site.jurisdiction or not site.jurisdiction:
+            raise ValidationError({"jurisdiction": "Policy must match the site's declared jurisdiction."})
+        return _existing_or_new(
+            DaycareRoomPolicyReview, school, actor, "policy",
+            {**values, "site": site, "room": room, "reviewed_at": timezone.now()},
+        )
+
+
+def _latest_review(record, model):
+    return not model.objects.filter(supersedes=record).exists()
+
+
+def submit_assignment(*, school_id, actor_id, site_id, room_id, values):
+    with transaction.atomic():
+        school, actor = require_reviewer(school_id, actor_id)
+        site, room = _scope(school, site_id, room_id)
+        proposal = DaycareRoomStaffCoverage.objects.select_for_update().filter(
+            pk=values["proposal_id"], school=school, site=site, room=room,
+            is_active=False, is_qualified=False, verified_at__isnull=True,
+            verified_by__isnull=True, qualification_evidence="",
+        ).first()
+        if proposal is None or proposal.staff_id == actor.pk:
+            raise ValidationError({"proposal_id": "An unapproved school-bound proposal is required."})
+        if not AuditLog.objects.filter(
+            action="diadem.daycare.staff_proposal.created",
+            model="DaycareRoomStaffCoverage", object_id=str(proposal.pk),
+            metadata__school_id=str(school.pk),
+            metadata__site_id=str(site.pk),
+            metadata__room_id=str(room.pk),
+            metadata__staff_id=str(proposal.staff_id),
+        ).exists():
+            raise SafetyReviewConflict("Proposal has no attributed creation event.")
+        qualification = DaycareStaffQualificationReview.objects.select_for_update().filter(
+            pk=values["qualification_review_id"], school=school, site=site,
+            staff_id=proposal.staff_id,
+        ).first()
+        policy = DaycareRoomPolicyReview.objects.select_for_update().filter(
+            pk=values["room_policy_review_id"], school=school, site=site, room=room,
+        ).first()
+        if qualification is None or policy is None:
+            raise ValidationError({"detail": "Referenced reviews must match school, staff and room."})
+        if values["decision"] == "APPROVED":
+            now = timezone.now()
+            if (qualification.decision != "VERIFIED" or policy.decision != "APPROVED"
+                    or not _latest_review(qualification, DaycareStaffQualificationReview)
+                    or not _latest_review(policy, DaycareRoomPolicyReview)
+                    or qualification.effective_from > values["effective_from"]
+                    or qualification.effective_until < values["effective_until"]
+                    or policy.effective_from > values["effective_from"]
+                    or policy.effective_until < values["effective_until"]
+                    or values["effective_until"] <= now):
+                raise SafetyReviewConflict("Current qualification and policy evidence do not cover this interval.")
+        return _existing_or_new(
+            DaycareStaffAssignmentReview, school, actor, "assignment",
+            {
+                "proposal": proposal,
+                "qualification_review": qualification,
+                "room_policy_review": policy,
+                **{k: v for k, v in values.items() if k not in (
+                    "proposal_id", "qualification_review_id", "room_policy_review_id",
+                )},
+                "reviewed_at": timezone.now(),
+            },
+        )
+
+
+def list_reviews(*, school_id, actor_id, site_id, room_id):
+    """Readback is deliberately factual, not a representation of live coverage."""
+    with transaction.atomic():
+        school, _actor = require_reviewer(school_id, actor_id)
+        site, room = _scope(school, site_id, room_id, lock=False)
+        qualifications = DaycareStaffQualificationReview.objects.filter(
+            school=school, site=site,
+        ).order_by("created_at", "pk")
+        policies = DaycareRoomPolicyReview.objects.filter(
+            school=school, site=site, room=room,
+        ).order_by("created_at", "pk")
+        assignments = DaycareStaffAssignmentReview.objects.filter(
+            school=school, proposal__site=site, proposal__room=room,
+        ).order_by("created_at", "pk")
+        def item(row, subject):
+            return {
+                "review_id": str(row.pk), "subject_id": str(subject),
+                "decision": row.decision,
+                "effective_from": row.effective_from.isoformat(),
+                "effective_until": row.effective_until.isoformat(),
+                "reviewed_at": row.reviewed_at.isoformat(),
+                "reviewed_by_id": str(row.reviewed_by_id),
+                "source_authority": row.source_authority,
+                "source_reference": row.source_reference,
+                "supersedes_id": str(row.supersedes_id) if row.supersedes_id else None,
+                "superseded": type(row).objects.filter(supersedes=row).exists(),
+                "operational_activation": False,
+            }
+        return {
+            "school_id": str(school.pk), "site_id": str(site.pk),
+            "room_id": str(room.pk), "as_of": timezone.now().isoformat(),
+            "operational_activation": False,
+            "qualifications": [item(row, row.staff_id) for row in qualifications],
+            "policies": [item(row, row.room_id) for row in policies],
+            "assignments": [item(row, row.proposal_id) for row in assignments],
+        }
