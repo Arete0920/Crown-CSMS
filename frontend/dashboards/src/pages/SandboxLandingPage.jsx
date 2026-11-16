@@ -53,6 +53,8 @@ export default function SandboxLandingPage() {
   const defaultSchool = getSandboxSchool(selectedTrack.primarySchoolKey);
 
   useEffect(() => {
+    const host = String(globalThis.location?.hostname || "").toLowerCase();
+    if (host && !["localhost", "127.0.0.1", "::1"].includes(host)) return;
     if (!inviteId) return;
     resolveSandboxInvite(inviteId)
       .then((resolved) => {
