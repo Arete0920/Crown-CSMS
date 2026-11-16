@@ -906,6 +906,10 @@ LOGGING.setdefault("loggers", {})["crown.request"] = {
 }
 
 # Sandbox demo access configuration
+# November 16 owner decision: hosted public buyer invitations and one-click
+# sessions are retired. Hard-coded, not environment-configurable. Only isolated
+# regression tests may override this setting; the staff presenter uses /login.
+CROWN_SALES_CONTROLLED_DEMO_ONLY = True
 CROWN_SANDBOX_ALLOW_OPEN_SESSION = _env_bool("CROWN_SANDBOX_ALLOW_OPEN_SESSION", default=DEBUG)
 CROWN_SANDBOX_ACCESS_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_ACCESS_TTL_SECONDS", "7200"))
 CROWN_SANDBOX_REFRESH_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_REFRESH_TTL_SECONDS", "43200"))
