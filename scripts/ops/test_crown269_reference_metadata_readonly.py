@@ -11,7 +11,7 @@ MODULE = Path(__file__).with_name("crown269_reference_metadata_readonly.py")
 modspec = importlib.util.spec_from_file_location("crown269_reference_metadata_readonly", MODULE)
 mod = importlib.util.module_from_spec(modspec)
 modspec.loader.exec_module(mod)
-WF = Path(__file__).resolve().parents[2] / ".github/workflows/crown269-dev-reference-metadata.yml"
+WF = Path(__file__).resolve().parents[2] / ".github/workflows/dev-blacklist-database-inventory.yml"
 ACCOUNT = {"id": mod.SUBSCRIPTION_ID, "tenant": "00000000-0000-0000-0000-000000000001"}
 ENV = {
     "CROWN269_EXPECTED_TENANT": ACCOUNT["tenant"],
@@ -137,34 +137,72 @@ class MetadataReadOnlyTests(unittest.TestCase):
             self.assertIn("target_ok:", projection)
             self.assertIn("active_version_present:", projection)
 
-    def test_workflow_is_manual_only_and_oidc_restricted(self):
+    def test_workflow_is_opt_in_inside_existing_canonical_inventory(self):
         data = WF.read_text(encoding="utf-8")
-        for expected in [
-            "workflow_dispatch:", "environment: dev", "id-token: write",
-            "github.ref == 'refs/heads/main'", "github.repository == 'Arete0920/Crown-CSMS'",
-            "GITHUB_REPOSITORY_ID\" = '1339719218'", "secrets.AZURE_CLIENT_ID",
-            "secrets.AZURE_TENANT_ID", "secrets.AZURE_SUBSCRIPTION_ID",
-            "uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5",
-            "retention-days: 30", "--receipt",
-        ]:
-            self.assertIn(expected, data)
-        self.assertNotIn("\n  push:", data)
-        self.assertNotIn("\n  schedule:", data)
-        self.assertNotIn("\n  pull_request:", data)
-        self.assertNotIn("az webapp", data)
-        self.assertNotIn("az keyvault", data)
-        self.assertNotIn("curl -X POST", data)
-        self.assertNotIn("github-script", data)
-        self.assertNotIn("appsettings set", data)
+        self.assertIn("run_crown269_metadata:", data)
+        self.assertIn("description: 'Issue #269:", data)
+        self.assertIn("default: false", data)
+        self.assertIn("two-fixed-reference-gets:", data)
+        self.assertIn("environment: dev", data)
+        self.assertIn("id-token: write", data)
+        self.assertIn("github.ref == 'refs/heads/main'", data)
+        self.assertIn("github.repository == 'Arete0920/Crown-CSMS'", data)
+        self.assertIn("GITHUB_REPOSITORY_ID\" = 1339719218", data)
+        self.assertIn("secrets.AZURE_CLIENT_ID", data)
+        self.assertIn("secrets.AZURE_TENANT_ID", data)
+        self.assertIn("secrets.AZURE_SUBSCRIPTION_ID", data)
+        self.assertIn("uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5", data)
+        self.assertIn("retention-days: 30", data)
+        self.assertIn("--receipt", data)
+        # Existing workflow's push/PR triggers MUST be retained, not removed.
+        self.assertIn("  pull_request:", data)
+        self.assertIn("  push:", data)
+        self.assertEqual(data.count("  workflow_dispatch:"), 1)
+        self.assertEqual(data.count("  two-fixed-reference-gets:"), 1)
 
-    def test_workflow_yaml_parses(self):
-        try:
-            import yaml
-        except ImportError:
-            self.skipTest("PyYAML unavailable in minimal offline runtime")
-        data = yaml.load(WF.read_text(), Loader=yaml.BaseLoader)
-        self.assertEqual(list(data["on"]), ["workflow_dispatch"])
-        self.assertEqual(list(data["jobs"]), ["two-fixed-reference-gets"])
+    def test_new_job_isolated_from_existing_inspect_and_migrations(self):
+        import yaml
+        data = yaml.load(WF.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        jobs = data["jobs"]
+        self.assertEqual(set(jobs), {
+            "support-contract-tests", "inspect", "stage-reviewed-dev-migrations",
+            "two-fixed-reference-gets",
+        })
+        check = jobs["two-fixed-reference-gets"]
+        clause = check["if"]
+        self.assertIn("github.event_name == 'workflow_dispatch'", clause)
+        self.assertIn("github.ref == 'refs/heads/main'", clause)
+        self.assertIn("inputs.run_crown269_metadata == true", clause)
+        self.assertIn("inputs.run_crown269_metadata != true", jobs["inspect"]["if"])
+        self.assertIn("inputs.run_crown269_metadata != true", jobs["stage-reviewed-dev-migrations"]["if"])
+        self.assertEqual(check["environment"], "dev")
+        self.assertEqual(check["permissions"]["id-token"], "write")
+        script = "\n".join(step.get("run", "") for step in check["steps"])
+        for token in (
+            'test "$GITHUB_REPOSITORY_ID" = 1339719218',
+            'test "$REQUESTED_SHA" = "$GITHUB_SHA"',
+            'test "$APPLY_SUPPORT" = false',
+            'test "$APPLY_LEGACY_REFRESH" = false',
+            'test "$APPLY_BLACKLIST" = false',
+            'test "$COMPARE_BASELINE" = false',
+            'test "$INSPECT_MIGRATIONS" = false',
+            'test -z "$CONFIRM_SUPPORT"',
+            'test -z "$CONFIRM_LEGACY"',
+            'test -z "$CONFIRM_BLACKLIST"',
+            'test -z "$DEV_RECOVERY_RECEIPT"',
+            'test "$(git rev-parse origin/main)" = "$REQUESTED_SHA"',
+        ):
+            self.assertIn(token, script)
+        for forbidden in ("az webapp", "az keyvault", "curl -X POST",
+                          "appsettings set", "migrate ", "--apply", "git push"):
+            self.assertNotIn(forbidden, script)
+
+    def test_workflow_yaml_parses_and_flag_is_default_off(self):
+        import yaml
+        data = yaml.load(WF.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        inputs = data["on"]["workflow_dispatch"]["inputs"]
+        self.assertEqual(inputs["run_crown269_metadata"]["type"], "boolean")
+        self.assertEqual(inputs["run_crown269_metadata"]["default"], "false")
         self.assertEqual(data["jobs"]["two-fixed-reference-gets"]["permissions"]["id-token"], "write")
 
     def test_cli_failure_does_not_echo_output(self):
