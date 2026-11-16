@@ -116,6 +116,24 @@ export default function SandboxLandingPage() {
       : [])
     : personas;
 
+  // Hosted evaluation links have been retired. Local loopback rehearsals keep
+  // their existing guarded selector; this UI is not an authentication boundary.
+  const host = String(globalThis.location?.hostname || "").toLowerCase();
+  if (host && !["localhost", "127.0.0.1", "::1"].includes(host)) {
+    return (
+      <main className="sandbox-crown-layout">
+        <div className="sandbox-experience">
+          <section className="sandbox-experience-panel" aria-label="Salesperson-operated demonstration">
+            <h1>CROWN demonstration access</h1>
+            <p>CROWN demonstrations are conducted by authorized Arete sales personnel.</p>
+            <p>Prospective schools participate through a guided presentation; independent visitor access is not available.</p>
+            <a href="/login">Authorized staff sign in</a>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="sandbox-crown-layout">
       <div className="sandbox-experience">
