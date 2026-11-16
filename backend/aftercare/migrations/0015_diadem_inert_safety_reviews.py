@@ -11,7 +11,9 @@ import django.db.models.deletion
 import django.utils.timezone
 
 
-_COMMON = [
+def _common():
+    # Each CreateModel must own distinct Django Field objects.
+    return [
     ("id", models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, serialize=False)),
     ("created_at", models.DateTimeField(auto_now_add=True)),
     ("updated_at", models.DateTimeField(auto_now=True)),
@@ -34,7 +36,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.CreateModel(
             name="DaycareStaffQualificationReview",
-            fields=_COMMON + [
+            fields=_common() + [
                 ("qualification_code", models.CharField(max_length=64)),
                 ("decision", models.CharField(max_length=12, choices=[
                     ("VERIFIED", "External evidence reviewed"),
@@ -73,7 +75,7 @@ class Migration(migrations.Migration):
         ),
         migrations.CreateModel(
             name="DaycareRoomPolicyReview",
-            fields=_COMMON + [
+            fields=_common() + [
                 ("jurisdiction", models.CharField(max_length=16)),
                 ("policy_version", models.CharField(max_length=64)),
                 ("facility_license_reference", models.CharField(max_length=160)),
@@ -128,7 +130,7 @@ class Migration(migrations.Migration):
         ),
         migrations.CreateModel(
             name="DaycareStaffAssignmentReview",
-            fields=_COMMON + [
+            fields=_common() + [
                 ("decision", models.CharField(max_length=12, choices=[
                     ("APPROVED", "Planning assignment reviewed"),
                     ("REJECTED", "Planning assignment rejected"),
