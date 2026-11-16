@@ -1,12 +1,15 @@
 """Inert #595 qualification, policy and planning approvals; synthetic only."""
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
+from threading import Barrier
 from uuid import uuid4
 from unittest.mock import patch
 
 import pytest
+from django.db import connection, connections
 from django.utils import timezone
 
-from aftercare.daycare_approval import REVIEW_PERMISSION
+from aftercare.daycare_approval import REVIEW_PERMISSION, submit_qualification
 from aftercare.models import (
     DaycareAttendance, DaycareRoom, DaycareRoomStaffCoverage,
     DaycareStaffQualificationReview, DaycareRoomPolicyReview,
@@ -218,3 +221,39 @@ def test_cross_tenant_review_identity_not_accepted():
     result = client.post(_url(room, "qualification-reviews"), payload, format="json")
     assert result.status_code == 400
     assert not DaycareStaffQualificationReview.objects.exists()
+
+@pytest.mark.django_db(transaction=True)
+def test_postgresql_concurrent_safety_review_retry_is_unique_and_audited():
+    assert connection.vendor == "postgresql", "Diadem review concurrency gate requires PostgreSQL."
+    school, director, _client, staff, room, starts, ends, _ = _setup()
+    _grant()
+    barrier = Barrier(2)
+    key = uuid4()
+    values = {
+        "staff_id": staff.pk, "qualification_code": "SYNTHETIC-RACE",
+        "decision": "VERIFIED", "source_authority": "SYNTHETIC NOT LICENSING",
+        "source_reference": "RACE-REVIEW-0001",
+        "effective_from": starts, "effective_until": ends, "request_key": key,
+    }
+
+    def worker():
+        connections.close_all()
+        try:
+            barrier.wait(timeout=20)
+            review, created = submit_qualification(
+                school_id=school.pk, actor_id=director.pk,
+                site_id=room.site_id, room_id=room.pk, values=values,
+            )
+            return review.pk, created
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = list(executor.map(lambda _: worker(), range(2)))
+    assert len({pk for pk, _ in outcomes}) == 1
+    assert sum(created for _, created in outcomes) == 1
+    assert DaycareStaffQualificationReview.objects.count() == 1
+    assert AuditLog.objects.filter(
+        action="diadem.daycare.safety_review.qualification",
+    ).count() == 1
+    assert not DaycareRoomStaffCoverage.objects.get(staff=staff).is_active
