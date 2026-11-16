@@ -34,6 +34,15 @@ def hosted_buyer_mode() -> bool:
     }
 
 
+def hosted_self_service_retired() -> bool:
+    """Block hosted buyer invitation entry, independent of legacy Azure flags.
+
+    Only isolated tests can override the code-owned sales policy. A missing or
+    unexpected value fails closed; local rehearsal and staff login are separate.
+    """
+    return hosted_buyer_mode() and getattr(settings, "CROWN_SALES_CONTROLLED_DEMO_ONLY", True) is not False
+
+
 def buyer_username(school_id, persona_key: str) -> str:
     """Deterministic reserved identity; distinct across invited schools."""
     if persona_key not in SANDBOX_PERSONAS:
