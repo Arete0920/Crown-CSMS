@@ -273,3 +273,57 @@ def test_new_decision_must_explicitly_supersede_the_current_subject():
     assert client.post(url, replacement, format="json").status_code == 200
     assert DaycareStaffQualificationReview.objects.count() == 2
     assert client.get(_url(room, "safety-reviews")).data["qualifications"][0]["superseded"] is True
+
+
+def test_unaudited_direct_orm_review_is_not_trusted_or_disclosed():
+    school, director, client, staff, room, starts, ends, proposal_id = _setup()
+    _grant()
+    # Privileged direct model writes do not carry transactional review provenance.
+    ghost = DaycareStaffQualificationReview.objects.create(
+        school=school, site=room.site, staff=staff,
+        reviewed_by=director, reviewed_at=timezone.now(),
+        effective_from=starts, effective_until=ends,
+        source_authority="SYNTHETIC UNATTRIBUTED",
+        source_reference="NO-AUDIT-RECORD",
+        qualification_code="SYNTHETIC-TRAINING-TEST",
+        decision="VERIFIED", request_key=uuid4(),
+    )
+    read = client.get(_url(room, "safety-reviews"))
+    assert read.status_code == 200
+    assert read.data["qualifications"] == []
+    # A real audited policy cannot turn an unaudited qualification into a
+    # valid assignment planning review.
+    policy = client.post(
+        _url(room, "policy-reviews"), _policy_payload(starts, ends),
+        format="json",
+    )
+    assert policy.status_code == 201, policy.data
+    attempt = client.post(_url(room, "assignment-reviews"), {
+        **_interval(starts, ends), "proposal_id": proposal_id,
+        "qualification_review_id": str(ghost.pk),
+        "room_policy_review_id": policy.data["review_id"],
+        "decision": "APPROVED",
+    }, format="json")
+    assert attempt.status_code == 409, attempt.data
+    assert not DaycareStaffAssignmentReview.objects.exists()
+
+
+def test_director_cannot_read_qualification_reviews_for_another_room():
+    school, director, client, staff, room, starts, ends, _ = _setup()
+    _grant()
+    qualified = client.post(
+        _url(room, "qualification-reviews"),
+        _qualification_payload(staff, starts, ends), format="json",
+    )
+    assert qualified.status_code == 201, qualified.data
+    from .test_daycare_setup import ROOM, room_url
+    other_room = client.post(
+        room_url(room.site_id), {**ROOM, "code": "room-b"},
+        format="json",
+    )
+    assert other_room.status_code == 201, other_room.data
+    other_read = client.get(
+        _url(DaycareRoom.objects.get(pk=other_room.data["room_id"]), "safety-reviews")
+    )
+    assert other_read.status_code == 200, other_read.data
+    assert other_read.data["qualifications"] == []
