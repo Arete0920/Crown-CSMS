@@ -191,6 +191,7 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
           python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
+          python -m unittest discover -s scripts/ops -p test_crown269_reference_metadata_readonly.py -v
   inspect:
     if: github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
     runs-on: ubuntu-latest
