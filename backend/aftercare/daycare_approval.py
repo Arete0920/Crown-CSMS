@@ -276,9 +276,37 @@ def list_reviews(*, school_id, actor_id, site_id, room_id):
                     "max_children_per_staff": row.max_children_per_staff,
                 })
             else:
+                qualification = row.qualification_review
+                policy = row.room_policy_review
+                proposal = row.proposal
+                now = timezone.now()
+                planning_evidence_current = bool(
+                    row.decision == "APPROVED"
+                    and not record["superseded"]
+                    and row.effective_from <= now < row.effective_until
+                    and qualification.decision == "VERIFIED"
+                    and policy.decision == "APPROVED"
+                    and _latest_review(qualification, DaycareStaffQualificationReview)
+                    and _latest_review(policy, DaycareRoomPolicyReview)
+                    and _review_is_audited(qualification, "qualification")
+                    and _review_is_audited(policy, "policy")
+                    and qualification.effective_from <= row.effective_from
+                    and qualification.effective_until >= row.effective_until
+                    and policy.effective_from <= row.effective_from
+                    and policy.effective_until >= row.effective_until
+                    and not proposal.is_active
+                    and not proposal.is_qualified
+                    and not proposal.qualification_evidence
+                    and proposal.verified_by_id is None
+                    and proposal.verified_at is None
+                    and proposal.staff.is_active
+                )
                 record.update({
                     "qualification_review_id": str(row.qualification_review_id),
                     "room_policy_review_id": str(row.room_policy_review_id),
+                    # A current *planning-evidence* indication is not
+                    # childcare approval and never confers on-duty authority.
+                    "planning_evidence_current": planning_evidence_current,
                 })
             return record
         return {
