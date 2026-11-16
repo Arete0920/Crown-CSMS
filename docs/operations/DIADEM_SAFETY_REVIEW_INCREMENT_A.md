@@ -101,3 +101,19 @@ backup/restore, backward compatibility and open-custody exit policy.
 
 Do not merge this branch, dispatch workflows, run migrations, activate coverage,
 or modify Azure without separate authorization. #427 and #617 are independent.
+
+
+### Provenance and room-readback safety
+
+Every persisted review must have a transactionally committed matching
+`AuditLog` action, reviewer identity, school, request key, decision and
+explicit non-activation flag. Readback excludes auditless review rows, and
+assignment planning rejects auditless qualification or policy references.
+Qualification readback is further restricted to staff who have a recorded
+coverage proposal/assignment in the requested room; a same-site staff review
+does not automatically appear in all other rooms.
+
+Source verification remains distinct from runtime proof. In particular,
+concurrency, migration state, PostgreSQL JSON-path audit filters and Django
+model checks must pass in the approved isolated test environment before
+a change can be proposed for merge.
