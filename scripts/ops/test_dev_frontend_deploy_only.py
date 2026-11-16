@@ -38,7 +38,7 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
         self.assertNotIn("VITE_LAUNCH_UI_TAKEOVER: '1'", build)
 
         # Production deployment instructions must not be altered by the DEV fix.
-        production = WORKFLOW.split('  dev-certification-preview:\\n', 1)[0]
+        production = WORKFLOW.split('  dev-certification-preview:\n', 1)[0]
         self.assertIn('  build-and-deploy:', production)
         self.assertIn('    environment: production', production)
         self.assertIn('    environment: dev', DEV)
@@ -46,7 +46,7 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
     def test_staff_login_and_real_dashboard_routes_are_source_backed(self):
         login = (ROOT / 'frontend/dashboards/src/pages/LoginPage.jsx').read_text()
         router = (ROOT / 'frontend/dashboards/src/routes/router.jsx').read_text()
-        self.assertIn('if (IS_SANDBOX) {\\n        await startSandboxPreview(role);', login)
+        self.assertIn('if (IS_SANDBOX) {\n        await startSandboxPreview(role);', login)
         self.assertIn('apiUrl("/api/v1/auth/token/")', login)
         self.assertIn("VITE_LAUNCH_UI_TAKEOVER === '1'", router)
         self.assertIn(': <FinanceDashboard />', router)
