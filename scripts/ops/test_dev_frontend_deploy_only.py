@@ -27,6 +27,31 @@ def step(name):
 
 
 class DeployOnlyBoundaryTests(unittest.TestCase):
+    def test_dev_preview_has_normal_staff_login_and_functional_routes(self):
+        """Never ship retired anonymous login or demo-only launch substitutes."""
+        build = step('Build pinned frontend for DEV')
+        self.assertIn("VITE_SANDBOX_MODE: '0'", build)
+        self.assertIn("VITE_DEMO_MODE: production", build)
+        self.assertIn("VITE_LAUNCH_UI_TAKEOVER: '0'", build)
+        self.assertNotIn("VITE_SANDBOX_MODE: '1'", build)
+        self.assertNotIn("VITE_DEMO_MODE: sandbox", build)
+        self.assertNotIn("VITE_LAUNCH_UI_TAKEOVER: '1'", build)
+
+        # Production deployment instructions must not be altered by the DEV fix.
+        production = WORKFLOW.split('  dev-certification-preview:\n', 1)[0]
+        self.assertIn('  build-and-deploy:', production)
+        self.assertIn('    environment: production', production)
+        self.assertIn('    environment: dev', DEV)
+
+    def test_staff_login_and_real_dashboard_routes_are_source_backed(self):
+        login = (ROOT / 'frontend/dashboards/src/pages/LoginPage.jsx').read_text()
+        router = (ROOT / 'frontend/dashboards/src/routes/router.jsx').read_text()
+        self.assertIn('if (IS_SANDBOX) {\n        await startSandboxPreview(role);', login)
+        self.assertIn('apiUrl("/api/v1/auth/token/")', login)
+        self.assertIn("VITE_LAUNCH_UI_TAKEOVER === '1'", router)
+        self.assertIn(': <FinanceDashboard />', router)
+        self.assertIn(': <AdmissionsPipelineList />', router)
+
     def test_deploy_only_defaults_to_true(self):
         self.assertRegex(WORKFLOW, r'dev_deploy_only:\n[^\n]*\n        type: boolean\n        default: true')
 
