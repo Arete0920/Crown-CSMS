@@ -257,3 +257,19 @@ def test_postgresql_concurrent_safety_review_retry_is_unique_and_audited():
         action="diadem.daycare.safety_review.qualification",
     ).count() == 1
     assert not DaycareRoomStaffCoverage.objects.get(staff=staff).is_active
+
+def test_new_decision_must_explicitly_supersede_the_current_subject():
+    _, _, client, staff, room, starts, ends, _ = _setup()
+    _grant()
+    url = _url(room, "qualification-reviews")
+    first = _qualification_payload(staff, starts, ends)
+    assert client.post(url, first, format="json").status_code == 201
+    competing = _qualification_payload(staff, starts, ends)
+    assert client.post(url, competing, format="json").status_code == 409
+    replacement = {**competing, "decision": "REJECTED",
+                   "supersedes_id": str(DaycareStaffQualificationReview.objects.get().pk)}
+    response = client.post(url, replacement, format="json")
+    assert response.status_code == 201, response.data
+    assert client.post(url, replacement, format="json").status_code == 200
+    assert DaycareStaffQualificationReview.objects.count() == 2
+    assert client.get(_url(room, "safety-reviews")).data["qualifications"][0]["superseded"] is True
