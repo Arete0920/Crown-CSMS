@@ -45,6 +45,19 @@ afterEach(() => {
 });
 
 describe("Sandbox persona launch", () => {
+  it("shows staff-only access on hosted DEV without persona launch or invite lookup", async () => {
+    window.location.hostname = "crown-sales.example.invalid";
+    window.location.search = "?invite=sbx_inv_legacy";
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+
+    expect(screen.getByText(/CROWN demonstrations are conducted by authorized Arete sales personnel/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Authorized staff sign in" }).getAttribute("href")).toBe("/login");
+    expect(screen.queryByText("Self-guided exploration")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Start guided/ })).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it("starts a one-click role session without visible credential fields", async () => {
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);
