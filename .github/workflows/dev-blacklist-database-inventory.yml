@@ -162,6 +162,10 @@ jobs:
           set -euo pipefail
           umask 077
           python scripts/ops/read_dev_school_census.py --expected-sha "$SHA" > dev-school-census.json
+          # The collector emits only sanitized aggregate counts, school hashes
+          # and fixed status fields, so the live result remains readable in CI
+          # even when artifact downloads are unavailable to the operator.
+          cat dev-school-census.json
       - name: Retain sanitized school count evidence
         if: always() && github.event_name == 'push' && hashFiles('dev-school-census.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
