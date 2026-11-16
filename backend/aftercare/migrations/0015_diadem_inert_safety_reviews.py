@@ -14,17 +14,17 @@ import django.utils.timezone
 def _common():
     # Each CreateModel must own distinct Django Field objects.
     return [
-    ("id", models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, serialize=False)),
-    ("created_at", models.DateTimeField(auto_now_add=True)),
-    ("updated_at", models.DateTimeField(auto_now=True)),
-    ("reviewed_at", models.DateTimeField(default=django.utils.timezone.now)),
-    ("effective_from", models.DateTimeField()),
-    ("effective_until", models.DateTimeField()),
-    ("source_authority", models.CharField(max_length=160)),
-    ("source_reference", models.CharField(max_length=255)),
-    ("request_key", models.UUIDField()),
-    ("school", models.ForeignKey(to="core.school", on_delete=django.db.models.deletion.PROTECT)),
-]
+        ("id", models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, serialize=False)),
+        ("created_at", models.DateTimeField(auto_now_add=True)),
+        ("updated_at", models.DateTimeField(auto_now=True)),
+        ("reviewed_at", models.DateTimeField(default=django.utils.timezone.now)),
+        ("effective_from", models.DateTimeField()),
+        ("effective_until", models.DateTimeField()),
+        ("source_authority", models.CharField(max_length=160)),
+        ("source_reference", models.CharField(max_length=255)),
+        ("request_key", models.UUIDField()),
+        ("school", models.ForeignKey(to="core.school", on_delete=django.db.models.deletion.PROTECT)),
+    ]
 
 
 class Migration(migrations.Migration):
