@@ -230,7 +230,7 @@ def list_reviews(*, school_id, actor_id, site_id, room_id):
             school=school, proposal__site=site, proposal__room=room,
         ).order_by("created_at", "pk")
         def item(row, subject):
-            return {
+            record = {
                 "review_id": str(row.pk), "subject_id": str(subject),
                 "decision": row.decision,
                 "effective_from": row.effective_from.isoformat(),
@@ -243,6 +243,25 @@ def list_reviews(*, school_id, actor_id, site_id, room_id):
                 "superseded": type(row).objects.filter(supersedes=row).exists(),
                 "operational_activation": False,
             }
+            if isinstance(row, DaycareStaffQualificationReview):
+                record["qualification_code"] = row.qualification_code
+            elif isinstance(row, DaycareRoomPolicyReview):
+                record.update({
+                    "jurisdiction": row.jurisdiction,
+                    "policy_version": row.policy_version,
+                    "facility_license_reference": row.facility_license_reference,
+                    "age_min_months": row.age_min_months,
+                    "age_max_months": row.age_max_months,
+                    "licensed_capacity": row.licensed_capacity,
+                    "max_group_size": row.max_group_size,
+                    "max_children_per_staff": row.max_children_per_staff,
+                })
+            else:
+                record.update({
+                    "qualification_review_id": str(row.qualification_review_id),
+                    "room_policy_review_id": str(row.room_policy_review_id),
+                })
+            return record
         return {
             "school_id": str(school.pk), "site_id": str(site.pk),
             "room_id": str(room.pk), "as_of": timezone.now().isoformat(),
