@@ -139,9 +139,9 @@ class MetadataReadOnlyTests(unittest.TestCase):
 
     def test_workflow_is_opt_in_inside_existing_canonical_inventory(self):
         data = WF.read_text(encoding="utf-8")
-        self.assertIn("run_crown269_metadata:", data)
-        self.assertIn("description: 'Issue #269:", data)
-        self.assertIn("default: false", data)
+        self.assertIn("crown269-reference-metadata-only", data)
+        self.assertIn("for #269 READ-ONLY", data)
+        self.assertIn('default: ""', data)
         self.assertIn("two-fixed-reference-gets:", data)
         self.assertIn("environment: dev", data)
         self.assertIn("id-token: write", data)
@@ -172,9 +172,9 @@ class MetadataReadOnlyTests(unittest.TestCase):
         clause = check["if"]
         self.assertIn("github.event_name == 'workflow_dispatch'", clause)
         self.assertIn("github.ref == 'refs/heads/main'", clause)
-        self.assertIn("inputs.run_crown269_metadata == true", clause)
-        self.assertIn("inputs.run_crown269_metadata != true", jobs["inspect"]["if"])
-        self.assertIn("inputs.run_crown269_metadata != true", jobs["stage-reviewed-dev-migrations"]["if"])
+        self.assertIn("inputs.confirm_dev_support == 'crown269-reference-metadata-only'", clause)
+        self.assertIn("inputs.confirm_dev_support != 'crown269-reference-metadata-only'", jobs["inspect"]["if"])
+        self.assertIn("inputs.confirm_dev_support != 'crown269-reference-metadata-only'", jobs["stage-reviewed-dev-migrations"]["if"])
         self.assertEqual(check["environment"], "dev")
         self.assertEqual(check["permissions"]["id-token"], "write")
         script = "\n".join(step.get("run", "") for step in check["steps"])
@@ -186,7 +186,7 @@ class MetadataReadOnlyTests(unittest.TestCase):
             'test "$APPLY_BLACKLIST" = false',
             'test "$COMPARE_BASELINE" = false',
             'test "$INSPECT_MIGRATIONS" = false',
-            'test -z "$CONFIRM_SUPPORT"',
+            'test "$CONFIRM_SUPPORT" = crown269-reference-metadata-only',
             'test -z "$CONFIRM_LEGACY"',
             'test -z "$CONFIRM_BLACKLIST"',
             'test -z "$DEV_RECOVERY_RECEIPT"',
@@ -201,8 +201,10 @@ class MetadataReadOnlyTests(unittest.TestCase):
         import yaml
         data = yaml.load(WF.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
         inputs = data["on"]["workflow_dispatch"]["inputs"]
-        self.assertEqual(inputs["run_crown269_metadata"]["type"], "boolean")
-        self.assertEqual(inputs["run_crown269_metadata"]["default"], "false")
+        self.assertEqual(len(inputs), 10)
+        self.assertEqual(inputs["confirm_dev_support"]["type"], "string")
+        self.assertEqual(inputs["confirm_dev_support"]["default"], "")
+        self.assertIn("crown269-reference-metadata-only", inputs["confirm_dev_support"]["description"])
         self.assertEqual(data["jobs"]["two-fixed-reference-gets"]["permissions"]["id-token"], "write")
 
     def test_cli_failure_does_not_echo_output(self):
