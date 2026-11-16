@@ -78,18 +78,11 @@ def _audit(review, actor, kind):
 
 def _existing_or_new(model, school, actor, kind, values):
     """One idempotent decision and one audit, or a conflict without partial writes."""
-    previous = None
-    if values.get("supersedes_id"):
-        previous = model.objects.select_for_update().filter(
-            pk=values["supersedes_id"], school=school,
-        ).first()
-        if previous is None:
-            raise ValidationError({"supersedes_id": "Review to supersede was not found."})
-        if model.objects.filter(supersedes=previous).exists():
-            raise SafetyReviewConflict("This review was already superseded.")
     existing = model.objects.filter(school=school, request_key=values["request_key"]).first()
     if existing is not None:
         for key, value in values.items():
+            if key == "reviewed_at":
+                continue  # server-generated on first commit; never a client input
             if getattr(existing, key) != value:
                 raise SafetyReviewConflict("Request key is already used for another review.")
         if existing.reviewed_by_id != actor.pk:
@@ -102,6 +95,14 @@ def _existing_or_new(model, school, actor, kind, values):
         ).exists():
             raise SafetyReviewConflict("Existing review lacks an attributable audit event.")
         return existing, False
+    if values.get("supersedes_id"):
+        previous = model.objects.select_for_update().filter(
+            pk=values["supersedes_id"], school=school,
+        ).first()
+        if previous is None:
+            raise ValidationError({"supersedes_id": "Review to supersede was not found."})
+        if model.objects.filter(supersedes=previous).exists():
+            raise SafetyReviewConflict("This review was already superseded.")
     values = {**values, "school": school, "reviewed_by": actor}
     try:
         review = model.objects.create(**values)
