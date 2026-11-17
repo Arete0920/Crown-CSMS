@@ -13,15 +13,60 @@ from pathlib import Path
 import re
 
 from read_dev_blacklist_state import (
-    CA_FILE, EvidenceBlocked, SAFE_CONFIGURATION_REASONS,
+    CA_FILE, EvidenceBlocked, SAFE_CONFIGURATION_REASONS, RESOURCE_GROUP,
     read_dev_database_setting, verify_accepted_source,
 )
-from run_dev_inquiry_migration import Blocked, DEV_APP, DEV_HOST, validate_database_url
+from run_dev_inquiry_migration import Blocked, DEV_APP, DEV_HOST, read_azure, validate_database_url
 
 HERITAGE_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
 HERITAGE_NAME = "Heritage Christian Academy"
 BUYER_NAME = "Heritage Christian Academy - Fictional Buyer Workspace"
 MAX_SCHOOLS = 1000
+
+DEMO_FLAG_NAMES = (
+    "CROWN_SANDBOX_ALLOW_OPEN_SESSION",
+    "CROWN_HOSTED_JIREH_DEMO_ENABLED",
+)
+DEMO_FLAG_FILTER = (
+    "[?name=='CROWN_SANDBOX_ALLOW_OPEN_SESSION' || "
+    "name=='CROWN_HOSTED_JIREH_DEMO_ENABLED'].{name:name,value:value}"
+)
+
+
+def read_demo_flag_markers(*, read=read_azure):
+    """Read only two DEV App Service markers; never emit secrets or raw errors.
+
+    The caller verifies the exact Azure DEV app identity first. A value is
+    confirmed only when it is a literal boolean; absent, duplicate, Key Vault
+    reference or unexpected values are UNVERIFIED, not guessed false.
+    """
+    result = {key: "UNVERIFIED" for key in DEMO_FLAG_NAMES}
+    try:
+        rows = read(
+            "webapp", "config", "appsettings", "list",
+            "--resource-group", RESOURCE_GROUP, "--name", DEV_APP,
+            "--query", DEMO_FLAG_FILTER,
+        )
+    except Exception:
+        return result
+    if not isinstance(rows, list):
+        return result
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            return {key: "UNVERIFIED" for key in DEMO_FLAG_NAMES}
+        key = row.get("name")
+        if key not in result:
+            continue
+        if key in seen:
+            result[key] = "UNVERIFIED"
+            continue
+        seen.add(key)
+        raw = row.get("value")
+        if isinstance(raw, str) and raw.strip().lower() in ("true", "false"):
+            result[key] = raw.strip().lower()
+    return result
+
 
 # Explicit table/model identity: core Family/Student != portal Household/Student.
 # Query is fixed and schema-qualified; no untrusted value is interpolated.
@@ -144,6 +189,7 @@ def main(argv=None):
         verify_accepted_source(args.expected_sha)
         stage = "dev_configuration"
         database_url, name = read_dev_database_setting()
+        packet["dev_demo_appsettings"] = read_demo_flag_markers()
         stage = "database_read_only"
         packet.update(inspect_database(database_url, name, args.expected_sha))
         packet["status"] = "COLLECTED"

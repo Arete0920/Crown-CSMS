@@ -152,12 +152,12 @@ jobs:
       - name: Install PostgreSQL client
         run: python -m pip install 'psycopg[binary]==3.3.6'
       - name: Verify census evidence boundary (offline)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
-      - name: Collect DEV school counts (read-only, protected main push)
-        if: github.event_name == 'push'
+      - name: Collect DEV school counts (read-only, protected main)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
-          SHA: ${{ github.sha }}
+          SHA: ${{ inputs.expected_sha || github.sha }}
         run: |
           set -euo pipefail
           umask 077
@@ -167,7 +167,7 @@ jobs:
           # even when artifact downloads are unavailable to the operator.
           cat dev-school-census.json
       - name: Retain sanitized school count evidence
-        if: always() && github.event_name == 'push' && hashFiles('dev-school-census.json') != ''
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && hashFiles('dev-school-census.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dev-school-census-${{ github.run_id }}
@@ -175,7 +175,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
       - name: Discard local school count evidence
-        if: always() && github.event_name == 'push'
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         run: rm -f dev-school-census.json
       - name: Collect DEV schema (read-only)
         env:
