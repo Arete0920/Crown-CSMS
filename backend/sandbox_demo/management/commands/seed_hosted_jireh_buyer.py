@@ -130,19 +130,7 @@ class Command(BaseCommand):
                 end_date=date(2027, 6, 30),
                 is_current=True,
             )
-            # This is a fictitious funding envelope, not a disbursement or award.
-            # Five bucket rows let the real policy/approval engine run without
-            # granting access to real schools or a payment provider.
-            AidPolicy.objects.create(school=workspace.school, academic_year=year)
-            for bucket, _label in AidBudgetTracker.BUCKET_CHOICES:
-                AidBudgetTracker.objects.create(
-                    school=workspace.school, academic_year=year,
-                    bucket=bucket, allocated_cents=2_000_000, awarded_cents=0,
-                )
-            ChartAccount.objects.create(
-                school=workspace.school, code="AID",
-                name="Fictional Institutional Aid Credits", account_type="INCOME",
-            )
+            _seed_fictional_aid_policy(workspace.school, year, workspace=workspace)
             family = Family.objects.create(
                 school=workspace.school, family_name="Fictional Buyer Household",
             )
@@ -215,3 +203,34 @@ class Command(BaseCommand):
             "fictional aid policy and noncash AID chart, school-bound officer role, "
             "two independent external partners and programs; release_certified=false"
         )
+
+
+@transaction.atomic
+def _seed_fictional_aid_policy(school, year, *, workspace=None):
+    if workspace is None:
+        from sandbox_demo.universal_demo import _owned_school
+        from sandbox_demo.universal_runtime import require_presenter_runtime
+        require_presenter_runtime()
+        owned = _owned_school()
+        if owned is None or owned.pk != school.pk:
+            raise CommandError("Owned fictional presenter required.")
+    else:
+        _require_existing_dev_runtime(workspace.source_sha)
+        _validate_invite(workspace.invite)
+        if workspace.school_id != school.pk or not workspace.invite.is_usable():
+            raise CommandError("Authorized fictional workspace required.")
+    if year.school_id != school.pk or not school.is_active or AidPolicy.objects.filter(school=school).exists() or AidBudgetTracker.objects.filter(school=school).exists() or ChartAccount.objects.filter(school=school, code="AID").exists():
+        raise CommandError("Empty same-school fictional aid configuration required.")
+    # This is a fictitious funding envelope, not a disbursement or award.
+    # Five bucket rows let the real policy/approval engine run without
+    # granting access to real schools or a payment provider.
+    AidPolicy.objects.create(school=school, academic_year=year)
+    for bucket, _label in AidBudgetTracker.BUCKET_CHOICES:
+        AidBudgetTracker.objects.create(
+            school=school, academic_year=year,
+            bucket=bucket, allocated_cents=2_000_000, awarded_cents=0,
+        )
+    ChartAccount.objects.create(
+        school=school, code="AID",
+        name="Fictional Institutional Aid Credits", account_type="INCOME",
+    )

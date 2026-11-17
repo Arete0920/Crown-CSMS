@@ -9,6 +9,8 @@ import ParentJourneyOverviewPage from "../features/parentJourney/ParentJourneyOv
 import CrownDashboardShell from "../components/crown-dashboard/CrownDashboardShell.jsx";
 import { getDashboardTemplate } from "../config/dashboardTemplates/index.js";
 
+import { isUniversalPresenterSchool } from "../utils/universalPresenterScope";
+
 const ENDPOINT = "/api/v1/aid/family/demo-intake/";
 // Shared token-change event added by the separate Diadem auth-hardening PR.
 // This listener is compatible with that PR and does not modify shared auth code.
@@ -32,7 +34,8 @@ function errorMessage(error) {
 }
 
 function FictionalFinancialAidPage({ hosted = false }) {
-  const endpoint = hosted ? "/api/v1/buyer-demo/jireh/aid/family/" : ENDPOINT;
+  const presenter = isUniversalPresenterSchool();
+  const endpoint = presenter ? "/api/v1/presenter/jireh/aid/family/" : hosted ? "/api/v1/buyer-demo/jireh/aid/family/" : ENDPOINT;
   const parentShell = getDashboardTemplate("parent");
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -386,10 +389,11 @@ function FictionalFinancialAidPage({ hosted = false }) {
   );
 }
 
-// Both fictional experiences require an explicit build option; backend
-// runtime, invitation and guardian checks remain the authorization boundary.
+// The owned presenter uses its dedicated realm. Backend runtime, tenant and
+// guardian checks remain the authorization boundary for every request.
 export default function ParentFinancialAidPreparationPage() {
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
   const hosted = !local && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
-  return local || hosted ? <FictionalFinancialAidPage hosted={hosted} /> : <ParentJourneyOverviewPage focus="aid" />;
+  const presenter = isUniversalPresenterSchool();
+  return local || hosted || presenter ? <FictionalFinancialAidPage hosted={hosted || presenter} /> : <ParentJourneyOverviewPage focus="aid" />;
 }

@@ -174,6 +174,9 @@ CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 # API additionally verifies both local runtime markers and absence of Azure markers.
 CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
 CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
+CROWN_UNIVERSAL_PRESENTER_ENABLED = _env_bool("CROWN_UNIVERSAL_PRESENTER_ENABLED", default=False)
+CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA", "")
+CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME", "")
 _assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
 
 # Tenant header enforcement
@@ -903,6 +906,10 @@ LOGGING.setdefault("loggers", {})["crown.request"] = {
 }
 
 # Sandbox demo access configuration
+# November 16 owner decision: hosted public buyer invitations and one-click
+# sessions are retired. Hard-coded, not environment-configurable. Only isolated
+# regression tests may override this setting; the staff presenter uses /login.
+CROWN_SALES_CONTROLLED_DEMO_ONLY = True
 CROWN_SANDBOX_ALLOW_OPEN_SESSION = _env_bool("CROWN_SANDBOX_ALLOW_OPEN_SESSION", default=DEBUG)
 CROWN_SANDBOX_ACCESS_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_ACCESS_TTL_SECONDS", "7200"))
 CROWN_SANDBOX_REFRESH_TTL_SECONDS = int(os.getenv("CROWN_SANDBOX_REFRESH_TTL_SECONDS", "43200"))

@@ -24,12 +24,12 @@ describe('React Router security dependency contract', () => {
     expect(manifest.dependencies).not.toHaveProperty(forbiddenPackage);
     expect(manifest.dependencies.react).toBe('19.3.1');
     expect(manifest.dependencies['react-dom']).toBe('19.3.1');
-    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.27.0');
-    expect(manifest.dependencies['@azure/msal-react']).toBe('5.7.4');
+    expect(manifest.dependencies['@azure/msal-browser']).toBe('5.29.1');
+    expect(manifest.dependencies['@azure/msal-react']).toBe('5.8.2');
     expect(manifest.overrides.postcss).toBe('8.5.23');
     expect(lockfile.packages['node_modules/react-router'].version).toBe('8.5.1');
-    expect(lockfile.packages['node_modules/@azure/msal-browser'].version).toBe('5.27.0');
-    expect(lockfile.packages['node_modules/@azure/msal-react'].version).toBe('5.7.4');
+    expect(lockfile.packages['node_modules/@azure/msal-browser'].version).toBe('5.29.1');
+    expect(lockfile.packages['node_modules/@azure/msal-react'].version).toBe('5.8.2');
     expect(lockfile.packages).not.toHaveProperty(`node_modules/${forbiddenPackage}`);
     expect(lockfile.packages['node_modules/postcss'].version).toBe('8.5.23');
   });

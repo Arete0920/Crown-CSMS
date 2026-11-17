@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import { authenticatedFetch, clearBrowserAuthState, getAccessToken } from "../utils/authClient.js";
+import { isUniversalPresenterSchool } from "../utils/universalPresenterScope";
+const presenterDemo = isUniversalPresenterSchool;
 const hostedDemo = () => import.meta.env.VITE_LOCAL_DEMO !== "1" && import.meta.env.VITE_HOSTED_JIREH_DEMO === "1";
 const grades = ["K", ...Array.from({ length: 12 }, (_, i) => String(i + 1))];
 const reasons = [
@@ -14,9 +16,10 @@ const card = {
 };
 async function sgoRequest(path, { method = "GET", data } = {}) {
   const hosted = hostedDemo();
-  const base = hosted ? "/api/v1/buyer-demo/jireh/sgo" : "/api/v1/jireh-sgo";
+  const presenter = presenterDemo();
+  const base = presenter ? "/api/v1/presenter/jireh/sgo" : hosted ? "/api/v1/buyer-demo/jireh/sgo" : "/api/v1/jireh-sgo";
   const response = await authenticatedFetch(base + path, {
-    method, omitSchoolContext: !hosted, cache: "no-store",
+    method, omitSchoolContext: !hosted && !presenter, cache: "no-store",
     ...(data === undefined ? {} : {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -28,7 +31,8 @@ export default function JirehSGOIntakePage() {
   const token = getAccessToken();
   const local = import.meta.env.VITE_LOCAL_DEMO === "1";
   const hosted = hostedDemo();
-  const enabled = local || hosted;
+  const presenter = presenterDemo();
+  const enabled = local || hosted || presenter;
   const [loadedToken, setLoadedToken] = useState(null);
   const [families, setFamilies] = useState([]), [processors, setProcessors] = useState([]);
   const [familyProgram, setFamilyProgram] = useState("");
@@ -63,7 +67,7 @@ export default function JirehSGOIntakePage() {
         if (item.status === "fulfilled") return item.value;
         // Hosted family and processor personas have separate API permissions.
         // Only a role-specific 404 can be empty; revocation/network errors deny.
-        if (!hosted || item.reason?.status !== 404) throw item.reason;
+        if (!(hosted || presenter) || item.reason?.status !== 404) throw item.reason;
         return { programs: [], synthetic_only: true, funds_status: "NONCASH_ONLY",
           ...(index === 1 ? { authority: "PROCESSOR_VERIFICATION_ONLY" } : {}) };
       });
@@ -82,7 +86,7 @@ export default function JirehSGOIntakePage() {
       if (live) setError("Fictional partner-program access could not be verified.");
     });
     return () => { live = false; };
-  }, [token, enabled, hosted]);
+  }, [token, enabled, hosted, presenter]);
   const family = families.find((item) => item.id === familyProgram);
   const processor = processors.find((item) => item.id === processorProgram);
   const authorized = !!token && enabled && loadedToken === token;

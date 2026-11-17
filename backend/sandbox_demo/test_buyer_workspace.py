@@ -31,6 +31,7 @@ SHA = "a" * 40
     BUILD_SHA=SHA,
     ALLOWED_HOSTS=["testserver"],
     CROWN_SANDBOX_ALLOW_OPEN_SESSION=False,
+    CROWN_SALES_CONTROLLED_DEMO_ONLY=False,  # Retired path: legacy security contract only.
 )
 class HostedBuyerWorkspaceContract(TestCase):
     def make_invite(self, *, roles=None, expiry=None):

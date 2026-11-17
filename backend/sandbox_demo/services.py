@@ -297,7 +297,51 @@ def _clear_flagship_data(school: School) -> None:
 
 @transaction.atomic
 def seed_heritage_flagship(*, reset: bool = False) -> dict:
-    school_spec = SANDBOX_SCHOOLS["heritage-core"]
+    return seed_fictional_school(
+        school_spec=SANDBOX_SCHOOLS["heritage-core"],
+        personas={key: SANDBOX_PERSONAS[key] for key in DEFAULT_SANDBOX_INVITE_ROLES},
+        reset=reset,
+    )
+
+
+_PRESENTER_BOOTSTRAP_CAPABILITY = object()
+
+
+@transaction.atomic
+def seed_fictional_school(*, school_spec: SandboxSchool,
+                         personas: dict[str, SandboxPersona], reset: bool = False,
+                         _presenter_bootstrap_capability=None,
+                         _presenter_rebuild=False) -> dict:
+    """Shared synthetic generator; callers own environment/provenance guards.
+
+    Tenant identity and principal names are explicit inputs. Never replace the
+    global Heritage catalog to seed another school.
+    """
+    from .universal_identity import UNIVERSAL_SCHOOL, generation_school, generation_number
+
+    try:
+        presenter_spec = school_spec == generation_school(generation_number(school_spec.id))
+    except ValueError:
+        presenter_spec = False
+    if school_spec != SANDBOX_SCHOOLS["heritage-core"] and not presenter_spec:
+        raise RuntimeError("Fictional generator refuses an unregistered school identity.")
+    if presenter_spec:
+        # The generic helper is importable. It cannot bypass the presenter's
+        # environment/provenance checks or its separately reviewed reset path.
+        from .universal_demo import _owned_school
+        from .universal_runtime import require_presenter_runtime
+        require_presenter_runtime()
+        if reset:
+            raise RuntimeError("Use the controlled presenter reset command.")
+        if _presenter_bootstrap_capability is not _PRESENTER_BOOTSTRAP_CAPABILITY:
+            raise RuntimeError("Presenter initialization requires the guarded presenter command.")
+        owned = _owned_school()
+        if (owned is None and school_spec != UNIVERSAL_SCHOOL) or (owned is not None and str(owned.pk) != school_spec.id):
+            raise RuntimeError("Fictional generator requires the current owned presenter generation.")
+        if owned is not None and not _presenter_rebuild:
+            raise RuntimeError("Presenter already exists; direct reseed would invalidate credentials or audit history.")
+        if owned is not None and _presenter_rebuild and UserAccount.objects.filter(school=owned).exists():
+            raise RuntimeError("Presenter rebuild requires a cleared principal inventory; existing logins are preserved.")
     school = ensure_demo_school(school_spec)
 
     if reset:
@@ -454,12 +498,11 @@ def seed_heritage_flagship(*, reset: bool = False) -> dict:
             )
             student_index += 1
 
-    for persona_key in DEFAULT_SANDBOX_INVITE_ROLES:
-        persona = SANDBOX_PERSONAS[persona_key]
+    for persona in personas.values():
         ensure_persona_user(school, persona)
 
     parent_user = UserAccount.objects.filter(
-        username="parent.reed@heritage.example.org", school=school
+        username=personas["parent"].email, school=school
     ).first()
     if parent_user:
         for n in range(1, 13):
@@ -582,6 +625,27 @@ def seed_local_heritage_camp() -> dict[str, int]:
     if camper.school_id != school.id or camper.household.school_id != school.id:
         raise RuntimeError("Fictional Camp camper and household have inconsistent school scope.")
 
+    return _seed_fictional_camp(school, camper)
+
+
+@transaction.atomic
+def _seed_fictional_camp(school, camper, *, workspace=None):
+    """Reuse Camp records in authorized local or invite-owned fictional schools."""
+    from datetime import time, timedelta
+    from django.utils import timezone
+    from subscriptions.models import SchoolModule
+    from summer_camp.models import SummerCampEnrollment, SummerCampProgram, SummerCampSession
+    from summer_camp.services import camp_school_local_date
+    if str(school.pk) == str(SANDBOX_SCHOOLS["heritage-core"].id):
+        from sandbox_demo.management.commands.five_module_demo_preflight import _require_isolated_local_database
+        _require_isolated_local_database()
+        if not getattr(settings, "CROWN_SANDBOX_ALLOW_OPEN_SESSION", False) or school.name != SANDBOX_SCHOOLS["heritage-core"].name:
+            raise RuntimeError("Canonical local Heritage Camp authority required.")
+    else:
+        from .fictional_care import require_fictional_care_scope
+        require_fictional_care_scope(school, workspace)
+    if not school.is_active or camper.school_id != school.pk or camper.household.school_id != school.pk:
+        raise RuntimeError("Fictional Camp camper requires an active same-school household.")
     camp_module, _ = SchoolModule.objects.get_or_create(
         school=school, module_key="little_lambs",
         defaults={"status": "active", "expiry_date": timezone.now() + timedelta(days=365)},

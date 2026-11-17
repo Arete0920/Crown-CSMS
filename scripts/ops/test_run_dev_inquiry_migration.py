@@ -275,8 +275,8 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 return_value=(URL, "synthetic-secret", "crown", False)), patch.object(migration, "migrate_on_dev",
                 side_effect=lambda *args, **kwargs: self._execute([plan])), contextlib.redirect_stdout(output):
             self.assertEqual(migration.main(["--expected-sha", SHA]), 1)
-        # Masking commands are consumed by GitHub; only the final line is structured evidence.
-        evidence_line = output.getvalue().splitlines()[-1]
+        # The entire stdout stream must remain structured evidence.
+        evidence_line = output.getvalue()
         evidence = json.loads(evidence_line)
         self.assertEqual(evidence["reason"], "unreviewed_pending_migrations")
         self.assertEqual(evidence["source_sha"], SHA)
@@ -299,6 +299,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         # Offline synthetic regression: local CLI must emit only redacted JSON.
         for actions in ("", "false", "TRUE"):
             output = io.StringIO()
+            commands = io.StringIO()
             with patch.dict(os.environ, {"GITHUB_ACTIONS": actions}), patch.object(
                 migration, "validate_source"
             ), patch.object(
@@ -306,19 +307,18 @@ class DevMigrationBoundaryTests(unittest.TestCase):
                 return_value=(URL, "synthetic-secret", "crown", False)
             ), patch.object(
                 migration, "migrate_on_dev", return_value=[]
-            ), contextlib.redirect_stdout(output):
+            ), contextlib.redirect_stdout(output), contextlib.redirect_stderr(commands):
                 self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
-            lines = output.getvalue().splitlines()
-            self.assertEqual(json.loads(lines[-1])["status"], "PASS")
+            self.assertEqual(json.loads(output.getvalue())["status"], "PASS")
+            self.assertNotIn(URL, output.getvalue())
+            self.assertNotIn("synthetic-secret", output.getvalue())
             if actions.strip().lower() == "true":
-                self.assertEqual(lines[:-1], [
+                self.assertEqual(commands.getvalue().splitlines(), [
                     "::add-mask::" + URL.replace("%", "%25"),
                     "::add-mask::synthetic-secret",
                 ])
             else:
-                self.assertEqual(len(lines), 1)
-                self.assertNotIn(URL, output.getvalue())
-                self.assertNotIn("synthetic-secret", output.getvalue())
+                self.assertEqual(commands.getvalue(), "")
 
     def test_read_only_preflight_never_invokes_migration_or_ddl(self):
         item = SimpleNamespace(app_label="crm_marketing", name="0002_inquiry_capture")
@@ -340,7 +340,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         ), patch.object(migration, "migrate_on_dev", return_value=[]) as called, contextlib.redirect_stdout(output):
             self.assertEqual(migration.main(["--expected-sha", SHA, "--check-only"]), 0)
         called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA, check_only=True)
-        evidence = json.loads(output.getvalue().splitlines()[-1])
+        evidence = json.loads(output.getvalue())
         self.assertEqual(evidence["status"], "PASS")
         self.assertEqual(evidence["mode"], "read_only")
         self.assertEqual(evidence["reviewed_pending_migrations"], [])
@@ -396,7 +396,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             )
         called.assert_called_once_with(URL, "synthetic-secret", "crown", SHA,
                                        apply_blacklist=True)
-        self.assertEqual(json.loads(output.getvalue().splitlines()[-1])["mode"],
+        self.assertEqual(json.loads(output.getvalue())["mode"],
                          "reviewed_dev_blacklist")
         for args in [
             ["--apply-reviewed-blacklist"],
@@ -435,7 +435,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             validate.assert_called_once_with(SHA, reviewed_legacy=True)
             load.assert_called_once_with(legacy_stage=True)
             invoked.assert_called_once_with(URL, "synthetic-secret", "crown", SHA, **kwargs)
-            self.assertEqual(json.loads(output.getvalue().splitlines()[-1])["mode"], expected_mode)
+            self.assertEqual(json.loads(output.getvalue())["mode"], expected_mode)
         for flags in (
             ["--apply-reviewed-legacy-refresh"],
             ["--confirm-dev-legacy-refresh", "migrate-dev-legacy-refresh"],
@@ -546,7 +546,9 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         self.assertEqual(job["environment"], "dev")
         steps = job["steps"]
         source = next(i for i, step in enumerate(steps) if step.get("name") == "Verify accepted DEV source")
-        gate = next(i for i, step in enumerate(steps) if "run_dev_inquiry_migration.py --expected-sha" in step.get("run", ""))
+        gate = next(i for i, step in enumerate(steps) if step.get("name") == "Verify zero pending DEV migrations using read-only PostgreSQL connection")
+        self.assertIn("--inspect-all-migrations", steps[gate]["run"])
+        self.assertNotIn("--apply-reviewed", steps[gate]["run"])
         self.assertIn("git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main", steps[source]["run"])
         source_script = steps[source]["run"]
         self.assertIn('CURRENT_MAIN_SHA="$(git rev-parse refs/remotes/origin/main)"', source_script)
@@ -574,18 +576,37 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         names = [step.get("name") for step in steps]
         for mutation, check in (
             ("Build and push Docker image", "DEV image push"),
-            ("Apply only reviewed DEV inquiry migration before deployment", "DEV migration"),
+            ("Verify zero pending DEV migrations using read-only PostgreSQL connection", "DEV migration"),
             ("Apply appsettings (allowlisted only)", "DEV appsettings"),
             ("Deploy to Azure Web App (managed identity pull)", "DEV container deployment"),
         ):
             index = names.index(mutation)
-            self.assertEqual(names[index - 1], "Reverify protected main before " + check)
-            self.assertEqual(steps[index - 1]["env"]["EXPECTED_DEV_SHA"],
+            guard_index = names.index("Reverify protected main before " + check)
+            if mutation == "Apply appsettings (allowlisted only)":
+                self.assertEqual(
+                    names[guard_index + 1:index],
+                    [
+                        "Capture current healthy immutable DEV release before automatic mutation",
+                        "Mark automatic release mutation boundary",
+                    ],
+                )
+                self.assertIn("inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true",
+                              steps[guard_index + 1]["if"])
+                self.assertIn("inputs.apply_reviewed_heritage24 != true && inputs.apply_finance_setup_0003 != true",
+                              steps[guard_index + 2]["if"])
+                self.assertIn("dev_release_rollback.py capture",
+                              steps[guard_index + 1]["run"])
+                self.assertIn("crown-dev-auto-mutation-attempted",
+                              steps[guard_index + 2]["run"])
+            else:
+                self.assertEqual(guard_index, index - 1)
+            self.assertLess(guard_index, index)
+            self.assertEqual(steps[guard_index]["env"]["EXPECTED_DEV_SHA"],
                              "$" + "{{ steps.vars.outputs.deploy_sha }}")
             self.assertIn('"$(git rev-parse refs/remotes/origin/main)" != "$EXPECTED_DEV_SHA"',
-                          steps[index - 1]["run"])
-            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
-            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[index - 1]["run"])
+                          steps[guard_index]["run"])
+            self.assertIn('"$GITHUB_SHA" != "$EXPECTED_DEV_SHA"', steps[guard_index]["run"])
+            self.assertIn('"$(git rev-parse HEAD)" != "$EXPECTED_DEV_SHA"', steps[guard_index]["run"])
 
 
     def test_inventory_plan_is_observation_only_and_normal_apply_still_rejects_diadem(self):
@@ -616,7 +637,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
         pending = ["aftercare.0012_diadem_visit_reentry_foundation",
                    "aftercare.0013_daycare_setup_proposals"]
         # Explicitly exercise ordinary terminal output. In GitHub Actions
-        # the helper must emit ::add-mask:: directives before redacted JSON;
+        # the helper must emit ::add-mask:: directives on stderr before JSON;
         # those commands are expected to contain the values being masked.
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "false"}), patch.object(
             migration, "validate_source"
@@ -632,7 +653,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             URL, "synthetic-secret", "crown", SHA, check_only=True, inventory_only=True,
             hosted_blacklist_enabled=False,
         )
-        packet = json.loads(output.getvalue().splitlines()[-1])
+        packet = json.loads(output.getvalue())
         self.assertEqual(packet["status"], "COLLECTED")
         self.assertEqual(packet["mode"], "inventory_all_read_only")
         self.assertEqual(packet["pending_migrations"], pending)
@@ -655,6 +676,7 @@ class DevMigrationBoundaryTests(unittest.TestCase):
 
     def test_inventory_actions_output_masks_only_commands_and_not_evidence(self):
         output = io.StringIO()
+        commands = io.StringIO()
         with patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), patch.object(
             migration, "validate_source"
         ), patch.object(
@@ -662,18 +684,54 @@ class DevMigrationBoundaryTests(unittest.TestCase):
             return_value=(URL, "synthetic-secret", "crown", False)
         ), patch.object(
             migration, "migrate_on_dev", return_value=[]
-        ), contextlib.redirect_stdout(output):
+        ), contextlib.redirect_stdout(output), contextlib.redirect_stderr(commands):
             self.assertEqual(
                 migration.main(["--expected-sha", SHA, "--inspect-all-migrations"]), 0
             )
-        lines = output.getvalue().splitlines()
-        self.assertEqual(lines[:2], ["::add-mask::" + URL, "::add-mask::synthetic-secret"])
-        packet = json.loads(lines[-1])
+        self.assertEqual(commands.getvalue().splitlines(), ["::add-mask::" + URL, "::add-mask::synthetic-secret"])
+        packet = json.loads(output.getvalue())
         self.assertEqual(packet["mode"], "inventory_all_read_only")
         self.assertEqual(packet["pending_migrations"], [])
-        self.assertNotIn(URL, lines[-1])
-        self.assertNotIn("synthetic-secret", lines[-1])
-        self.assertNotIn("private-password", lines[-1])
+        self.assertNotIn(URL, output.getvalue())
+        self.assertNotIn("synthetic-secret", output.getvalue())
+        self.assertNotIn("private-password", output.getvalue())
+
+    def test_actions_stream_contract_preserves_all_authorized_modes(self):
+        secret = "synthetic%secret"
+        url = URL.replace("private-password", "private%25password")
+        expected_commands = "::add-mask::" + url.replace("%", "%25") + "\n::add-mask::synthetic%25secret\n"
+        cases = (
+            ([], "migrate", []),
+            (["--check-only"], "read_only", []),
+            (["--inspect-all-migrations"], "inventory_all_read_only", []),
+            (["--apply-reviewed-blacklist", "--confirm-dev-blacklist", "migrate-dev-blacklist"],
+             "reviewed_dev_blacklist", []),
+            (["--inspect-reviewed-legacy-refresh"], "reviewed_dev_legacy_inspect", []),
+            (["--apply-reviewed-legacy-refresh", "--confirm-dev-legacy-refresh", "migrate-dev-legacy-refresh"],
+             "reviewed_dev_legacy_apply", []),
+            (["--apply-reviewed-support", "--confirm-dev-support", "migrate-dev-support"],
+             "reviewed_dev_support", {"applied": [], "remaining": []}),
+        )
+        for flags, mode, applied in cases:
+            output, commands = io.StringIO(), io.StringIO()
+
+            def run(*args, **kwargs):
+                self.assertEqual(commands.getvalue(), expected_commands)
+                # Incidental dependency output must still be suppressed.
+                print(url)
+                print(secret, file=migration.sys.stderr)
+                return applied
+
+            with self.subTest(mode=mode), patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+                 patch.object(migration, "validate_source"), patch.object(
+                     migration, "load_dev_settings", return_value=(url, secret, "crown", False)
+                 ), patch.object(migration, "migrate_on_dev", side_effect=run), \
+                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(commands):
+                self.assertEqual(migration.main(["--expected-sha", SHA, *flags]), 0)
+            self.assertEqual(json.loads(output.getvalue())["mode"], mode)
+            self.assertEqual(commands.getvalue(), expected_commands)
+            for sensitive in (url, secret, "private", "::add-mask::"):
+                self.assertNotIn(sensitive, output.getvalue())
 
     def test_inventory_preserves_hosted_blacklist_setting_without_database_access(self):
         def stopped():
