@@ -52,6 +52,37 @@ class DeployOnlyBoundaryTests(unittest.TestCase):
         self.assertIn(': <FinanceDashboard />', router)
         self.assertIn(': <AdmissionsPipelineList />', router)
 
+    def test_retired_full_dev_certification_fails_before_azure_or_fixtures(self):
+        """DEV deployment cannot reach retired buyer-invitation certification."""
+        name = 'Reject retired DEV full certification mode'
+        self.assertTrue(DEV.split('    steps:\n', 1)[1].startswith('      - name: ' + name + '\n'))
+        guard = step(name)
+        self.assertIn('shell: bash', guard)
+        self.assertIn('DEPLOY_ONLY: ${{ toJSON(inputs.dev_deploy_only) }}', guard)
+        self.assertIn('set -euo pipefail', guard)
+        for later in (
+            'Validate pinned DEV source',
+            'Authenticate existing Azure DEV deployment identity',
+            'Deploy preview on existing SWA only',
+            'Configure exact owned DEV preview origin',
+            'Execute existing buyer persistence journeys on DEV',
+            'Prepare two synthetic DEV tenants using existing models',
+        ):
+            with self.subTest(later=later):
+                self.assertLess(DEV.index('      - name: ' + name),
+                                DEV.index('      - name: ' + later))
+        shell = textwrap.dedent(guard.split('run: |\n', 1)[1])
+        for value, allowed in [('true', True), ('false', False), ('null', False), ('', False)]:
+            with self.subTest(value=value):
+                result = subprocess.run(
+                    ['bash', '-c', shell],
+                    env=dict(os.environ, DEPLOY_ONLY=value),
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(result.returncode == 0, allowed)
+                if not allowed:
+                    self.assertIn('Retired DEV buyer-invitation', result.stdout)
+
     def test_deploy_only_defaults_to_true(self):
         self.assertRegex(WORKFLOW, r'dev_deploy_only:\n[^\n]*\n        type: boolean\n        default: true')
 
