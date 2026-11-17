@@ -135,5 +135,78 @@ class CensusTests(unittest.TestCase):
         self.assertEqual(json.loads(out.getvalue())["stage"], "source")
 
 
+    def test_sanitized_readback_reports_only_literal_demo_booleans(self):
+        rows = [
+            {"name": "CROWN_SANDBOX_ALLOW_OPEN_SESSION", "value": "false"},
+            {"name": "CROWN_HOSTED_JIREH_DEMO_ENABLED", "value": "TRUE"},
+            {"name": "DATABASE_URL", "value": URL},
+        ]
+        read = Mock(return_value=rows)
+        result = subject.read_demo_flag_markers(read=read)
+        self.assertEqual(result, {
+            "CROWN_SANDBOX_ALLOW_OPEN_SESSION": "false",
+            "CROWN_HOSTED_JIREH_DEMO_ENABLED": "true",
+        })
+        self.assertEqual(read.call_args.args[:4],
+                         ("webapp", "config", "appsettings", "list"))
+        self.assertEqual(read.call_args.args[-2:],
+                         ("--query", subject.DEMO_FLAG_FILTER))
+        self.assertNotIn("private-password", json.dumps(result))
+        self.assertNotIn(URL, json.dumps(result))
+
+    def test_sanitized_readback_missing_secret_or_duplicate_is_unverified(self):
+        first, second = subject.DEMO_FLAG_NAMES
+        for rows in (
+            [],
+            [{"name": first, "value": "@Microsoft.KeyVault(SecretUri=https://private)"}],
+            [{"name": first, "value": "some private value"}],
+            [{"name": first, "value": "true"}, {"name": first, "value": "false"}],
+            [{"name": first, "value": "true"}, None],
+            {"wrong": "shape"}, None,
+        ):
+            with self.subTest(rows=rows):
+                evidence = subject.read_demo_flag_markers(read=lambda *args: rows)
+                self.assertEqual(evidence, {first: "UNVERIFIED", second: "UNVERIFIED"})
+                self.assertNotIn("private", json.dumps(evidence))
+
+    def test_sanitized_readback_azure_failure_never_emits_secret(self):
+        def forbidden(*args):
+            raise RuntimeError("subscription-secret-123")
+        evidence = subject.read_demo_flag_markers(read=forbidden)
+        self.assertEqual(evidence, {
+            key: "UNVERIFIED" for key in subject.DEMO_FLAG_NAMES
+        })
+        self.assertNotIn("subscription-secret-123", json.dumps(evidence))
+
+    def test_main_records_flag_evidence_after_dev_identity_check_only(self):
+        out = io.StringIO()
+        with patch.object(subject, "verify_accepted_source"), patch.object(
+            subject, "read_dev_database_setting", return_value=(URL, "crown"),
+        ), patch.object(subject, "read_demo_flag_markers", return_value={
+            "CROWN_SANDBOX_ALLOW_OPEN_SESSION": "false",
+            "CROWN_HOSTED_JIREH_DEMO_ENABLED": "UNVERIFIED",
+        }) as read_flags, patch.object(
+            subject, "inspect_database", return_value={"school_count": 0},
+        ), contextlib.redirect_stdout(out):
+            self.assertEqual(subject.main(["--expected-sha", SHA]), 0)
+        data = json.loads(out.getvalue())
+        self.assertEqual(data["dev_demo_appsettings"], {
+            "CROWN_SANDBOX_ALLOW_OPEN_SESSION": "false",
+            "CROWN_HOSTED_JIREH_DEMO_ENABLED": "UNVERIFIED",
+        })
+        read_flags.assert_called_once_with()
+
+    def test_main_never_reads_flags_if_dev_target_rejected(self):
+        out = io.StringIO()
+        with patch.object(subject, "verify_accepted_source"), patch.object(
+            subject, "read_dev_database_setting",
+            side_effect=subject.EvidenceBlocked("dev_app_identity_not_verified"),
+        ), patch.object(subject, "read_demo_flag_markers") as read_flags, contextlib.redirect_stdout(out):
+            self.assertEqual(subject.main(["--expected-sha", SHA]), 1)
+        read_flags.assert_not_called()
+        self.assertEqual(json.loads(out.getvalue())["status"], "BLOCKED")
+
+
+
 if __name__ == "__main__":
     unittest.main()
