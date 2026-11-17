@@ -2,10 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import JirehSGOIntakePage from "./JirehSGOIntakePage.jsx";
-import { authenticatedFetch, getAccessToken } from "../utils/authClient.js";
+import { authenticatedFetch, getAccessToken, getSelectedSchoolId } from "../utils/authClient.js";
 vi.mock("../utils/authClient.js", () => ({
   authenticatedFetch: vi.fn(),
   getAccessToken: vi.fn(),
+  getSelectedSchoolId: vi.fn(() => ""),
 }));
 vi.mock("../components/crown/CrownLayout.jsx", () => ({
   default: ({ children, title }) => <main aria-label={title}>{children}</main>,
@@ -247,4 +248,19 @@ describe("Hosted SGO refusal", () => {
     expect(screen.queryByRole("button", { name: "Submit fictional application" })).toBeNull();
     expect(screen.queryByLabelText("Partner SGO and program")).toBeNull();
   });
+});
+
+
+it("keeps tenant context on the reserved presenter realm in a normal build", async () => {
+  vi.stubEnv("VITE_LOCAL_DEMO", "0");
+  vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
+  getSelectedSchoolId.mockReturnValue("cd216908-b692-5fa7-997b-743f811f1ea9");
+  authenticatedFetch.mockImplementation(async (url) => {
+    if (url.endsWith("/processor/programs/")) throw Object.assign(new Error("Not found"), { status: 404 });
+    return response({ programs: [FAMILY], synthetic_only: true, funds_status: "NONCASH_ONLY" });
+  });
+  render(<JirehSGOIntakePage />);
+  await screen.findByLabelText("Partner SGO and program");
+  await waitFor(() => expect(authenticatedFetch).toHaveBeenCalledWith(
+    "/api/v1/presenter/jireh/sgo/family/programs/", expect.objectContaining({ omitSchoolContext: false })));
 });

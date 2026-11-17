@@ -7,6 +7,15 @@ on:
       - 'scripts/ops/reviewed_dev_support_migrations.py'
       - 'scripts/ops/test_reviewed_dev_support_migrations.py'
       - 'scripts/ops/run_dev_inquiry_migration.py'
+      - 'scripts/ops/read_dev_school_census.py'
+      - 'scripts/ops/test_read_dev_school_census.py'
+  # Protected-main push uses the existing OIDC-authenticated DEV read-only job.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dev-blacklist-database-inventory.yml'
+      - 'scripts/ops/read_dev_school_census.py'
+      - 'scripts/ops/test_read_dev_school_census.py'
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -85,6 +94,7 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_run_dev_inquiry_migration.py -v
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
+          python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
   inspect:
     if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
     runs-on: ubuntu-latest
@@ -96,11 +106,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.expected_sha }}
+          ref: ${{ inputs.expected_sha || github.sha }}
           fetch-depth: 0
       - name: Verify accepted main identity
         env:
-          SHA: ${{ inputs.expected_sha }}
+          SHA: ${{ inputs.expected_sha || github.sha }}
         run: |
           set -euo pipefail
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]
@@ -141,9 +151,35 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       - name: Install PostgreSQL client
         run: python -m pip install 'psycopg[binary]==3.3.6'
+      - name: Verify census evidence boundary (offline)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
+      - name: Collect DEV school counts (read-only, protected main)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          SHA: ${{ inputs.expected_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python scripts/ops/read_dev_school_census.py --expected-sha "$SHA" > dev-school-census.json
+          # The collector emits only sanitized aggregate counts, school hashes
+          # and fixed status fields, so the live result remains readable in CI
+          # even when artifact downloads are unavailable to the operator.
+          cat dev-school-census.json
+      - name: Retain sanitized school count evidence
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && hashFiles('dev-school-census.json') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dev-school-census-${{ github.run_id }}
+          path: dev-school-census.json
+          retention-days: 7
+          if-no-files-found: error
+      - name: Discard local school count evidence
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: rm -f dev-school-census.json
       - name: Collect DEV schema (read-only)
         env:
-          SHA: ${{ inputs.expected_sha }}
+          SHA: ${{ inputs.expected_sha || github.sha }}
         run: |
           set -euo pipefail
           umask 077

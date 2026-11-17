@@ -104,7 +104,7 @@ def _ensure_teacher_roster(school: School, section: Section) -> list[str]:
     grade = GradeLevel.objects.filter(school=school, code="5").first()
     student_ids = []
     for index, (first_name, last_name, student_number) in enumerate(DEMO_STUDENTS, start=1):
-        stable_id = uuid.uuid5(uuid.UUID(HERITAGE_SCHOOL_ID), student_number)
+        stable_id = uuid.uuid5(uuid.UUID(str(school.id)), student_number)
         household_student, _ = HouseholdStudent.objects.update_or_create(
             id=stable_id,
             defaults={
@@ -149,10 +149,11 @@ def _ensure_teacher_roster(school: School, section: Section) -> list[str]:
     return student_ids
 
 
-def seed_heritage_teacher_academics() -> dict:
+def seed_heritage_teacher_academics(*, school_id=HERITAGE_SCHOOL_ID,
+                                   teacher_username=TEACHER_USERNAME) -> dict:
     """Create deterministic, teacher-owned instructional data for the flagship sandbox."""
-    school = School.objects.get(pk=HERITAGE_SCHOOL_ID)
-    teacher = UserAccount.objects.get(school=school, username=TEACHER_USERNAME)
+    school = School.objects.get(pk=school_id)
+    teacher = UserAccount.objects.get(school=school, username=teacher_username)
     if teacher.staff_id is None:
         raise RuntimeError("Heritage teacher sandbox persona is missing its Staff record.")
 

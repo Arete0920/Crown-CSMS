@@ -106,9 +106,15 @@ test.describe("Heritage six-persona guided presenter links, click by click", () 
           // renders only "Checking parent journey state…" (30 characters).
           // Never reduce the content requirement or accept a loading guard
           // as evidence of a working linked page.
-          const contentRoot = page.locator("main, [role='main']").first();
-          const readPageText = async () => String(await (await contentRoot.count()
-            ? contentRoot.innerText() : page.locator("body").innerText()) || "").trim();
+          // Snapshot visible route content in a single browser execution.
+          // Separate count()/innerText() locator calls can attach to a <main>
+          // that React removes during navigation, causing false timeouts.
+          const readPageText = () => page.evaluate(() => {
+            const root = Array.from(document.querySelectorAll<HTMLElement>("main, [role='main']"))
+              .find(node => node.isConnected && node.getClientRects().length > 0
+                && window.getComputedStyle(node).visibility !== "hidden");
+            return String(root?.innerText ?? document.body?.innerText ?? "").trim();
+          });
           await expect.poll(async () => {
             if (await page.locator('section[aria-busy="true"]').count()) return 0;
             return (await readPageText()).length;
@@ -120,6 +126,10 @@ test.describe("Heritage six-persona guided presenter links, click by click", () 
           // Require a visible document heading and actual page content, not one tag name.
           const headingNode = page.locator("h1, h2, h3, h4, [role='heading']").filter({ hasText: /\S.{2,}/ }).first();
           await expect(headingNode).toBeVisible();
+          if (persona.role === "student" && href === "/academics/student-work") {
+            await expect(page.getByRole("heading", { name: "Student Work", exact: true }))
+              .toBeVisible({ timeout: 20_000 });
+          }
           const observed = new URL(page.url()).pathname;
           const accepted = [href!, ...(knownRedirects[href!] || [])];
           expect(accepted).toContain(observed);

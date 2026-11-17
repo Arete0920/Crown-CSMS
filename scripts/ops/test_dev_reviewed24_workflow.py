@@ -129,7 +129,7 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
         self.assertLess(src.index("      - name: Azure Login"),
                         src.index("      - name: " + STAGE))
         self.assertLess(src.index("      - name: " + STAGE),
-                        src.index("      - name: Apply only reviewed DEV inquiry migration before deployment"))
+                        src.index("      - name: Verify zero pending DEV migrations using read-only PostgreSQL connection"))
         self.assertLess(src.index("      - name: " + STAGE),
                         src.index("      - name: Build and push Docker image"))
         self.assertNotIn("az ", self.guard)
@@ -152,7 +152,7 @@ class Reviewed24WorkflowContracts(unittest.TestCase):
             "Reverify protected main before DEV migration",
             "Reverify protected main before DEV container deployment",
             "Verify SimpleJWT migration allowlist without database access",
-            "Apply only reviewed DEV inquiry migration before deployment",
+            "Verify zero pending DEV migrations using read-only PostgreSQL connection",
         ):
             self.assertIn("      - name: " + name, self.source)
 

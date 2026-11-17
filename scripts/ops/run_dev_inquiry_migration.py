@@ -473,12 +473,12 @@ def main(argv=None):
             database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings(legacy_stage=True)
         else:
             database_url, secret, database_name, hosted_blacklist_enabled = load_dev_settings()
-        # GitHub masking commands are consumed by the runner, not evidence files.
-        # GitHub Actions consumes add-mask workflow commands. Printing them in a
-        # local operator terminal would disclose the raw DB URL and Django key.
+        # The runner consumes workflow commands on stderr even when stdout is
+        # redirected to a JSON report. Never retain raw secrets in that report
+        # or print masking commands in a local operator terminal.
         if os.environ.get("GITHUB_ACTIONS", "").strip().lower() == "true":
             for value in (database_url, secret):
-                print("::add-mask::" + value.replace("%", "%25"), flush=True)
+                print("::add-mask::" + value.replace("%", "%25"), file=sys.stderr, flush=True)
         stage = ("database_plan_read_only" if args.inspect_all_migrations
                  else "database_plan_and_migration")
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):

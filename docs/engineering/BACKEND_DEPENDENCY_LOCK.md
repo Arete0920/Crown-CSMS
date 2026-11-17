@@ -11,8 +11,20 @@ runtime containers and test workflows continue using their existing inputs until
 a separately verified adoption PR. Windows requires a separately generated lock.
 
 The metadata records the source and lock hashes, target and pinned compiler.
-Regenerate with Python 3.12 and `pip-tools==7.6.2` using the command in the metadata;
-then update both hashes. Review the dependency changes before merging. These hashes
+Regenerate on Linux with Python 3.12 and `pip-tools==7.6.2`:
+
+```bash
+python tools/ci/regenerate_backend_lock.py
+python tools/ci/verify_backend_lock.py
+python -m unittest discover -s tools/ci -p 'test_*backend_lock.py'
+```
+
+The generator retains compatible existing pins, resolves the changed manifest,
+validates hash-checked binary installation, and updates lock and metadata only
+after successful validation. Run it on each Python dependency branch, including
+Dependabot branches: Dependabot does not maintain this custom metadata file.
+It deliberately does not grant a token write access or bypass Repository Policy.
+Review the dependency changes before merging. These hashes
 detect drift and are not signed build provenance or a reviewer approval record.
 
 Repository Policy verifies metadata, manifest membership and hashed exact pins.
