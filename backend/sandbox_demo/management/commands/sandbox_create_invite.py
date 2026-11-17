@@ -7,6 +7,7 @@ from sandbox_demo.catalog import (
     DEFAULT_SANDBOX_INVITE_ROLES, SANDBOX_PERSONAS, SANDBOX_SCHOOLS, SANDBOX_TRACKS,
 )
 from sandbox_demo.models import SandboxInvite
+from sandbox_demo.buyer_workspace import hosted_self_service_retired
 
 
 class Command(BaseCommand):
@@ -21,6 +22,8 @@ class Command(BaseCommand):
         parser.add_argument("--base-url", required=True)
 
     def handle(self, *args, **opts):
+        if hosted_self_service_retired():
+            raise CommandError("External sandbox invitations are retired; use staff-authenticated presentation.")
         roles = [item.strip() for item in opts["roles"].split(",") if item.strip()]
         seed_packs = [item.strip() for item in opts["seed_packs"].split(",") if item.strip()]
         if (

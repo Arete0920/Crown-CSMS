@@ -398,6 +398,16 @@ jobs:
       id-token: write
     timeout-minutes: 45
     steps:
+      - name: Reject retired DEV full certification mode
+        shell: bash
+        env:
+          DEPLOY_ONLY: ${{ toJSON(inputs.dev_deploy_only) }}
+        run: |
+          set -euo pipefail
+          if [[ "$DEPLOY_ONLY" != "true" ]]; then
+            echo "::error::Retired DEV buyer-invitation certification is disabled; use dev_deploy_only=true for code-only preview. Staff-authenticated acceptance is separate."
+            exit 1
+          fi
       - name: Validate pinned DEV source
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
@@ -444,10 +454,12 @@ jobs:
           VITE_BUILD_SHA: ${{ inputs.dev_source_sha }}
           CROWN_DEPLOY_TAG: dev-certification-preview
           VITE_DEPLOY_TAG: dev-certification-preview
-          VITE_SANDBOX_MODE: '1'
-          VITE_DEMO_MODE: sandbox
+          # Salesperson-led DEV preview uses normal staff authentication and real
+          # product routes. Never rebuild the retired anonymous sandbox launcher.
+          VITE_SANDBOX_MODE: '0'
+          VITE_DEMO_MODE: production
           VITE_HOSTED_JIREH_DEMO: ${{ inputs.dev_hosted_jireh_preview == true && '1' || '0' }}
-          VITE_LAUNCH_UI_TAKEOVER: '1'
+          VITE_LAUNCH_UI_TAKEOVER: '0'
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"

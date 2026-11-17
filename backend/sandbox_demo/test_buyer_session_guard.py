@@ -17,6 +17,7 @@ SHA = "c" * 40
 @override_settings(
     CROWN_ENV="dev", DEBUG=False, BUILD_SHA=SHA, ALLOWED_HOSTS=["testserver"],
     CROWN_SANDBOX_ALLOW_OPEN_SESSION=False,
+    CROWN_SALES_CONTROLLED_DEMO_ONLY=False,  # Legacy revocation contract.
 )
 class BuyerRevocationMiddlewareTests(TestCase):
     def setUp(self):

@@ -80,6 +80,7 @@ class HostedJirehRuntimeGuardTests(SimpleTestCase):
     CROWN_ENV="dev", DEBUG=False, BUILD_SHA=SHA,
     CROWN_SANDBOX_ALLOW_OPEN_SESSION=False,
     CROWN_HOSTED_JIREH_DEMO_ENABLED=True,
+    CROWN_SALES_CONTROLLED_DEMO_ONLY=False,  # Legacy isolated buyer API contract.
     ALLOWED_HOSTS=["testserver"],
 )
 class HostedJirehContract(TestCase):

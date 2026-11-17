@@ -27,6 +27,62 @@ def step(name):
 
 
 class DeployOnlyBoundaryTests(unittest.TestCase):
+    def test_dev_preview_has_normal_staff_login_and_functional_routes(self):
+        """Never ship retired anonymous login or demo-only launch substitutes."""
+        build = step('Build pinned frontend for DEV')
+        self.assertIn("VITE_SANDBOX_MODE: '0'", build)
+        self.assertIn("VITE_DEMO_MODE: production", build)
+        self.assertIn("VITE_LAUNCH_UI_TAKEOVER: '0'", build)
+        self.assertNotIn("VITE_SANDBOX_MODE: '1'", build)
+        self.assertNotIn("VITE_DEMO_MODE: sandbox", build)
+        self.assertNotIn("VITE_LAUNCH_UI_TAKEOVER: '1'", build)
+
+        # Production deployment instructions must not be altered by the DEV fix.
+        production = WORKFLOW.split('  dev-certification-preview:\n', 1)[0]
+        self.assertIn('  build-and-deploy:', production)
+        self.assertIn('    environment: production', production)
+        self.assertIn('    environment: dev', DEV)
+
+    def test_staff_login_and_real_dashboard_routes_are_source_backed(self):
+        login = (ROOT / 'frontend/dashboards/src/pages/LoginPage.jsx').read_text()
+        router = (ROOT / 'frontend/dashboards/src/routes/router.jsx').read_text()
+        self.assertIn('if (IS_SANDBOX) {\n        await startSandboxPreview(role);', login)
+        self.assertIn('apiUrl("/api/v1/auth/token/")', login)
+        self.assertIn("VITE_LAUNCH_UI_TAKEOVER === '1'", router)
+        self.assertIn(': <FinanceDashboard />', router)
+        self.assertIn(': <AdmissionsPipelineList />', router)
+
+    def test_retired_full_dev_certification_fails_before_azure_or_fixtures(self):
+        """DEV deployment cannot reach retired buyer-invitation certification."""
+        name = 'Reject retired DEV full certification mode'
+        self.assertTrue(DEV.split('    steps:\n', 1)[1].startswith('      - name: ' + name + '\n'))
+        guard = step(name)
+        self.assertIn('shell: bash', guard)
+        self.assertIn('DEPLOY_ONLY: ${{ toJSON(inputs.dev_deploy_only) }}', guard)
+        self.assertIn('set -euo pipefail', guard)
+        for later in (
+            'Validate pinned DEV source',
+            'Authenticate existing Azure DEV deployment identity',
+            'Deploy preview on existing SWA only',
+            'Configure exact owned DEV preview origin',
+            'Execute existing buyer persistence journeys on DEV',
+            'Prepare two synthetic DEV tenants using existing models',
+        ):
+            with self.subTest(later=later):
+                self.assertLess(DEV.index('      - name: ' + name),
+                                DEV.index('      - name: ' + later))
+        shell = textwrap.dedent(guard.split('run: |\n', 1)[1])
+        for value, allowed in [('true', True), ('false', False), ('null', False), ('', False)]:
+            with self.subTest(value=value):
+                result = subprocess.run(
+                    ['bash', '-c', shell],
+                    env=dict(os.environ, DEPLOY_ONLY=value),
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(result.returncode == 0, allowed)
+                if not allowed:
+                    self.assertIn('Retired DEV buyer-invitation', result.stdout)
+
     def test_deploy_only_defaults_to_true(self):
         self.assertRegex(WORKFLOW, r'dev_deploy_only:\n[^\n]*\n        type: boolean\n        default: true')
 
