@@ -101,6 +101,7 @@ export function storeSandboxSession(session) {
     sessionStorage.setItem("crown_current_user", JSON.stringify(user));
     sessionStorage.setItem("crown_user", JSON.stringify(user));
     sessionStorage.setItem("crown_user_roles", JSON.stringify(user.roles));
+    sessionStorage.setItem("crown.website.presenter", "1");
   }
   sessionStorage.setItem("crown.sandbox.command_center", JSON.stringify(session.command_center || {}));
 
