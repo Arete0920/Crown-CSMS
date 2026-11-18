@@ -60,4 +60,4 @@ def ensure_imports(text: str) -> str:
         if line.startswith("from ") or line.startswith("import "):
             insert_at = i + 1
     lines[insert_at:insert_at] = inserts
-    return "\\n".join(lines) + "\\n"
+    return "\n".join(lines) + "\n"
