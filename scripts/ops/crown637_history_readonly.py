@@ -18,6 +18,7 @@ METRICS = (
     "legacy_app_number_candidates",
     "legacy_app_number_near_creation_dob_candidates",
     "legacy_app_number_without_verified_identity",
+    "canonical_marked_legacy_without_verified_identity",
     "verified_admissions_provenance_unmatched",
     "invalid_identity_link_scope_or_evidence",
     "enrolled_legacy_without_matching_core_enrollment",
@@ -85,6 +86,17 @@ SELECT s.id::text,
        SELECT 1 FROM public.core_studentidentitylink l
        WHERE l.school_id=s.id AND l.core_student_id=c.id
          AND l.verification_status='verified' AND BTRIM(l.evidence_reference)<>'')),
+  -- The historical bridge could also reuse an unrelated same-name core
+  -- student, not only create an APP-numbered one. Inspect canonical-marked
+  -- legacy records regardless of student-number pattern.
+  (SELECT COUNT(*) FROM public.admissions_admissionsapplication a
+   WHERE a.school_id=s.id AND a.student_id IS NOT NULL
+     AND a.notes_internal LIKE '%canonical_application_id=%'
+     AND NOT EXISTS (
+       SELECT 1 FROM public.core_studentidentitylink l
+       WHERE l.school_id=s.id AND l.core_student_id=a.student_id
+         AND l.source='admissions' AND l.verification_status='verified'
+         AND BTRIM(l.evidence_reference)<>'')),
   (SELECT COUNT(*) FROM public.core_studentidentitylink l
    JOIN public.core_student c ON c.id=l.core_student_id
    JOIN public.student p ON p.id=l.compatibility_student_id

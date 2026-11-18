@@ -19,7 +19,7 @@ FAKE_URL = 'postgresql://no-real-credentials@dev.example.test/crown'
 
 class Cursor:
     def __init__(self, rows=None, readonly='on', tls=True):
-        self.rows = rows if rows is not None else [(SCHOOL, 2, 1, 2, 0, 0, 1, 0)]
+        self.rows = rows if rows is not None else [(SCHOOL, 2, 1, 2, 1, 0, 0, 1, 0)]
         self.readonly, self.tls, self.queries, self.last = readonly, tls, [], ''
 
     def __enter__(self): return self
@@ -72,6 +72,7 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(result['aggregate_candidate_counts']['legacy_app_number_candidates'], 2)
         self.assertEqual(result['aggregate_candidate_counts']['legacy_app_number_near_creation_dob_candidates'], 1)
         self.assertEqual(result['schools_with_candidates']['legacy_app_number_without_verified_identity'], 1)
+        self.assertEqual(result['aggregate_candidate_counts']['canonical_marked_legacy_without_verified_identity'], 1)
         self.assertNotIn(SCHOOL, json.dumps(result))
         self.assertIn('SCREEN_ONLY', result['interpretation'])
         self.assertEqual(cursor.queries[-1], subject.READ_ONLY_SQL)
@@ -92,8 +93,8 @@ class AuditTests(unittest.TestCase):
     def test_bad_rows_and_duplicates_block(self):
         with self.assertRaises(subject.AuditBlocked):
             subject.format_counts([])
-        for rows in [[(SCHOOL, 1, 0)], [(SCHOOL, 0, 0, 0, 0, 0, 0, True)],
-                     [(SCHOOL, 0, 0, 0, 0, 0, 0, 0)]*2, [(SCHOOL, -1, 0, 0, 0, 0, 0, 0)]]:
+        for rows in [[(SCHOOL, 1, 0)], [(SCHOOL, 0, 0, 0, 0, 0, 0, 0, True)],
+                     [(SCHOOL, 0, 0, 0, 0, 0, 0, 0, 0)]*2, [(SCHOOL, -1, 0, 0, 0, 0, 0, 0, 0)]]:
             with self.subTest(rows=rows):
                 with self.assertRaises(subject.AuditBlocked):
                     subject.format_counts(rows)
@@ -103,6 +104,7 @@ class AuditTests(unittest.TestCase):
         # PostgreSQL SUM(bigint) returns numeric/Decimal; the aggregate packet
         # must return bigint/int for format_counts to accept a valid result.
         self.assertIn("COALESCE(SUM(D.N-1), 0)::BIGINT", sql)
+        self.assertIn("A.NOTES_INTERNAL LIKE '%CANONICAL_APPLICATION_ID=%'", sql)
         for forbidden in ['INSERT INTO ', 'UPDATE PUBLIC.', 'DELETE FROM ', 'ALTER TABLE ',
                           'DROP TABLE ', 'COPY ', 'CREATE TABLE ', 'DO $$', 'EXECUTE ']:
             self.assertNotIn(forbidden, sql)
