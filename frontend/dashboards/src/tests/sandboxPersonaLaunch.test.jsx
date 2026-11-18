@@ -120,6 +120,9 @@ describe("Sandbox persona launch", () => {
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);
     const launch = (await screen.findAllByRole("button", { name: "Explore this role" }))[0];
+    expect(screen.getAllByText(/Changes are disabled\./).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Saving or changing records requires an authorized staff account\./)).toBeTruthy();
+    expect(screen.queryByText("Heritage Christian Academy")).toBeNull();
     expect(screen.queryByLabelText("Password")).toBeNull();
     fireEvent.click(launch);
     await waitFor(() => expect(sessionStorage.getItem("crown.jwt.access")).toBe("website-access"));
