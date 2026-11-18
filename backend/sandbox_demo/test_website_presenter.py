@@ -2,7 +2,7 @@
 from unittest.mock import patch
 
 import pytest
-from django.core.cache import cache
+from django.db import transaction
 from django.test import RequestFactory
 from rest_framework.test import APIClient
 
@@ -42,7 +42,6 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
 ):
     prepare_presenter(apply=True)
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
-    cache.clear()
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
         client = APIClient()
         available = client.get("/api/v1/sandbox/website-presenter/")
@@ -104,15 +103,19 @@ def test_hosted_presenter_requires_scoped_token_even_for_legacy_login(
     assert result.status_code == 403
 
 
-def test_website_presenter_entry_rate_limit_is_bounded():
-    cache.clear()
-    request = RequestFactory().post(
-        "/api/v1/sandbox/website-presenter/", REMOTE_ADDR="192.0.2.68",
-    )
-    for _ in range(12):
-        assert website_demo_rate_limit(request)
-    assert not website_demo_rate_limit(request)
-
+@pytest.mark.django_db
+def test_website_presenter_entry_rate_limit_is_bounded(local_runtime):
+    from sandbox_demo.models import SandboxEvent
+    from sandbox_demo.website_presenter import website_demo_rate_limit
+    school_id = prepare_presenter(apply=True)["school_id"]
+    school = School.objects.get(pk=school_id)
+    with transaction.atomic():
+        for _ in range(12):
+            assert website_demo_rate_limit(school, "teacher")
+        assert not website_demo_rate_limit(school, "teacher")
+    assert SandboxEvent.objects.filter(
+        event="website_presenter_session_issued_v1", school=str(school.pk),
+    ).count() == 12
 
 @pytest.mark.django_db
 def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
