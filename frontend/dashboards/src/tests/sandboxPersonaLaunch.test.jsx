@@ -58,6 +58,64 @@ describe("Sandbox persona launch", () => {
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
+  it("keeps the website presenter unavailable when its server-side readiness gate is closed", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(
+      JSON.stringify({ available: false, code: "website_presenter_not_ready" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    ))));
+
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+
+    await screen.findByText("The fictional demonstration school is not yet activated.");
+    expect(screen.queryByRole("button", { name: "Explore this role" })).toBeNull();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
+  });
+
+  it("opens the fictional website presenter without a password or refresh token", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
+    const endpoint = "/api/v1/sandbox/website-presenter/";
+    vi.stubGlobal("fetch", vi.fn((url, options) => {
+      expect(String(url)).toContain(endpoint);
+      const launching = options?.method === "POST";
+      return Promise.resolve(new Response(JSON.stringify(launching ? {
+        access: "website-access",
+        school_id: schoolId,
+        school_name: "Heritage Christian Academy - Arete Fictional Presenter",
+        role: "school_admin",
+        role_code: "HEAD_OF_SCHOOL",
+        username: "presenter.school-admin@fictional.crown.invalid",
+        email: "presenter.school-admin@fictional.crown.invalid",
+        route: "/school-admin-dashboard",
+        demo_scope: "website_presenter_v1",
+        command_center: { track: "school" },
+      } : {
+        available: true,
+        school: { id: schoolId, name: "Heritage Christian Academy - Arete Fictional Presenter" },
+        roles: [{ key: "school_admin", label: "School Administrator" }],
+      }), { status: launching ? 201 : 200, headers: { "Content-Type": "application/json" } }));
+    }));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    const launch = (await screen.findAllByRole("button", { name: "Explore this role" }))[0];
+    expect(screen.queryByLabelText("Password")).toBeNull();
+    fireEvent.click(launch);
+    await waitFor(() => expect(sessionStorage.getItem("crown.jwt.access")).toBe("website-access"));
+    expect(sessionStorage.getItem("crown.jwt.refresh")).toBe("");
+    expect(sessionStorage.getItem("crown.school.id")).toBe(schoolId);
+    expect(sessionStorage.getItem("crown.website.presenter")).toBe("1");
+    expect(window.location.href).toBe("/school-admin-dashboard");
+    const post = globalThis.fetch.mock.calls.find(([, options]) => options?.method === "POST");
+    expect(post).toBeTruthy();
+    expect(post[1].credentials).toBe("omit");
+    expect(JSON.parse(post[1].body)).toEqual({ role: "school_admin" });
+  });
+
   it("starts a one-click role session without visible credential fields", async () => {
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);
