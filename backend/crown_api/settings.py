@@ -175,6 +175,9 @@ CROWN_DEMO_KEY = os.getenv("CROWN_DEMO_KEY", "").strip()
 CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", default=False)
 CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
 CROWN_UNIVERSAL_PRESENTER_ENABLED = _env_bool("CROWN_UNIVERSAL_PRESENTER_ENABLED", default=False)
+# One fictional DEV school, no manual browser sign-in. Disabled until activation is certified.
+CROWN_WEBSITE_DEMO_ENABLED = _env_bool("CROWN_WEBSITE_DEMO_ENABLED", default=False)
+_assert_not_prod_true("CROWN_WEBSITE_DEMO_ENABLED", CROWN_WEBSITE_DEMO_ENABLED)
 CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA", "")
 CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME", "")
 _assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
@@ -317,6 +320,7 @@ MIDDLEWARE = [
     'core.middleware.TenantIsolationMiddleware',
     'crown_api.auth_middleware.JwtAuthMiddleware',  # JWT authentication (after Django auth, coexists with SimpleJWT)
     'sandbox_demo.buyer_session_guard.HostedBuyerSessionGuardMiddleware',  # fail closed on revoked hosted evaluator identity
+    'sandbox_demo.website_presenter.WebsitePresenterSessionGuardMiddleware',  # scoped fictional website access only
     'core.tenant_header_middleware.TenantHeaderRequiredMiddleware',  # Tenant guard -- after auth so user.school_id is available for header-less fallback
     'crown_api.tenant_middleware.TenantContextMiddleware',  # Tenant resolution (after JWT auth)
     'audit.middleware.AuditMiddleware',  # Audit logging (after auth)
