@@ -90,5 +90,22 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
             self.assertEqual(marker.read_text(encoding="utf-8"), "DO NOT REMOVE")
 
 
+    def test_runtime_generator_rejects_linked_root_before_force_deletion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            external = base / "external"
+            external.mkdir()
+            sentinel = external / "keep.txt"
+            sentinel.write_text("DO NOT REMOVE", encoding="utf-8")
+            linked_root = base / "runtime"
+            try:
+                linked_root.symlink_to(external, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on test platform")
+            with patch.object(generator, "RUNTIME_PACK_ROOT", linked_root):
+                self.assertEqual(generator.generate_runtime_bundle("keep", force=True), 1)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+
 if __name__ == "__main__":
     unittest.main()
