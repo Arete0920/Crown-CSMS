@@ -3,7 +3,6 @@
 Not a buyer invitation, sandbox-open-session bypass, provisioning API, or
 school selector. The server issues only short-lived DEV-scoped access tokens.
 """
-import re
 import time
 from datetime import timedelta
 
@@ -26,8 +25,8 @@ DEMO_SCOPE = "website_presenter_v1"
 DEMO_ORIGIN = "https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net"
 ACCESS_SECONDS = 60 * 60
 
-# Only actual, reviewed school workflows; global ops, account management,
-# payment-provider and external communication routes are never in this list.
+# Public viewing only; global ops, account management, payment-provider,
+# external communication and ALL state-changing routes are excluded.
 READ_PREFIXES = (
     "/api/system/whoami/",
     "/api/v1/dashboards/",
@@ -44,21 +43,10 @@ READ_PREFIXES = (
     "/api/ledger/accounts/",
     "/api/admissions/",
 )
-WRITE_PATHS = frozenset({
-    "/api/v1/academics/submissions/",
-    "/api/v1/academics/grades/grade/",
-    "/api/v1/aftercare/daycare/attendance/checkin/",
-    "/api/v1/aftercare/daycare/attendance/release/",
-    "/api/admissions/enroll/",
-})
 DISALLOWED_PATH_PARTS = frozenset({
     "ops", "platform", "payments", "webhooks", "credentials", "secrets",
     "provisioning", "export", "exports", "tokens", "api-keys",
 })
-ASSIGNMENTS_PATH = re.compile(
-    r"/api/v1/academics/sections/[0-9a-fA-F-]{36}/assignments/\Z"
-)
-
 
 def website_demo_school():
     """Read-only, fail-closed readiness check; never seeds or grants anything."""
@@ -185,10 +173,8 @@ def website_demo_request_allowed(request, actor, claims):
     method = request.method
     if method in {"GET", "HEAD", "OPTIONS"}:
         return any(path.startswith(prefix) for prefix in READ_PREFIXES)
-    if method in {"POST", "PUT", "PATCH"}:
-        return (path.startswith("/api/v1/presenter/")
-                or path in WRITE_PATHS
-                or bool(ASSIGNMENTS_PATH.fullmatch(path)))
+    # Public website sessions are read-only. Transactional demonstration
+    # remains exclusively on the separately authenticated presenter path.
     return False
 
 
