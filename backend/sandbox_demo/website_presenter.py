@@ -22,7 +22,7 @@ from .universal_runtime import require_hosted_presenter
 
 DEMO_SCOPE = "website_presenter_v1"
 DEMO_ORIGIN = "https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net"
-ACCESS_SECONDS = 15 * 60
+ACCESS_SECONDS = 60 * 60
 
 # Only actual, reviewed school workflows; global ops, account management,
 # payment-provider and external communication routes are never in this list.
