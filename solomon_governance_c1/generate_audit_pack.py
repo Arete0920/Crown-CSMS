@@ -602,6 +602,8 @@ def validated_runtime_bundle_path(bundle_id: str) -> Path:
     """Reject traversal and links before any runtime bundle overwrite."""
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", bundle_id):
         raise ValueError("bundle id must be one safe filesystem component")
+    if RUNTIME_PACK_ROOT.is_symlink():
+        raise ValueError("runtime audit root must not be a symlink")
     root = RUNTIME_PACK_ROOT.resolve()
     target = root / bundle_id
     if target.is_symlink() or target.resolve().parent != root:
