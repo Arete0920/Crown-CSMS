@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from solomon_governance_c1 import verify_audit_pack_integrity as audit
 from solomon_governance_c1 import generate_audit_pack as generator
+from solomon_governance_c1 import certify_audit_pack as certifier
 
 
 class AuditBundlePathBoundaryTests(unittest.TestCase):
@@ -105,6 +106,44 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
             with patch.object(generator, "RUNTIME_PACK_ROOT", linked_root):
                 self.assertEqual(generator.generate_runtime_bundle("keep", force=True), 1)
             self.assertEqual(sentinel.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+
+    def test_certification_accepts_only_runtime_bundle_folder(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            runtime = base / "runtime"
+            runtime.mkdir()
+            valid = runtime / "20260515T182250Z"
+            valid.mkdir()
+            external = base / "external"
+            external.mkdir()
+            with patch.object(certifier, "RUNTIME_PACK_ROOT", runtime):
+                self.assertEqual(certifier.validated_certification_bundle_path(valid), valid)
+                for path in (external, base / "missing", runtime):
+                    with self.subTest(path=path), self.assertRaises(ValueError):
+                        certifier.validated_certification_bundle_path(path)
+                link = runtime / "linked"
+                try:
+                    link.symlink_to(external, target_is_directory=True)
+                except (OSError, NotImplementedError):
+                    self.skipTest("symlinks unavailable on test platform")
+                with self.assertRaises(ValueError):
+                    certifier.validated_certification_bundle_path(link)
+                self.assertEqual(certifier.certify(link), 1)
+
+    def test_certification_output_symlink_cannot_overwrite_external_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            outside = base / "outside.txt"
+            outside.write_text("DO NOT REMOVE", encoding="utf-8")
+            output = base / "AUDIT_PACK_CERTIFICATION.json"
+            try:
+                output.symlink_to(outside)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on test platform")
+            with self.assertRaises(ValueError):
+                certifier.write_text(output, "overwritten")
+            self.assertEqual(outside.read_text(encoding="utf-8"), "DO NOT REMOVE")
 
 
 if __name__ == "__main__":
