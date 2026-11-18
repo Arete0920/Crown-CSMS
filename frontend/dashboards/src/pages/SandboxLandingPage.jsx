@@ -191,8 +191,8 @@ export default function SandboxLandingPage() {
         <div className="sandbox-experience-layout">
           <aside className="sandbox-experience-steps" aria-label="Demonstration steps">
             <div className="sandbox-step is-active"><span>1</span><div><strong>Choose the track</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Select the client scenario.</small></div></div>
-            <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div>
-            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Choose a role to open its fictional school workflows.</small></div></div>
+            {!onWebsiteDemo ? <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div> : null}
+            <div className="sandbox-step"><span>{onWebsiteDemo ? "2" : "3"}</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Choose a role to open its fictional school workflows.</small></div></div>
             <div className="sandbox-workspace-preview">
               <CrownIcon name="dashboard" size={24} />
               <div>
@@ -226,7 +226,7 @@ export default function SandboxLandingPage() {
               </div>
             </section>
 
-            <section className="sandbox-section">
+            {!onWebsiteDemo ? <section className="sandbox-section">
               <div className="sandbox-section-heading"><span>2</span><div><h2>Choose the demonstration style</h2><p>Guided is recommended for a first owner walkthrough.</p></div></div>
               <div className="sandbox-choice-grid sandbox-mode-grid">
                 <button type="button" className={`sandbox-choice-card ${selectedMode === "guided" ? "is-selected" : ""}`} onClick={() => setSelectedMode("guided")}>
@@ -240,10 +240,10 @@ export default function SandboxLandingPage() {
                   <span>Move independently through the available role workspace and modules.</span>
                 </button>
               </div>
-            </section>
+            </section> : null}
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>3</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard.</p></div></div>
+              <div className="sandbox-section-heading"><span>{onWebsiteDemo ? "2" : "3"}</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard.</p></div></div>
               <div className="sandbox-persona-grid">
                 {visiblePersonas.map((persona) => (
                   <article className="sandbox-persona-card persona-card" key={persona.value}>
@@ -255,7 +255,7 @@ export default function SandboxLandingPage() {
                       disabled={Boolean(launchingRole)}
                       onClick={() => launchPersona(persona)}
                     >
-                      {launchingRole === persona.value ? "Launching..." : `Start ${selectedMode === "guided" ? "guided" : "self-guided"}`}
+                      {launchingRole === persona.value ? "Launching..." : (onWebsiteDemo ? "Explore this role" : `Start ${selectedMode === "guided" ? "guided" : "self-guided"}`)}
                     </button>
                   </article>
                 ))}
