@@ -100,6 +100,9 @@ class AuditTests(unittest.TestCase):
 
     def test_only_readonly_sql_contract(self):
         sql = subject.READ_ONLY_SQL.upper()
+        # PostgreSQL SUM(bigint) returns numeric/Decimal; the aggregate packet
+        # must return bigint/int for format_counts to accept a valid result.
+        self.assertIn("COALESCE(SUM(d.n-1), 0)::BIGINT", sql)
         for forbidden in ['INSERT INTO ', 'UPDATE PUBLIC.', 'DELETE FROM ', 'ALTER TABLE ',
                           'DROP TABLE ', 'COPY ', 'CREATE TABLE ', 'DO $$', 'EXECUTE ']:
             self.assertNotIn(forbidden, sql)
