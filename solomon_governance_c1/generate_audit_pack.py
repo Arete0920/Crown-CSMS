@@ -598,10 +598,25 @@ def validate_bundle(bundle_dir: Path) -> list[str]:
     return missing
 
 
+def validated_runtime_bundle_path(bundle_id: str) -> Path:
+    """Reject traversal and links before any runtime bundle overwrite."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", bundle_id):
+        raise ValueError("bundle id must be one safe filesystem component")
+    root = RUNTIME_PACK_ROOT.resolve()
+    target = root / bundle_id
+    if target.is_symlink() or target.resolve().parent != root:
+        raise ValueError("bundle path must stay inside runtime audit bundles")
+    return target
+
+
 def generate_runtime_bundle(bundle_id: str | None, force: bool) -> int:
+    resolved_bundle_id = bundle_id if bundle_id is not None else timestamp_bundle_id()
+    try:
+        bundle_dir = validated_runtime_bundle_path(resolved_bundle_id)
+    except (TypeError, ValueError) as exc:
+        print(f"FAILED: invalid runtime bundle id: {exc}")
+        return 1
     RUNTIME_PACK_ROOT.mkdir(parents=True, exist_ok=True)
-    resolved_bundle_id = bundle_id or timestamp_bundle_id()
-    bundle_dir = RUNTIME_PACK_ROOT / resolved_bundle_id
 
     if bundle_dir.exists():
         if not force:
