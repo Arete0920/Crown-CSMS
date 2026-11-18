@@ -3,8 +3,12 @@
 Not a buyer invitation, sandbox-open-session bypass, provisioning API, or
 school selector. The server issues only short-lived DEV-scoped access tokens.
 """
+import hashlib
 import re
 import time
+
+from django.core.cache import cache
+from django.http import JsonResponse
 
 from django.conf import settings
 from django.core.management.base import CommandError
@@ -44,6 +48,10 @@ WRITE_PATHS = frozenset({
     "/api/v1/aftercare/daycare/attendance/checkin/",
     "/api/v1/aftercare/daycare/attendance/release/",
     "/api/admissions/enroll/",
+})
+DISALLOWED_PATH_PARTS = frozenset({
+    "ops", "platform", "payments", "webhooks", "credentials", "secrets",
+    "provisioning", "export", "exports", "tokens", "api-keys",
 })
 ASSIGNMENTS_PATH = re.compile(
     r"/api/v1/academics/sections/[0-9a-fA-F-]{36}/assignments/\Z"
@@ -88,6 +96,22 @@ def website_demo_school():
         return None
 
 
+def website_demo_rate_limit(request):
+    """Fail closed if per-address bounded session issuance cannot be enforced."""
+    address = request.META.get("REMOTE_ADDR", "").strip()
+    if not address or len(address) > 64:
+        return False
+    key = "crown-website-presenter:" + hashlib.sha256(
+        (address + ":" + str(int(time.time()) // 60)).encode("utf-8")
+    ).hexdigest()
+    try:
+        if cache.add(key, 1, timeout=120):
+            return True
+        return cache.incr(key) <= 12
+    except Exception:
+        return False
+
+
 def issue_website_demo_session(school, role):
     """Issue an ordinary verified JWT with a separately enforced demo scope."""
     persona = SANDBOX_PERSONAS[role]
@@ -127,10 +151,16 @@ def website_demo_request_allowed(request, actor, claims):
     persona = SANDBOX_PERSONAS.get(key)
     if (persona is None or not isinstance(actor, UserAccount)
             or not actor.is_active or actor.is_staff or actor.is_superuser
-            or str(actor.school_id) != str(school.pk)
             or actor.username != presenter_username(key, school.pk)
             or str(claims.get("sub")) != str(actor.pk)
             or str(claims.get("school_id")) != str(school.pk)):
+        return False
+    stored = UserAccount.objects.filter(pk=actor.pk).values(
+        "school_id", "is_active", "is_staff", "is_superuser",
+    ).first()
+    if (stored is None or not stored["is_active"]
+            or stored["is_staff"] or stored["is_superuser"]
+            or str(stored["school_id"]) != str(school.pk)):
         return False
     if not UserRole.objects.filter(
         user=actor, school=school, role_code=persona.role_code
@@ -142,6 +172,10 @@ def website_demo_request_allowed(request, actor, claims):
             return False
 
     path = request.path
+    if not path.startswith("/api/"):
+        return False
+    if DISALLOWED_PATH_PARTS.intersection(path.strip("/").split("/")):
+        return False
     method = request.method
     if method in {"GET", "HEAD", "OPTIONS"}:
         return any(path.startswith(prefix) for prefix in READ_PREFIXES)
@@ -150,3 +184,33 @@ def website_demo_request_allowed(request, actor, claims):
                 or path in WRITE_PATHS
                 or bool(ASSIGNMENTS_PATH.fullmatch(path)))
     return False
+
+
+class WebsitePresenterSessionGuardMiddleware:
+    """Never let a loginless presenter identity cross into ordinary APIs."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from .buyer_workspace import hosted_buyer_mode
+        if not hosted_buyer_mode():
+            return self.get_response(request)
+
+        authenticated = getattr(request, "_crown_authenticated", None)
+        claims = authenticated[1] if authenticated else {}
+        actor = getattr(request, "user", None)
+        is_presenter = str(getattr(actor, "username", "") or "").startswith("presenter.")
+        has_demo_scope = bool(isinstance(claims, dict) and claims.get("demo_scope"))
+        if not (is_presenter or has_demo_scope):
+            return self.get_response(request)
+        try:
+            allowed = website_demo_request_allowed(request, actor, claims)
+        except Exception:
+            allowed = False
+        if not allowed:
+            return JsonResponse({
+                "detail": "Demonstration session is not authorized for this operation.",
+                "code": "website_presenter_scope_denied",
+            }, status=403)
+        return self.get_response(request)
