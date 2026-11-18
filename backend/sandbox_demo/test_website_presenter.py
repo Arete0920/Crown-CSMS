@@ -144,3 +144,29 @@ def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
         )
         denied = client.get("/api/v1/academics/classroom/workspace/")
         assert denied.status_code == 403
+
+
+
+@pytest.mark.parametrize("enabled, debug, env, hostname, allowed", [
+    (False, False, "prod", "crown-api-prod.azurewebsites.net", True),
+    (True, False, "dev", "crown-api-dev.azurewebsites.net", True),
+    (True, True, "dev", "crown-api-dev.azurewebsites.net", False),
+    (True, False, "prod", "crown-api-dev.azurewebsites.net", False),
+    (True, False, "dev", "crown-api-prod.azurewebsites.net", False),
+    (True, False, "dev", "crown-api-dev.azurewebsites.net.evil.invalid", False),
+    (True, False, "dev", "", False),
+])
+def test_website_demo_flag_only_accepts_hardened_dev_runtime(
+    enabled, debug, env, hostname, allowed,
+):
+    from crown_api.settings import _assert_website_demo_dev_only
+
+    if allowed:
+        _assert_website_demo_dev_only(
+            enabled, debug=debug, crown_env=env, hostname=hostname,
+        )
+    else:
+        with pytest.raises(RuntimeError, match="hardened crown-api-dev only"):
+            _assert_website_demo_dev_only(
+                enabled, debug=debug, crown_env=env, hostname=hostname,
+            )
