@@ -37,13 +37,38 @@ def ensure_imports(text: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _inventory_target(item: object) -> Path | None:
+    """Reject inventory paths that could redirect schema edits outside backend."""
+    if not isinstance(item, dict) or not isinstance(item.get("file"), str):
+        raise ValueError("invalid schema inventory entry")
+    name = item["file"]
+    if name == "unknown":
+        return None
+    relative = Path(name)
+    if (
+        "\\" in name
+        or not relative.parts
+        or relative.parts[0] != "backend"
+        or ".." in relative.parts
+        or relative.is_absolute()
+        or relative.suffix != ".py"
+    ):
+        raise ValueError("schema inventory path must be a backend Python file")
+    target = ROOT / relative
+    if not target.exists():
+        return None
+    if target.resolve() != target or not target.is_file():
+        raise ValueError("schema inventory path must be a regular in-repository file")
+    return target
+
+
 def target_files() -> list[Path]:
     files: list[Path] = []
     if INVENTORY.exists():
         items = json.loads(INVENTORY.read_text(encoding="utf-8"))
         for item in items[:30]:
-            path = ROOT / item["file"]
-            if path.exists():
+            path = _inventory_target(item)
+            if path is not None:
                 files.append(path)
     return files
 
