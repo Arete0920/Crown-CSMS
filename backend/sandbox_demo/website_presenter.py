@@ -44,6 +44,19 @@ READ_PREFIXES = (
     "/api/ledger/accounts/",
     "/api/admissions/",
 )
+
+# Exact registered dashboard reads. Keep these role-bound: a public demo
+# token is not a general-purpose permission to query another role's metrics.
+ROLE_READ_PATHS = {
+    "school_admin": frozenset({"/api/v1/admin/metrics/"}),
+    "teacher": frozenset({"/api/v1/teacher/metrics/"}),
+    "parent": frozenset({"/api/v1/parent/metrics/"}),
+    "student": frozenset({"/api/v1/student/metrics/"}),
+    "board": frozenset({
+        "/api/v1/board/metrics/", "/api/v1/board/dashboard/",
+        "/api/v1/board/snapshots/", "/api/v1/board/packets/",
+    }),
+}
 DISALLOWED_PATH_PARTS = frozenset({
     "ops", "platform", "payments", "webhooks", "credentials", "secrets",
     "provisioning", "export", "exports", "tokens", "api-keys",
@@ -173,7 +186,11 @@ def website_demo_request_allowed(request, actor, claims):
         return False
     method = request.method
     if method in {"GET", "HEAD", "OPTIONS"}:
-        return any(path.startswith(prefix) for prefix in READ_PREFIXES)
+        return (
+            path == "/api/v1/nav/"
+            or path in ROLE_READ_PATHS.get(key, ())
+            or any(path.startswith(prefix) for prefix in READ_PREFIXES)
+        )
     # Public website sessions are read-only. Transactional demonstration
     # remains exclusively on the separately authenticated presenter path.
     return False

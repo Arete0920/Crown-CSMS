@@ -87,6 +87,80 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
         assert website_demo_school() is None
 
 
+
+@pytest.mark.django_db
+def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
+    local_runtime, settings,
+):
+    prepare_presenter(apply=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    role_paths = {
+        "school_admin": ("/api/v1/admin/metrics/",),
+        "admissions_director": (),
+        "finance_director": (),
+        "daycare_director": (),
+        "daycare_staff": (),
+        "teacher": ("/api/v1/teacher/metrics/",),
+        "parent": ("/api/v1/parent/metrics/",),
+        "student": ("/api/v1/student/metrics/",),
+        "board": (
+            "/api/v1/board/metrics/", "/api/v1/board/dashboard/",
+            "/api/v1/board/snapshots/", "/api/v1/board/packets/",
+        ),
+    }
+    actors = {
+        role: UserAccount.objects.get(username=presenter_username(role))
+        for role in role_paths
+    }
+    claims = {
+        role: {
+            "demo_scope": DEMO_SCOPE, "role": role,
+            "sub": str(actor.pk), "school_id": str(UNIVERSAL_SCHOOL_ID),
+        }
+        for role, actor in actors.items()
+    }
+    factory = RequestFactory()
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
+        for role, paths in role_paths.items():
+            assert website_demo_request_allowed(
+                factory.get("/api/v1/nav/"), actors[role], claims[role]
+            )
+            assert not website_demo_request_allowed(
+                factory.post("/api/v1/nav/"), actors[role], claims[role]
+            )
+            assert not website_demo_request_allowed(
+                factory.get(
+                    "/api/v1/nav/",
+                    HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
+                ),
+                actors[role], claims[role],
+            )
+            for path in paths:
+                get = factory.get(path)
+                assert website_demo_request_allowed(get, actors[role], claims[role])
+                assert not website_demo_request_allowed(
+                    factory.post(path), actors[role], claims[role]
+                )
+                assert not website_demo_request_allowed(
+                    factory.get(path, HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001"),
+                    actors[role], claims[role],
+                )
+                for other_role in role_paths:
+                    if other_role != role:
+                        assert not website_demo_request_allowed(
+                            get, actors[other_role], claims[other_role]
+                        )
+        for path in (
+            "/api/v1/board/packets/1/",
+            "/api/v1/nav/private/",
+            "/api/v1/board/packet/download/",
+            "/api/v1/board/metrics/private/",
+        ):
+            assert not website_demo_request_allowed(
+                factory.get(path), actors["board"], claims["board"]
+            )
+
+
 @pytest.mark.django_db
 def test_hosted_presenter_requires_scoped_token_even_for_legacy_login(
     local_runtime, settings,
