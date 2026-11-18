@@ -75,6 +75,23 @@ describe("Sandbox persona launch", () => {
     expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
   });
 
+  it("does not let an obsolete invite query suppress website demo roles", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    window.location.search = "?invite=sbx_inv_retired";
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      available: true,
+      school: { id: "cd216908-b692-5fa7-997b-743f811f1ea9", name: "Arete Fictional Presenter" },
+      roles: [{ key: "school_admin", label: "School Administrator" }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+
+    await screen.findByText(/Arete Fictional Presenter is the protected CROWN demonstration environment/);
+    expect(screen.getAllByRole("button", { name: "Explore this role" }).length).toBeGreaterThan(0);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("opens the fictional website presenter without a password or refresh token", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
