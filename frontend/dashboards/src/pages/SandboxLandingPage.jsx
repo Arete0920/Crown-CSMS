@@ -197,7 +197,7 @@ export default function SandboxLandingPage() {
               <CrownIcon name="dashboard" size={24} />
               <div>
                 <strong>What opens next</strong>
-                <p>Role-aware sidebar, operational cards, queues, alerts, reports, and connected module actions.</p>
+                <p>{onWebsiteDemo ? "Role-aware dashboards, read-only records, queues, reports, and module previews. Transactional actions require staff sign-in." : "Role-aware sidebar, operational cards, queues, alerts, reports, and connected module actions."}</p>
               </div>
             </div>
           </aside>
@@ -243,12 +243,12 @@ export default function SandboxLandingPage() {
             </section> : null}
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>{onWebsiteDemo ? "2" : "3"}</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard.</p></div></div>
+              <div className="sandbox-section-heading"><span>{onWebsiteDemo ? "2" : "3"}</span><div><h2>Start as a role</h2><p>{onWebsiteDemo ? "Explore fictional school information in read-only mode. Saving or changing records requires an authorized staff account." : "The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard."}</p></div></div>
               <div className="sandbox-persona-grid">
                 {visiblePersonas.map((persona) => (
                   <article className="sandbox-persona-card persona-card" key={persona.value}>
                     <div className="sandbox-persona-icon"><CrownIcon name="user" size={22} /></div>
-                    <div><strong>{persona.label}</strong><p>{persona.promise}</p></div>
+                    <div><strong>{persona.label}</strong><p>{onWebsiteDemo ? `View the ${persona.label.toLowerCase()} workspace and available fictional records. Changes are disabled.` : persona.promise}</p></div>
                     <button
                       type="button"
                       className="sandbox-launch-button"
@@ -267,9 +267,9 @@ export default function SandboxLandingPage() {
               <div className="sandbox-scenario-grid">
                 {trackSchools.map((school) => (
                   <article className="sandbox-scenario-card" key={school.key}>
-                    <strong>{school.name}</strong>
+                    <strong>{onWebsiteDemo ? websitePresenter.school.name : school.name}</strong>
                     <p>{school.archetype}. Best for {school.bestFor}.</p>
-                    <span>{school.enrollment} demo records</span>
+                    <span>{onWebsiteDemo ? "Fictional data only" : `${school.enrollment} demo records`}</span>
                   </article>
                 ))}
               </div>
