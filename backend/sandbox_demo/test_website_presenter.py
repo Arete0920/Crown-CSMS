@@ -10,7 +10,7 @@ from core.models import School, UserAccount
 from crown_api.jwt_utils import decode_access
 from sandbox_demo.test_universal_presenter import local_runtime
 from sandbox_demo.universal_demo import prepare_presenter
-from sandbox_demo.universal_identity import presenter_username
+from sandbox_demo.universal_identity import UNIVERSAL_SCHOOL_ID, presenter_username
 from sandbox_demo.website_presenter import (
     DEMO_ORIGIN, DEMO_SCOPE, WebsitePresenterSessionGuardMiddleware,
     website_demo_rate_limit, website_demo_request_allowed,
@@ -107,8 +107,8 @@ def test_hosted_presenter_requires_scoped_token_even_for_legacy_login(
 def test_website_presenter_entry_rate_limit_is_bounded(local_runtime):
     from sandbox_demo.models import SandboxEvent
     from sandbox_demo.website_presenter import website_demo_rate_limit
-    school_id = prepare_presenter(apply=True)["school_id"]
-    school = School.objects.get(pk=school_id)
+    prepare_presenter(apply=True)
+    school = School.objects.get(pk=UNIVERSAL_SCHOOL_ID)
     with transaction.atomic():
         for _ in range(12):
             assert website_demo_rate_limit(school, "teacher")
