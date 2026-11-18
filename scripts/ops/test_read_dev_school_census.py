@@ -208,5 +208,14 @@ class CensusTests(unittest.TestCase):
 
 
 
+# Include the narrow #637 offline tests in the existing governed DEV inventory
+# test runner, without changing the #269-owned Actions workflow.
+def load_tests(loader, existing, pattern):
+    from test_crown637_history_readonly import AuditTests, DispatchSelectionTests
+    existing.addTests(loader.loadTestsFromTestCase(AuditTests))
+    existing.addTests(loader.loadTestsFromTestCase(DispatchSelectionTests))
+    return existing
+
+
 if __name__ == "__main__":
     unittest.main()
