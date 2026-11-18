@@ -109,7 +109,7 @@ SELECT s.id::text,
        SELECT 1 FROM public.core_enrollment e
        WHERE e.school_id=a.school_id AND e.student_id=a.student_id
          AND e.academic_year_id=a.academic_year_id)),
-  (SELECT COALESCE(SUM(d.n-1), 0) FROM (
+  (SELECT COALESCE(SUM(d.n-1), 0)::bigint FROM (
      SELECT COUNT(*) AS n FROM public.admissions_admissionsapplication a
      WHERE a.school_id=s.id AND a.student_id IS NOT NULL
      GROUP BY a.school_id, a.academic_year_id, a.family_id, a.student_id
