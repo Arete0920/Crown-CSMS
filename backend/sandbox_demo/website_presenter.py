@@ -30,6 +30,7 @@ ACCESS_SECONDS = 60 * 60
 READ_PREFIXES = (
     "/api/system/whoami/",
     "/api/v1/dashboards/",
+    "/api/dashboards/",  # Back-compat alias uses the same authenticated views.
     "/api/v1/presenter/",
     "/api/v1/academics/",
     "/api/v1/aftercare/",

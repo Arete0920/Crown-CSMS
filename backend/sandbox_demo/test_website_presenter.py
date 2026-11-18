@@ -62,6 +62,10 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
         actor = UserAccount.objects.get(username=presenter_username("teacher"))
         request = RequestFactory().get("/api/v1/academics/classroom/workspace/")
         assert website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().get("/api/dashboards/summary/")
+        assert website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().post("/api/dashboards/summary/")
+        assert not website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().post("/api/v1/academics/submissions/")
         assert not website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().post("/api/v1/presenter/admin/resolve-operational-exception/")
@@ -136,6 +140,9 @@ def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
         assert issued.status_code == 201, issued.content
         token = issued.data["access"]
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        allowed = client.get("/api/dashboards/me/", HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID))
+        assert allowed.status_code == 200, allowed.content
+        assert allowed.data["school_id"] == str(UNIVERSAL_SCHOOL_ID)
         denied = client.post("/api/v1/academics/submissions/", {}, format="json")
         assert denied.status_code == 403
         denied = client.post("/api/v1/presenter/admin/resolve-operational-exception/", {}, format="json")
