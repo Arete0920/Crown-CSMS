@@ -112,3 +112,33 @@ def test_website_presenter_entry_rate_limit_is_bounded():
     for _ in range(12):
         assert website_demo_rate_limit(request)
     assert not website_demo_rate_limit(request)
+
+
+@pytest.mark.django_db
+def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
+    local_runtime, settings,
+):
+    prepare_presenter(apply=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    cache.clear()
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True
+    ):
+        client = APIClient()
+        issued = client.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "teacher"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert issued.status_code == 201, issued.content
+        token = issued.data["access"]
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
+        denied = client.get("/api/platform/overview")
+        assert denied.status_code == 403
+        denied = client.post("/api/v1/auth/token/", {}, format="json")
+        assert denied.status_code == 403
+        client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+            HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
+        )
+        denied = client.get("/api/v1/academics/classroom/workspace/")
+        assert denied.status_code == 403
