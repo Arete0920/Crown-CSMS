@@ -4,6 +4,11 @@ import json
 import re
 from pathlib import Path
 
+try:
+    from scripts.release.schema_patch_path_guard import ensure_imports, inventory_targets
+except ModuleNotFoundError:
+    from schema_patch_path_guard import ensure_imports, inventory_targets
+
 ROOT = Path(__file__).resolve().parents[2]
 VERIFY_DIR = ROOT / "audit-artifacts" / "release-verify"
 VERIFY_DIR.mkdir(parents=True, exist_ok=True)
@@ -19,39 +24,8 @@ METHOD_RE = re.compile(
 )
 
 
-def ensure_imports(text: str) -> str:
-    inserts = []
-    if "from drf_spectacular.utils import extend_schema" not in text:
-        inserts.append("from drf_spectacular.utils import extend_schema")
-    if "from drf_spectacular.types import OpenApiTypes" not in text:
-        inserts.append("from drf_spectacular.types import OpenApiTypes")
-    if not inserts:
-        return text
-
-    lines = text.splitlines()
-    insert_at = 0
-    for i, line in enumerate(lines):
-        if line.startswith("from ") or line.startswith("import "):
-            insert_at = i + 1
-    lines[insert_at:insert_at] = inserts
-    return "\n".join(lines) + "\n"
-
-
-try:
-    from scripts.release.schema_patch_path_guard import inventory_target
-except ModuleNotFoundError:
-    from schema_patch_path_guard import inventory_target
-
-
 def target_files() -> list[Path]:
-    files: list[Path] = []
-    if INVENTORY.exists():
-        items = json.loads(INVENTORY.read_text(encoding="utf-8"))
-        for item in items[:30]:
-            path = inventory_target(item, ROOT)
-            if path is not None:
-                files.append(path)
-    return files
+    return inventory_targets(INVENTORY, ROOT)
 
 
 def patch_file(path: Path) -> dict:
