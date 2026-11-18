@@ -164,7 +164,7 @@ class ReferencePolicyTests(unittest.TestCase):
             "policy = importlib.util.module_from_spec(spec); "
             "spec.loader.exec_module(policy); "
             "assert policy.ENCODED_MEDIA_RE.search('data:text/plain' + ';a' * 60 + 'NO_COMMA') is None; "
-            "match = policy.ENCODED_MEDIA_RE.search('data:image/svg+xml;charset=utf-8;base64,PHN2Zz4='); "
+            "match = policy.ENCODED_MEDIA_RE.search('data:' + 'image/svg+xml;charset=utf-8;base64,PHN2Zz4='); "
             "assert match is not None and match.group(1).endswith('base64,') "
             "and match.group(2) == 'PHN2Zz4='"
         )
