@@ -123,7 +123,6 @@ def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
 ):
     prepare_presenter(apply=True)
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
-    cache.clear()
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True
     ):
