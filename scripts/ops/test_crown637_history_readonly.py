@@ -99,6 +99,14 @@ class AuditTests(unittest.TestCase):
                 with self.assertRaises(subject.AuditBlocked):
                     subject.format_counts(rows)
 
+    def test_enrolled_without_canonical_student_is_included(self):
+        """Historical ENROLLED rows with a missing canonical ID are candidates."""
+        sql = subject.READ_ONLY_SQL
+        section = sql.split("WHERE a.school_id=s.id AND a.status='ENROLLED'", 1)[1]
+        section = section.split("  (SELECT COALESCE", 1)[0]
+        self.assertIn("AND (a.student_id IS NULL OR NOT EXISTS (", section)
+        self.assertIn("AND e.academic_year_id=a.academic_year_id)))", section)
+
     def test_only_readonly_sql_contract(self):
         sql = subject.READ_ONLY_SQL.upper()
         # PostgreSQL SUM(bigint) returns numeric/Decimal; the aggregate packet

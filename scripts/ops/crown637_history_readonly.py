@@ -116,11 +116,11 @@ SELECT s.id::text,
      c.school_id<>s.id OR p.school_id<>s.id
      OR (l.verification_status='verified' AND BTRIM(l.evidence_reference)=''))),
   (SELECT COUNT(*) FROM public.admissions_admissionsapplication a
-   WHERE a.school_id=s.id AND a.status='ENROLLED' AND a.student_id IS NOT NULL
-     AND NOT EXISTS (
+   WHERE a.school_id=s.id AND a.status='ENROLLED'
+     AND (a.student_id IS NULL OR NOT EXISTS (
        SELECT 1 FROM public.core_enrollment e
        WHERE e.school_id=a.school_id AND e.student_id=a.student_id
-         AND e.academic_year_id=a.academic_year_id)),
+         AND e.academic_year_id=a.academic_year_id))),
   (SELECT COALESCE(SUM(d.n-1), 0)::bigint FROM (
      SELECT COUNT(*) AS n FROM public.admissions_admissionsapplication a
      WHERE a.school_id=s.id AND a.student_id IS NOT NULL
