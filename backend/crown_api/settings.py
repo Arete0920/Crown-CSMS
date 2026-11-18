@@ -176,8 +176,21 @@ CROWN_SGO_FICTIONAL_INTAKE_ENABLED = _env_bool("CROWN_SGO_FICTIONAL_INTAKE_ENABL
 CROWN_HOSTED_JIREH_DEMO_ENABLED = _env_bool("CROWN_HOSTED_JIREH_DEMO_ENABLED", default=False)
 CROWN_UNIVERSAL_PRESENTER_ENABLED = _env_bool("CROWN_UNIVERSAL_PRESENTER_ENABLED", default=False)
 # One fictional DEV school, no manual browser sign-in. Disabled until activation is certified.
+def _assert_website_demo_dev_only(enabled: bool, *, debug: bool, crown_env: str, hostname: str) -> None:
+    """Permit website access only on the existing hardened Azure DEV host."""
+    if enabled and (
+        debug
+        or crown_env.strip().lower() != "dev"
+        or hostname.strip().lower() != "crown-api-dev.azurewebsites.net"
+    ):
+        raise RuntimeError("CROWN_WEBSITE_DEMO_ENABLED requires hardened crown-api-dev only.")
+
+
 CROWN_WEBSITE_DEMO_ENABLED = _env_bool("CROWN_WEBSITE_DEMO_ENABLED", default=False)
-_assert_not_prod_true("CROWN_WEBSITE_DEMO_ENABLED", CROWN_WEBSITE_DEMO_ENABLED)
+_assert_website_demo_dev_only(
+    CROWN_WEBSITE_DEMO_ENABLED,
+    debug=DEBUG, crown_env=CROWN_ENV, hostname=os.getenv("WEBSITE_HOSTNAME", ""),
+)
 CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_SHA", "")
 CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME = os.getenv("CROWN_UNIVERSAL_PRESENTER_APPROVED_DB_NAME", "")
 _assert_not_prod_true("CROWN_SGO_FICTIONAL_INTAKE_ENABLED", CROWN_SGO_FICTIONAL_INTAKE_ENABLED)
