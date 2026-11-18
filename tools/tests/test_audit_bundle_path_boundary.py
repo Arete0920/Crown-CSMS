@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from solomon_governance_c1 import verify_audit_pack_integrity as audit
+from solomon_governance_c1 import generate_audit_pack as generator
 
 
 class AuditBundlePathBoundaryTests(unittest.TestCase):
@@ -43,6 +44,50 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
                 audit.require_regular_file(root / "missing.txt")
             with self.assertRaises(SystemExit):
                 audit.require_regular_file(root)
+
+
+    def test_runtime_generator_rejects_traversal_before_force_deletion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "runtime"
+            outside = base / "outside"
+            outside.mkdir()
+            sentinel = outside / "keep.txt"
+            sentinel.write_text("DO NOT REMOVE", encoding="utf-8")
+            with patch.object(generator, "RUNTIME_PACK_ROOT", root):
+                for bundle_id in (
+                    "../outside", "../../outside", "safe/../../outside",
+                    r"..\\outside", "/tmp/outside", ".", "..", "a" * 81,
+                ):
+                    with self.subTest(bundle_id=bundle_id):
+                        self.assertEqual(generator.generate_runtime_bundle(bundle_id, force=True), 1)
+                        self.assertEqual(sentinel.read_text(encoding="utf-8"), "DO NOT REMOVE")
+                        self.assertFalse(root.exists())
+                self.assertEqual(
+                    generator.validated_runtime_bundle_path("20260515T182250Z"),
+                    root / "20260515T182250Z",
+                )
+
+    def test_runtime_generator_rejects_symlink_force_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "runtime"
+            root.mkdir()
+            outside = base / "outside"
+            outside.mkdir()
+            marker = outside / "keep.txt"
+            marker.write_text("DO NOT REMOVE", encoding="utf-8")
+            link = root / "linked"
+            try:
+                link.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on test platform")
+            with patch.object(generator, "RUNTIME_PACK_ROOT", root):
+                with self.assertRaises(ValueError):
+                    generator.validated_runtime_bundle_path("linked")
+                self.assertEqual(generator.generate_runtime_bundle("linked", force=True), 1)
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(marker.read_text(encoding="utf-8"), "DO NOT REMOVE")
 
 
 if __name__ == "__main__":
