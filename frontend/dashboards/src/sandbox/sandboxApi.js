@@ -62,12 +62,46 @@ export async function createSandboxSession({ inviteId, role, school, track, guid
   return response.json();
 }
 
+export async function getWebsitePresenterState() {
+  const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/website-presenter/"), {
+    credentials: "omit", cache: "no-store",
+  });
+  if (!response.ok) return { available: false };
+  const body = await response.json();
+  return body?.available === true ? body : { available: false };
+}
+
+export async function createWebsitePresenterSession(role) {
+  const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/website-presenter/"), {
+    method: "POST",
+    credentials: "omit",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.detail || ("Demo school unavailable (" + response.status + ")"));
+  }
+  return response.json();
+}
+
 export function storeSandboxSession(session) {
   sessionStorage.setItem("crown.jwt.access", session.access);
   sessionStorage.setItem("crown.jwt.refresh", session.refresh || "");
   sessionStorage.setItem("crown.school.id", session.school_id);
   sessionStorage.setItem("crown.school.name", session.school_name || "");
   sessionStorage.setItem("crown.role", session.role);
+  if (session.demo_scope === "website_presenter_v1") {
+    sessionStorage.setItem("crown.active.role", session.role);
+    const user = {
+      username: session.username, email: session.email,
+      role: session.role, primaryRole: session.role,
+      roles: [session.role_code], school_id: session.school_id,
+    };
+    sessionStorage.setItem("crown_current_user", JSON.stringify(user));
+    sessionStorage.setItem("crown_user", JSON.stringify(user));
+    sessionStorage.setItem("crown_user_roles", JSON.stringify(user.roles));
+  }
   sessionStorage.setItem("crown.sandbox.command_center", JSON.stringify(session.command_center || {}));
 
   localStorage.setItem("crown.role", session.role);
