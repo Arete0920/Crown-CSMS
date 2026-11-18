@@ -10,10 +10,15 @@ import {
 } from "../sandbox/sandboxExperience";
 import {
   createSandboxSession,
+  createWebsitePresenterSession,
+  getWebsitePresenterState,
   recordSandboxEvent,
   resolveSandboxInvite,
   storeSandboxSession,
 } from "../sandbox/sandboxApi";
+import { clearBrowserAuthState } from "../utils/authClient.js";
+
+const WEBSITE_DEMO_HOST = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
 
 const ACCESSIBLE_ACCENT_STYLE = { color: "var(--crown-primary-deep)" };
 const ACCESSIBLE_SUPPORT_STYLE = { color: "var(--crown-muted)" };
@@ -40,6 +45,17 @@ export default function SandboxLandingPage() {
   const [inviteError, setInviteError] = useState("");
   const [launchingRole, setLaunchingRole] = useState("");
   const [launchError, setLaunchError] = useState("");
+  const host = String(globalThis.location?.hostname || "").toLowerCase();
+  const onWebsiteDemo = host === WEBSITE_DEMO_HOST;
+  const [websitePresenter, setWebsitePresenter] = useState(null);
+  useEffect(() => {
+    if (!onWebsiteDemo) return;
+    let active = true;
+    getWebsitePresenterState()
+      .then((state) => { if (active) setWebsitePresenter(state); })
+      .catch(() => { if (active) setWebsitePresenter({ available: false }); });
+    return () => { active = false; };
+  }, [onWebsiteDemo]);
 
   const selectedTrack = useMemo(
     () => SANDBOX_TRACKS.find((track) => track.key === selectedTrackKey) || SANDBOX_TRACKS[0],
@@ -47,8 +63,8 @@ export default function SandboxLandingPage() {
   );
   const trackSchools = useMemo(() => getTrackSchools(selectedTrack.key), [selectedTrack.key]);
   const personas = useMemo(
-    () => getTrackPersonas(selectedTrack.key, { includeHosted: invite?.usable === true }),
-    [selectedTrack.key, invite?.usable]
+    () => getTrackPersonas(selectedTrack.key, { includeHosted: invite?.usable === true || (onWebsiteDemo && websitePresenter?.available === true) }),
+    [selectedTrack.key, invite?.usable, onWebsiteDemo, websitePresenter?.available]
   );
   const defaultSchool = getSandboxSchool(selectedTrack.primarySchoolKey);
 
@@ -70,7 +86,9 @@ export default function SandboxLandingPage() {
     setLaunchingRole(persona.value);
 
     try {
-      const session = await createSandboxSession({
+      const session = onWebsiteDemo
+        ? await createWebsitePresenterSession(persona.value)
+        : await createSandboxSession({
         inviteId,
         role: persona.value,
         school: defaultSchool.key || defaultSchool.id,
@@ -79,9 +97,10 @@ export default function SandboxLandingPage() {
         tour: persona.tourTitle,
       });
 
+      if (onWebsiteDemo) clearBrowserAuthState();
       storeSandboxSession(session);
 
-      await recordSandboxEvent({
+      if (!onWebsiteDemo) await recordSandboxEvent({
         event: "sandbox_persona_launched",
         invite_id: inviteId || null,
         track: selectedTrack.key,
@@ -112,7 +131,7 @@ export default function SandboxLandingPage() {
 
   // A supplied invite is never a fallback to the unrestricted local selector.
   // Only a usable invitation with an explicit role list may display its roles.
-  const visiblePersonas = inviteId
+  const visiblePersonas = inviteId && !onWebsiteDemo
     ? (invite?.usable === true && Array.isArray(invite.allowed_roles)
       ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
       : [])
@@ -120,8 +139,7 @@ export default function SandboxLandingPage() {
 
   // Hosted evaluation links have been retired. Local loopback rehearsals keep
   // their existing guarded selector; this UI is not an authentication boundary.
-  const host = String(globalThis.location?.hostname || "").toLowerCase();
-  if (host && !["localhost", "127.0.0.1", "::1"].includes(host)) {
+  if (host && !["localhost", "127.0.0.1", "::1"].includes(host) && !onWebsiteDemo) {
     return (
       <main className="sandbox-crown-layout">
         <div className="sandbox-experience">
@@ -130,6 +148,20 @@ export default function SandboxLandingPage() {
             <p>CROWN demonstrations are conducted by authorized Arete sales personnel.</p>
             <p>Prospective schools participate through a guided presentation; independent visitor access is not available.</p>
             <a href="/login">Authorized staff sign in</a>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (onWebsiteDemo && websitePresenter?.available !== true) {
+    return (
+      <main className="sandbox-crown-layout">
+        <div className="sandbox-experience">
+          <section className="sandbox-experience-panel" aria-label="Fictional demonstration readiness">
+            <h1>CROWN demonstration school</h1>
+            <p>{websitePresenter === null ? "Checking demonstration availability..." : "The fictional demonstration school is not yet activated."}</p>
+            <p>No school accounts, student records or credentials are available through this page.</p>
           </section>
         </div>
       </main>
@@ -159,13 +191,13 @@ export default function SandboxLandingPage() {
         <div className="sandbox-experience-layout">
           <aside className="sandbox-experience-steps" aria-label="Demonstration steps">
             <div className="sandbox-step is-active"><span>1</span><div><strong>Choose the track</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Select the client scenario.</small></div></div>
-            <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div>
-            <div className="sandbox-step"><span>3</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>On the local guided demo, open the authenticated transaction proof path.</small></div></div>
+            {!onWebsiteDemo ? <div className="sandbox-step"><span>2</span><div><strong>Choose guidance</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Use a guided or independent path.</small></div></div> : null}
+            <div className="sandbox-step"><span>{onWebsiteDemo ? "2" : "3"}</span><div><strong>Launch a role</strong><small style={ACCESSIBLE_SUPPORT_STYLE}>Choose a role to open its fictional school workflows.</small></div></div>
             <div className="sandbox-workspace-preview">
               <CrownIcon name="dashboard" size={24} />
               <div>
                 <strong>What opens next</strong>
-                <p>Role-aware sidebar, operational cards, queues, alerts, reports, and connected module actions.</p>
+                <p>{onWebsiteDemo ? "Role-aware dashboards, read-only records, queues, reports, and module previews. Transactional actions require staff sign-in." : "Role-aware sidebar, operational cards, queues, alerts, reports, and connected module actions."}</p>
               </div>
             </div>
           </aside>
@@ -176,7 +208,7 @@ export default function SandboxLandingPage() {
             {launchError ? <div className="sandbox-message is-error">{launchError}</div> : null}
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>1</span><div><h2>Confirm the demo track</h2><p>Heritage Christian Academy is the protected CROWN demonstration environment.</p></div></div>
+              <div className="sandbox-section-heading"><span>1</span><div><h2>Confirm the demo track</h2><p>{onWebsiteDemo ? websitePresenter.school.name : "Heritage Christian Academy"} is the protected CROWN demonstration environment.</p></div></div>
               <div className="sandbox-choice-grid sandbox-track-grid">
                 {SANDBOX_TRACKS.map((track) => (
                   <button
@@ -194,7 +226,7 @@ export default function SandboxLandingPage() {
               </div>
             </section>
 
-            <section className="sandbox-section">
+            {!onWebsiteDemo ? <section className="sandbox-section">
               <div className="sandbox-section-heading"><span>2</span><div><h2>Choose the demonstration style</h2><p>Guided is recommended for a first owner walkthrough.</p></div></div>
               <div className="sandbox-choice-grid sandbox-mode-grid">
                 <button type="button" className={`sandbox-choice-card ${selectedMode === "guided" ? "is-selected" : ""}`} onClick={() => setSelectedMode("guided")}>
@@ -208,22 +240,22 @@ export default function SandboxLandingPage() {
                   <span>Move independently through the available role workspace and modules.</span>
                 </button>
               </div>
-            </section>
+            </section> : null}
 
             <section className="sandbox-section">
-              <div className="sandbox-section-heading"><span>3</span><div><h2>Start as a role</h2><p>The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard.</p></div></div>
+              <div className="sandbox-section-heading"><span>{onWebsiteDemo ? "2" : "3"}</span><div><h2>Start as a role</h2><p>{onWebsiteDemo ? "Explore fictional school information in read-only mode. Saving or changing records requires an authorized staff account." : "The role launch creates a protected demo session first. Local guided mode opens the transactional proof path; self-guided mode opens the role dashboard."}</p></div></div>
               <div className="sandbox-persona-grid">
                 {visiblePersonas.map((persona) => (
                   <article className="sandbox-persona-card persona-card" key={persona.value}>
                     <div className="sandbox-persona-icon"><CrownIcon name="user" size={22} /></div>
-                    <div><strong>{persona.label}</strong><p>{persona.promise}</p></div>
+                    <div><strong>{persona.label}</strong><p>{onWebsiteDemo ? `View the ${persona.label.toLowerCase()} workspace and available fictional records. Changes are disabled.` : persona.promise}</p></div>
                     <button
                       type="button"
                       className="sandbox-launch-button"
                       disabled={Boolean(launchingRole)}
                       onClick={() => launchPersona(persona)}
                     >
-                      {launchingRole === persona.value ? "Launching..." : `Start ${selectedMode === "guided" ? "guided" : "self-guided"}`}
+                      {launchingRole === persona.value ? "Launching..." : (onWebsiteDemo ? "Explore this role" : `Start ${selectedMode === "guided" ? "guided" : "self-guided"}`)}
                     </button>
                   </article>
                 ))}
@@ -235,9 +267,9 @@ export default function SandboxLandingPage() {
               <div className="sandbox-scenario-grid">
                 {trackSchools.map((school) => (
                   <article className="sandbox-scenario-card" key={school.key}>
-                    <strong>{school.name}</strong>
+                    <strong>{onWebsiteDemo ? websitePresenter.school.name : school.name}</strong>
                     <p>{school.archetype}. Best for {school.bestFor}.</p>
-                    <span>{school.enrollment} demo records</span>
+                    <span>{onWebsiteDemo ? "Fictional data only" : `${school.enrollment} demo records`}</span>
                   </article>
                 ))}
               </div>
