@@ -1,0 +1,14 @@
+{
+  "exceptions": [
+    {
+      "directory": "frontend/dashboards",
+      "advisory": "GHSA-fc5q-39xc-vjpf",
+      "packages": ["picomatch", "fdir", "tinyglobby", "vite", "@vitejs/plugin-react", "vitest", "@vitest/mocker"],
+      "reason": "picomatch <= 4.0.7 ReDoS (CVE-2026-112366); no patched version is published. Build/test-time dependency only, not shipped in the runtime bundle.",
+      "owner": "release-owner (@Arete0920)",
+      "approved": "2026-11-18",
+      "expires": "2026-12-18",
+      "removal": "Remove when a patched picomatch is released: npm update picomatch, commit lockfile."
+    }
+  ]
+}

@@ -174,6 +174,7 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   const serializedUser = JSON.stringify(currentUser);
   const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
 
+  sessionStorage.removeItem("crown.website.presenter");
   sessionStorage.setItem("crown.jwt.access", access);
   if (IS_SANDBOX && refresh) {
     sessionStorage.setItem("crown.jwt.refresh", refresh);
@@ -722,6 +723,12 @@ export default function LoginPage() {
                 ? "Heritage Christian Academy is the approved demo school. Select a role to enter the no-login sandbox preview."
                 : "Use your authorized role and account to access CROWN."}
             </p>
+
+            {!IS_SANDBOX && globalThis.location?.hostname === "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net" && (
+              <p className="login-subtitle">
+                <a href="/sandbox">Explore our fictional CROWN demonstration school — no password required</a>
+              </p>
+            )}
 
             {IS_SANDBOX && (
               <div className="warning-banner">Use demo data only. Do not enter real school records.</div>

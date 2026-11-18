@@ -184,6 +184,21 @@ export const SANDBOX_PERSONAS = [
       { label: "Confirm administrative, finance, admissions, and grading controls are unavailable.", route: "/student" },
     ],
   },
+  {
+    value: "board",
+    label: "School Board",
+    loginLabel: "School Board",
+    trackKeys: ["school"],
+    route: "/board",
+    email: "board@heritage.example.org",
+    defaultSchoolId: DEMO_SCHOOL_ID,
+    promise: "Review fictional governance, enrollment, finance, and mission indicators.",
+    tourTitle: "Governance summary proof path",
+    steps: [
+      { label: "Open governance-safe school indicators.", route: "/board" },
+      { label: "Confirm operational and finance changes remain restricted.", route: "/board" },
+    ],
+  },
 ];
 
 export function getSandboxTrack(key) {

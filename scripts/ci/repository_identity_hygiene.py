@@ -124,7 +124,7 @@ OPAQUE_TOKEN_RE = re.compile(
     r"(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+|\.{3})(?![A-Za-z0-9_.-])"
 )
 ENCODED_MEDIA_RE = re.compile(
-    r"(data:(?:[a-z][a-z0-9.+-]*/[a-z0-9.+-]+)?(?:;[^,\s\"'<>]*)*,)([^\s\"')]+)", re.IGNORECASE,
+    r"(data:(?:[a-z][a-z0-9.+-]*/[a-z0-9.+-]+)?(?:;[^;,\s\"'<>]*)*,)([^\s\"')]+)", re.IGNORECASE,
 )
 
 
