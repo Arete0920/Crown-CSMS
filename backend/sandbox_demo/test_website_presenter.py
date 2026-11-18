@@ -1,5 +1,4 @@
 """Disposable-DB proof for disabled-by-default fictional website access."""
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -24,7 +23,8 @@ def test_entry_default_off_and_rejects_other_origins(settings, django_assert_num
     settings.CROWN_WEBSITE_DEMO_ENABLED = False
     client = APIClient()
     with django_assert_num_queries(0):
-        unavailable = client.get("/api/v1/sandbox/website-presenter/")
+        assert website_demo_school() is None
+    unavailable = client.get("/api/v1/sandbox/website-presenter/")
     assert unavailable.status_code == 503
     assert unavailable.data["available"] is False
     denied = client.post(
