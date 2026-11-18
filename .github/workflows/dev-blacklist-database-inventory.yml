@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       confirm_dev_support:
-        description: "Type migrate-dev-support for the DEV-only support stage"
+        description: "Type migrate-dev-support for schema changes; or crown269-reference-metadata-only for #269 READ-ONLY"
         required: false
         type: string
         default: ""
@@ -73,6 +73,102 @@ concurrency:
   group: crown-dev-blacklist-db-readonly
   cancel-in-progress: false
 jobs:
+  two-fixed-reference-gets:
+    # Never run as part of an existing inventory push/PR, migration stage or DEV deployment.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.confirm_dev_support == 'crown269-reference-metadata-only'
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Reject mixed or stale #269 dispatch before Azure authentication
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ inputs.expected_sha }}
+          APPLY_SUPPORT: ${{ inputs.apply_reviewed_support }}
+          APPLY_LEGACY_REFRESH: ${{ inputs.apply_reviewed_legacy_refresh }}
+          APPLY_BLACKLIST: ${{ inputs.apply_reviewed_blacklist }}
+          COMPARE_BASELINE: ${{ inputs.compare_rehearsal_baseline }}
+          INSPECT_MIGRATIONS: ${{ inputs.inspect_migration_plan }}
+          CONFIRM_SUPPORT: ${{ inputs.confirm_dev_support }}
+          CONFIRM_LEGACY: ${{ inputs.confirm_dev_legacy_refresh }}
+          CONFIRM_BLACKLIST: ${{ inputs.confirm_dev_blacklist }}
+          DEV_RECOVERY_RECEIPT: ${{ inputs.dev_recovery_receipt }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_REPOSITORY" = Arete0920/Crown-CSMS
+          test "$GITHUB_REPOSITORY_ID" = 1339719218
+          [[ "$REQUESTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$REQUESTED_SHA" = "$GITHUB_SHA"
+          test "$APPLY_SUPPORT" = false
+          test "$APPLY_LEGACY_REFRESH" = false
+          test "$APPLY_BLACKLIST" = false
+          test "$COMPARE_BASELINE" = false
+          test "$INSPECT_MIGRATIONS" = false
+          test "$CONFIRM_SUPPORT" = crown269-reference-metadata-only
+          test -z "$CONFIRM_LEGACY"
+          test -z "$CONFIRM_BLACKLIST"
+          test -z "$DEV_RECOVERY_RECEIPT"
+      - name: Checkout immutable expected main source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify accepted main has not moved
+        shell: bash
+        env:
+          REQUESTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REQUESTED_SHA"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse origin/main)" = "$REQUESTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Verify metadata-only boundary contracts before Azure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install pyyaml==6.0.3
+          python -m py_compile scripts/ops/crown269_reference_metadata_readonly.py
+          python -m unittest discover -s scripts/ops -p test_crown269_reference_metadata_readonly.py -v
+      - name: Authenticate using existing DEV OIDC identity
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Read only two fixed Key Vault reference statuses
+        shell: bash
+        env:
+          CROWN269_EXPECTED_TENANT: ${{ secrets.AZURE_TENANT_ID }}
+          CROWN269_EXPECTED_SUBSCRIPTION: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python scripts/ops/crown269_reference_metadata_readonly.py \
+            --receipt "$RUNNER_TEMP/crown269-dev-reference-metadata.json"
+      - name: Retain redacted #269 metadata evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: crown269-dev-reference-metadata-${{ github.run_id }}
+          path: ${{ runner.temp }}/crown269-dev-reference-metadata.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Discard local #269 receipt and Azure session
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/crown269-dev-reference-metadata.json"
+          az logout >/dev/null 2>&1 || true
   support-contract-tests:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -95,8 +191,9 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_reviewed_legacy_refresh_migrations.py -v
           python -m unittest discover -s scripts/ops -p test_dev_blacklist_workflow_stage.py -v
           python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
+          python -m unittest discover -s scripts/ops -p test_crown269_reference_metadata_readonly.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
+    if: github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -152,12 +249,12 @@ jobs:
       - name: Install PostgreSQL client
         run: python -m pip install 'psycopg[binary]==3.3.6'
       - name: Verify census evidence boundary (offline)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
-      - name: Collect DEV school counts (read-only, protected main push)
-        if: github.event_name == 'push'
+      - name: Collect DEV school counts (read-only, protected main)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
-          SHA: ${{ github.sha }}
+          SHA: ${{ inputs.expected_sha || github.sha }}
         run: |
           set -euo pipefail
           umask 077
@@ -167,7 +264,7 @@ jobs:
           # even when artifact downloads are unavailable to the operator.
           cat dev-school-census.json
       - name: Retain sanitized school count evidence
-        if: always() && github.event_name == 'push' && hashFiles('dev-school-census.json') != ''
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && hashFiles('dev-school-census.json') != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dev-school-census-${{ github.run_id }}
@@ -175,7 +272,7 @@ jobs:
           retention-days: 7
           if-no-files-found: error
       - name: Discard local school count evidence
-        if: always() && github.event_name == 'push'
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
         run: rm -f dev-school-census.json
       - name: Collect DEV schema (read-only)
         env:
@@ -218,7 +315,7 @@ jobs:
         run: az logout
 
   stage-reviewed-dev-migrations:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true)
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 20
