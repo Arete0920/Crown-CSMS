@@ -69,6 +69,31 @@ def test_schema_patch_inventory_paths_are_confined(tmp_path):
     except (OSError, NotImplementedError):
         symlink = None
 
+    guard_path = Path("scripts/release/schema_patch_path_guard.py")
+    guard_spec = importlib.util.spec_from_file_location("schema_patch_path_guard", guard_path)
+    guard = importlib.util.module_from_spec(guard_spec)
+    guard_spec.loader.exec_module(guard)
+
+    assert guard.inventory_target({"file": "backend/classes/views.py"}, tmp_path) == valid
+    assert guard.inventory_target({"file": "unknown"}, tmp_path) is None
+    assert guard.inventory_target({"file": "backend/classes/missing.py"}, tmp_path) is None
+    for candidate in (
+        "../outside.py",
+        "backend/../../outside.py",
+        "backend/classes/../../../outside.py",
+        str(outside),
+        "backend\\\\classes\\\\views.py",
+        "backend/classes/notes.txt",
+        "scripts/release/patch_schema_apiview_methods.py",
+    ):
+        with pytest.raises(ValueError, match="backend Python file"):
+            guard.inventory_target({"file": candidate}, tmp_path)
+    if symlink is not None:
+        with pytest.raises(ValueError, match="regular in-repository file"):
+            guard.inventory_target({"file": "backend/classes/linked.py"}, tmp_path)
+    with pytest.raises(ValueError, match="invalid schema inventory"):
+        guard.inventory_target({"no_file": "backend/classes/views.py"}, tmp_path)
+
     for file_name in (
         "patch_schema_apiview_methods.py",
         "patch_schema_function_views.py",
@@ -80,30 +105,8 @@ def test_schema_patch_inventory_paths_are_confined(tmp_path):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module.ROOT = tmp_path
-
-        assert module._inventory_target({"file": "backend/classes/views.py"}) == valid
-        assert module._inventory_target({"file": "unknown"}) is None
-        assert module._inventory_target({"file": "backend/classes/missing.py"}) is None
-        for candidate in (
-            "../outside.py",
-            "backend/../../outside.py",
-            "backend/classes/../../../outside.py",
-            str(outside),
-            "backend\\\\classes\\\\views.py",
-            "backend/classes/notes.txt",
-            "scripts/release/patch_schema_apiview_methods.py",
-        ):
-            with pytest.raises(ValueError, match="backend Python file"):
-                module._inventory_target({"file": candidate})
-        if symlink is not None:
-            with pytest.raises(ValueError, match="regular in-repository file"):
-                module._inventory_target({"file": "backend/classes/linked.py"})
-        with pytest.raises(ValueError, match="invalid schema inventory"):
-            module._inventory_target({"no_file": "backend/classes/views.py"})
-
-        inventory = tmp_path / "inventory.json"
-        module.INVENTORY = inventory
-        inventory.write_text(json.dumps([
+        module.INVENTORY = tmp_path / "inventory.json"
+        module.INVENTORY.write_text(json.dumps([
             {"file": "unknown"},
             {"file": "backend/classes/views.py"},
             {"file": "../outside.py"},
