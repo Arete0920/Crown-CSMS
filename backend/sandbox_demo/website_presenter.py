@@ -3,12 +3,13 @@
 Not a buyer invitation, sandbox-open-session bypass, provisioning API, or
 school selector. The server issues only short-lived DEV-scoped access tokens.
 """
-import hashlib
 import re
 import time
+from datetime import timedelta
 
-from django.core.cache import cache
 from django.http import JsonResponse
+from django.utils import timezone
+from django.db import connection
 
 from django.conf import settings
 from django.core.management.base import CommandError
@@ -16,6 +17,7 @@ from django.core.management.base import CommandError
 from core.models import UserAccount, UserRole
 from crown_api.jwt_utils import encode_jwt
 from .catalog import SANDBOX_PERSONAS
+from .models import SandboxEvent
 from .universal_demo import _owned_school
 from .universal_identity import presenter_username
 from .universal_runtime import require_hosted_presenter
@@ -96,21 +98,25 @@ def website_demo_school():
         return None
 
 
-def website_demo_rate_limit(request):
-    """Fail closed if per-address bounded session issuance cannot be enforced."""
-    address = request.META.get("REMOTE_ADDR", "").strip()
-    if not address or len(address) > 64:
+def website_demo_rate_limit(school, role):
+    """Bound issuance atomically in the existing database, without Redis."""
+    if not connection.in_atomic_block:
+        raise CommandError("Presenter session issuance requires a transaction.")
+    # Lock one registered school row; concurrent issuers serialize across hosts.
+    school.__class__.objects.select_for_update().get(pk=school.pk, is_active=True)
+    recent = SandboxEvent.objects.filter(
+        event="website_presenter_session_issued_v1",
+        school=str(school.pk),
+        occurred_at__gte=timezone.now() - timedelta(seconds=60),
+    ).count()
+    if recent >= 12:
         return False
-    key = "crown-website-presenter:" + hashlib.sha256(
-        (address + ":" + str(int(time.time()) // 60)).encode("utf-8")
-    ).hexdigest()
-    try:
-        if cache.add(key, 1, timeout=120):
-            return True
-        return cache.incr(key) <= 12
-    except Exception:
-        return False
-
+    SandboxEvent.objects.create(
+        event="website_presenter_session_issued_v1",
+        track="school", guidance="website", persona=role,
+        school=str(school.pk), tour="", route="",
+    )
+    return True
 
 def issue_website_demo_session(school, role):
     """Issue an ordinary verified JWT with a separately enforced demo scope."""
