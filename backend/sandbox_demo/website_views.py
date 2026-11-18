@@ -1,5 +1,6 @@
 """Public launcher for one owned fictional DEV school; no customer access."""
 from django.db import transaction
+from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -20,6 +21,7 @@ class WebsitePresenterEntryView(APIView):
         response["Cache-Control"] = "no-store, private"
         return response
 
+    @extend_schema(exclude=True)
     def get(self, request):
         school = website_demo_school()
         if school is None:
@@ -33,6 +35,7 @@ class WebsitePresenterEntryView(APIView):
                       for key, persona in SANDBOX_PERSONAS.items()],
         })
 
+    @extend_schema(exclude=True)
     @transaction.atomic
     def post(self, request):
         # Cross-origin static-app submission; never issues a cookie or refresh.
