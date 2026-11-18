@@ -131,7 +131,7 @@ export default function SandboxLandingPage() {
 
   // A supplied invite is never a fallback to the unrestricted local selector.
   // Only a usable invitation with an explicit role list may display its roles.
-  const visiblePersonas = inviteId
+  const visiblePersonas = inviteId && !onWebsiteDemo
     ? (invite?.usable === true && Array.isArray(invite.allowed_roles)
       ? personas.filter((persona) => invite.allowed_roles.includes(persona.value))
       : [])
