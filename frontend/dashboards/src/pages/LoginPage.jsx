@@ -174,6 +174,7 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   const serializedUser = JSON.stringify(currentUser);
   const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
 
+  sessionStorage.removeItem("crown.website.presenter");
   sessionStorage.setItem("crown.jwt.access", access);
   if (IS_SANDBOX && refresh) {
     sessionStorage.setItem("crown.jwt.refresh", refresh);
