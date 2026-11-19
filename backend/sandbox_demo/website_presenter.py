@@ -68,6 +68,14 @@ SENSITIVE_DASHBOARD_READ_GRANTS = {
     "/api/dashboards/admissions/funnel": "admissions.view",
     "/api/v1/dashboards/academics/enrollment": "academics.view",
     "/api/dashboards/academics/enrollment": "academics.view",
+    # Stage-2 CFO endpoints use only IsAuthenticated in the underlying views.
+    # Website tokens must not expose schoolwide reconciliation/payout metrics
+    # to parent, student, teacher, admissions or childcare personas.
+    "/api/v1/finance/kpis": "finance.view",
+    "/api/v1/finance/chargebacks": "finance.view",
+    "/api/v1/finance/monthly-summary": "finance.view",
+    "/api/v1/finance/payout-audit": "finance.view",
+    "/api/v1/finance/dunning": "finance.view",
 }
 
 DISALLOWED_PATH_PARTS = frozenset({
