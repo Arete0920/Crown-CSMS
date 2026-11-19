@@ -229,6 +229,25 @@ def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
                     )
                     assert foreign.status_code == 403, (role, path, foreign.content)
 
+            # Five Stage-2 CFO GETs have no underlying role check. The website
+            # scope must enforce the school-bound finance grant for every persona.
+            actor = UserAccount.objects.get(username=presenter_username(role))
+            claims = decode_access(issued.data["access"]).payload
+            for route in (
+                "kpis/", "chargebacks/", "monthly-summary/", "payout-audit/",
+                "dunning/",
+            ):
+                path = f"/api/v1/finance/{route}"
+                expected = role in {"school_admin", "finance_director"}
+                assert website_demo_request_allowed(
+                    RequestFactory().get(path), actor, claims,
+                ) is expected, (role, path)
+                if not expected:
+                    denied = client.get(
+                        path, HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID),
+                    )
+                    assert denied.status_code == 403, (role, path, denied.content)
+
         # A privileged-looking URL without a route-grant must fail closed,
         # including the no-slash legacy dashboard resolver alias.
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}")
