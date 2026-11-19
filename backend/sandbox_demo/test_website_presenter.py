@@ -6,7 +6,7 @@ from django.db import transaction
 from django.test import RequestFactory
 from rest_framework.test import APIClient
 
-from core.models import School, UserAccount
+from core.models import CrownPermission, RolePermission, School, UserAccount
 from crown_api.jwt_utils import decode_access
 from sandbox_demo.test_universal_presenter import local_runtime
 from sandbox_demo.universal_demo import prepare_presenter
@@ -159,6 +159,83 @@ def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
             assert not website_demo_request_allowed(
                 factory.get(path), actors["board"], claims["board"]
             )
+
+
+
+@pytest.mark.django_db
+def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
+    local_runtime, settings,
+):
+    """Exercise middleware, real signed JWTs, persisted grants and legacy aliases."""
+    prepare_presenter(apply=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    from sandbox_demo.catalog import SANDBOX_PERSONAS
+
+    # Explicit grants make the positive cases stable in an isolated test DB.
+    for role_code, code in (
+        ("HEAD_OF_SCHOOL", "finance.view"),
+        ("HEAD_OF_SCHOOL", "admissions.view"),
+        ("FINANCE_DIRECTOR", "finance.view"),
+        ("REGISTRAR", "admissions.view"),
+        ("HEAD_OF_SCHOOL", "academics.view"),
+        ("REGISTRAR", "academics.view"),
+        ("TEACHER", "academics.view"),
+    ):
+        permission, _ = CrownPermission.objects.get_or_create(code=code)
+        RolePermission.objects.get_or_create(
+            role_code=role_code, permission=permission,
+        )
+
+    allowed = {
+        "finance/summary/": {"school_admin", "finance_director"},
+        "admissions/funnel/": {"school_admin", "admissions_director"},
+        "academics/enrollment/": {
+            "school_admin", "admissions_director", "teacher",
+        },
+    }
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
+    ):
+        client = APIClient()
+        for role in SANDBOX_PERSONAS:
+            issued = client.post(
+                "/api/v1/sandbox/website-presenter/",
+                {"role": role}, format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+            )
+            assert issued.status_code == 201, (role, issued.content)
+            client.credentials(
+                HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}",
+            )
+            for suffix, authorized_roles in allowed.items():
+                for prefix in ("/api/v1/dashboards/", "/api/dashboards/"):
+                    path = prefix + suffix
+                    result = client.get(
+                        path, HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID),
+                    )
+                    expected = 200 if role in authorized_roles else 403
+                    assert result.status_code == expected, (
+                        role, path, expected, result.content,
+                    )
+                    blocked = client.post(
+                        path, {}, format="json",
+                        HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID),
+                    )
+                    assert blocked.status_code == 403, (role, path, blocked.content)
+                    foreign = client.get(
+                        path, HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
+                    )
+                    assert foreign.status_code == 403, (role, path, foreign.content)
+
+        # A privileged-looking URL without a route-grant must fail closed,
+        # including the no-slash legacy dashboard resolver alias.
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}")
+        for path in (
+            "/api/v1/dashboards/finance/summary",
+            "/api/dashboards/admissions/funnel",
+        ):
+            assert client.get(
+                path, HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID),
+            ).status_code == 403
 
 
 @pytest.mark.django_db
