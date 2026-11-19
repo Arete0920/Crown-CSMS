@@ -44,9 +44,9 @@ jobs:
           node-version: '24'
       - run: npm ci --no-audit --no-fund
         working-directory: frontend/dashboards
-      - run: npx vitest run src/features/contentOperations/ContentReleases.test.jsx
+      - run: ./node_modules/.bin/vitest run src/features/contentOperations/ContentReleases.test.jsx
         working-directory: frontend/dashboards
-      - run: npx eslint src/features/contentOperations/*.jsx src/pages/ReenrollmentWizard.jsx src/pages/ParentLifecycleStatusCenterPage.jsx src/pages/ParentDashboard.jsx src/pages/reenrollment/Step1Config.jsx src/api/reenrollment.js
+      - run: ./node_modules/.bin/eslint src/features/contentOperations/*.jsx src/pages/ReenrollmentWizard.jsx src/pages/ParentLifecycleStatusCenterPage.jsx src/pages/ParentDashboard.jsx src/pages/reenrollment/Step1Config.jsx src/api/reenrollment.js
         working-directory: frontend/dashboards
       - run: npm run build
         working-directory: frontend/dashboards
