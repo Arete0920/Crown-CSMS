@@ -29,5 +29,5 @@ services:
       # Mount pass template assets (safe to commit; images added by operator)
       - ./services/wallet/apple-pass-service/template:/template:ro
     ports:
-      - "7071:7071"
+      - "127.0.0.1:7071:7071"
     restart: unless-stopped
