@@ -4,6 +4,11 @@ import json
 import re
 from pathlib import Path
 
+try:
+    from scripts.release.schema_patch_path_guard import ensure_imports, inventory_targets
+except ModuleNotFoundError:
+    from schema_patch_path_guard import ensure_imports, inventory_targets
+
 ROOT = Path(__file__).resolve().parents[2]
 VERIFY_DIR = ROOT / "audit-artifacts" / "release-verify"
 VERIFY_DIR.mkdir(parents=True, exist_ok=True)
@@ -14,32 +19,8 @@ REPORT = VERIFY_DIR / "schema_function_patch_report.json"
 API_VIEW_RE = re.compile(r"^(?P<indent>\s*)@api_view\(")
 
 
-def ensure_imports(text: str) -> str:
-    inserts = []
-    if "from drf_spectacular.utils import extend_schema" not in text:
-        inserts.append("from drf_spectacular.utils import extend_schema")
-    if "from drf_spectacular.types import OpenApiTypes" not in text:
-        inserts.append("from drf_spectacular.types import OpenApiTypes")
-    if not inserts:
-        return text
-
-    lines = text.splitlines()
-    insert_at = 0
-    for i, line in enumerate(lines):
-        if line.startswith("from ") or line.startswith("import "):
-            insert_at = i + 1
-    lines[insert_at:insert_at] = inserts
-    return "\n".join(lines) + "\n"
-
-
 def target_files() -> list[Path]:
-    files: list[Path] = []
-    if INVENTORY.exists():
-        items = json.loads(INVENTORY.read_text(encoding="utf-8"))
-        for item in items[:30]:
-            path = ROOT / item["file"]
-            if path.exists():
-                files.append(path)
+    files = inventory_targets(INVENTORY, ROOT)
 
     for path in ROOT.glob("backend/*_wizard/views.py"):
         if path not in files:
