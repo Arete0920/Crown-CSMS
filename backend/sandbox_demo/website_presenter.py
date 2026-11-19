@@ -44,6 +44,40 @@ READ_PREFIXES = (
     "/api/ledger/accounts/",
     "/api/admissions/",
 )
+
+# Exact registered dashboard reads. Keep these role-bound: a public demo
+# token is not a general-purpose permission to query another role's metrics.
+ROLE_READ_PATHS = {
+    "school_admin": frozenset({"/api/v1/admin/metrics/"}),
+    "teacher": frozenset({"/api/v1/teacher/metrics/"}),
+    "parent": frozenset({"/api/v1/parent/metrics/"}),
+    "student": frozenset({"/api/v1/student/metrics/"}),
+    "board": frozenset({
+        "/api/v1/board/metrics/", "/api/v1/board/dashboard/",
+        "/api/v1/board/snapshots/", "/api/v1/board/packets/",
+    }),
+}
+# Sensitive dashboard views have their own permission checks, but the
+# website token gate must enforce the same role grants for both URL aliases.
+# Strip the optional slash to cover the registered views and the legacy
+# no-slash dashboard summary fallback without granting another role access.
+SENSITIVE_DASHBOARD_READ_GRANTS = {
+    "/api/v1/dashboards/finance/summary": "finance.view",
+    "/api/dashboards/finance/summary": "finance.view",
+    "/api/v1/dashboards/admissions/funnel": "admissions.view",
+    "/api/dashboards/admissions/funnel": "admissions.view",
+    "/api/v1/dashboards/academics/enrollment": "academics.view",
+    "/api/dashboards/academics/enrollment": "academics.view",
+    # Stage-2 CFO endpoints use only IsAuthenticated in the underlying views.
+    # Website tokens must not expose schoolwide reconciliation/payout metrics
+    # to parent, student, teacher, admissions or childcare personas.
+    "/api/v1/finance/kpis": "finance.view",
+    "/api/v1/finance/chargebacks": "finance.view",
+    "/api/v1/finance/monthly-summary": "finance.view",
+    "/api/v1/finance/payout-audit": "finance.view",
+    "/api/v1/finance/dunning": "finance.view",
+}
+
 DISALLOWED_PATH_PARTS = frozenset({
     "ops", "platform", "payments", "webhooks", "credentials", "secrets",
     "provisioning", "export", "exports", "tokens", "api-keys",
@@ -173,7 +207,15 @@ def website_demo_request_allowed(request, actor, claims):
         return False
     method = request.method
     if method in {"GET", "HEAD", "OPTIONS"}:
-        return any(path.startswith(prefix) for prefix in READ_PREFIXES)
+        required_grant = SENSITIVE_DASHBOARD_READ_GRANTS.get(path.rstrip("/"))
+        if required_grant is not None:
+            from core.permissions import user_has_permission
+            return user_has_permission(actor, required_grant, school=school)
+        return (
+            path == "/api/v1/nav/"
+            or path in ROLE_READ_PATHS.get(key, ())
+            or any(path.startswith(prefix) for prefix in READ_PREFIXES)
+        )
     # Public website sessions are read-only. Transactional demonstration
     # remains exclusively on the separately authenticated presenter path.
     return False

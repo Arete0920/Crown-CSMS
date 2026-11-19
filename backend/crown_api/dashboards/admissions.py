@@ -5,11 +5,14 @@ from datetime import timedelta
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from admissions.models import AdmissionsApplication
+from core.models import School
+from core.permissions import user_has_permission
 
 from crown_api.dashboards.tenant import get_dashboard_school_id
 
@@ -21,6 +24,9 @@ class AdmissionsFunnelDashboard(APIView):
 
     def get(self, request):
         school_id = get_dashboard_school_id(request, required=True)
+        school = School.objects.filter(pk=school_id, is_active=True).first()
+        if not user_has_permission(request.user, "admissions.view", school=school):
+            raise PermissionDenied("Admissions access is not authorized.")
 
         now = timezone.now()
         start = now - timedelta(days=30)
