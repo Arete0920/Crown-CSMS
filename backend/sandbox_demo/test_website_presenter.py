@@ -198,6 +198,9 @@ def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
     ):
         client = APIClient()
         for role in SANDBOX_PERSONAS:
+            # Match website credential-omission on persona switches: a prior
+            # demo JWT must not authorize the next session-issuance request.
+            client.credentials()
             issued = client.post(
                 "/api/v1/sandbox/website-presenter/",
                 {"role": role}, format="json", HTTP_ORIGIN=DEMO_ORIGIN,
