@@ -57,6 +57,19 @@ ROLE_READ_PATHS = {
         "/api/v1/board/snapshots/", "/api/v1/board/packets/",
     }),
 }
+# Sensitive dashboard views have their own permission checks, but the
+# website token gate must enforce the same role grants for both URL aliases.
+# Strip the optional slash to cover the registered views and the legacy
+# no-slash dashboard summary fallback without granting another role access.
+SENSITIVE_DASHBOARD_READ_GRANTS = {
+    "/api/v1/dashboards/finance/summary": "finance.view",
+    "/api/dashboards/finance/summary": "finance.view",
+    "/api/v1/dashboards/admissions/funnel": "admissions.view",
+    "/api/dashboards/admissions/funnel": "admissions.view",
+    "/api/v1/dashboards/academics/enrollment": "academics.view",
+    "/api/dashboards/academics/enrollment": "academics.view",
+}
+
 DISALLOWED_PATH_PARTS = frozenset({
     "ops", "platform", "payments", "webhooks", "credentials", "secrets",
     "provisioning", "export", "exports", "tokens", "api-keys",
@@ -186,6 +199,10 @@ def website_demo_request_allowed(request, actor, claims):
         return False
     method = request.method
     if method in {"GET", "HEAD", "OPTIONS"}:
+        required_grant = SENSITIVE_DASHBOARD_READ_GRANTS.get(path.rstrip("/"))
+        if required_grant is not None:
+            from core.permissions import user_has_permission
+            return user_has_permission(actor, required_grant, school=school)
         return (
             path == "/api/v1/nav/"
             or path in ROLE_READ_PATHS.get(key, ())
