@@ -10,10 +10,12 @@ from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from core.models import School
 from ledger.models import LedgerAccount, Payment
+from ledger.tests.factories import grant_finance_authority
 from ledger.models_dunning import DunningRecord, Chargeback, DailyPayoutAudit
 from ledger.services_dunning import process_failed_payments, register_failed_payment
 from ledger.services_reconciliation import (
@@ -253,3 +255,49 @@ class GracePeriodTests(TestCase):
         )
         result = enforce_grace_period(school_id=self.school_id)
         self.assertEqual(result["suspended_count"], 0)
+
+
+class CfoReportReadAuthorizationTests(TestCase):
+    """The five Stage-2 CFO reports require school-scoped finance.view."""
+
+    ROUTES = (
+        "/api/v1/finance/kpis/",
+        "/api/v1/finance/chargebacks/",
+        "/api/v1/finance/monthly-summary/",
+        "/api/v1/finance/payout-audit/",
+        "/api/v1/finance/dunning/",
+    )
+
+    def setUp(self):
+        self.school = School.objects.create(name="CFO reporting authority school")
+        self.other_school = School.objects.create(name="Unrelated CFO reporting school")
+        self.user = get_user_model().objects.create_user(
+            username="cfo-read-access-synthetic", school=self.school,
+        )
+        self.client.force_login(self.user)
+
+    def test_authenticated_user_without_school_finance_grant_cannot_read_reports(self):
+        for route in self.ROUTES:
+            with self.subTest(route=route):
+                response = self.client.get(
+                    route, HTTP_X_SCHOOL_ID=str(self.school.id),
+                )
+                self.assertEqual(response.status_code, 403)
+
+    def test_authorized_school_finance_reader_can_read_reports(self):
+        grant_finance_authority(self.user, self.school.id)
+        for route in self.ROUTES:
+            with self.subTest(route=route):
+                response = self.client.get(
+                    route, HTTP_X_SCHOOL_ID=str(self.school.id),
+                )
+                self.assertEqual(response.status_code, 200)
+
+    def test_school_finance_grant_cannot_read_another_school(self):
+        grant_finance_authority(self.user, self.school.id)
+        for route in self.ROUTES:
+            with self.subTest(route=route):
+                response = self.client.get(
+                    route, HTTP_X_SCHOOL_ID=str(self.other_school.id),
+                )
+                self.assertEqual(response.status_code, 404)
