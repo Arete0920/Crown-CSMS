@@ -53,6 +53,9 @@ jobs:
           python tools/tests/test_repository_identity_hygiene.py
           python scripts/ci/repository_identity_hygiene.py
 
+      - name: Verify audit bundle path boundaries
+        run: python -m unittest tools.tests.test_audit_bundle_path_boundary -v
+
       - name: Run pull-request hygiene
         if: github.event_name == 'pull_request'
         env:
