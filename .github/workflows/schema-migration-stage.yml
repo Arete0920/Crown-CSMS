@@ -128,13 +128,16 @@ jobs:
     steps:
       - name: Validate production authorization inputs
         shell: bash
+        env:
+          CONFIRM_ENVIRONMENT: ${{ inputs.confirm_environment }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          [[ "${{ inputs.confirm_environment }}" == "production" ]] || {
+          [[ "$CONFIRM_ENVIRONMENT" == "production" ]] || {
             echo "ERROR: confirm_environment must equal production"
             exit 1
           }
-          [[ "${{ inputs.expected_sha }}" =~ ^[0-9a-f]{40}$ ]] || {
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
             echo "ERROR: expected_sha must be a full lowercase 40-character SHA"
             exit 1
           }
@@ -147,12 +150,14 @@ jobs:
 
       - name: Verify exact checked-out SHA
         shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
           actual="$(git rev-parse HEAD)"
-          test "$actual" = "${{ inputs.expected_sha }}" || {
+          test "$actual" = "$EXPECTED_SHA" || {
             echo "ERROR: checked-out SHA mismatch"
-            echo "expected=${{ inputs.expected_sha }}"
+            echo "expected=$EXPECTED_SHA"
             echo "actual=$actual"
             exit 1
           }
@@ -403,10 +408,12 @@ jobs:
 
       - name: Record migration authority summary
         shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           {
             echo "## Controlled schema migration"
-            echo "- application SHA: ${{ inputs.expected_sha }}"
+            echo "- application SHA: $EXPECTED_SHA"
             echo "- workflow run: ${{ github.run_id }}"
             echo "- environment: production"
             echo "- secret source: ${{ steps.secret_source.outputs.source }}"
