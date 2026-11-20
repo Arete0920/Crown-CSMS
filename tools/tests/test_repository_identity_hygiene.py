@@ -155,6 +155,25 @@ class ReferencePolicyTests(unittest.TestCase):
             path.write_text(content.replace(definition, definition + tail), encoding="utf-8")
             self.assertTrue(self.findings())
 
+    def test_embedded_media_regex_rejects_ambiguous_parameters_with_bounded_runtime(self):
+        # A missing comma previously caused exponential backtracking as
+        # the same semicolon could be consumed by adjacent repetitions.
+        script = (
+            "import importlib.util, sys; "
+            "spec = importlib.util.spec_from_file_location('policy', sys.argv[1]); "
+            "policy = importlib.util.module_from_spec(spec); "
+            "spec.loader.exec_module(policy); "
+            "assert policy.ENCODED_MEDIA_RE.search('data:text/plain' + ';a' * 60 + 'NO_COMMA') is None; "
+            "match = policy.ENCODED_MEDIA_RE.search('data:' + 'image/svg+xml;charset=utf-8;base64,PHN2Zz4='); "
+            "assert match is not None and match.group(1).endswith('base64,') "
+            "and match.group(2) == 'PHN2Zz4='"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", script, str(ROOT / policy.GUARD_PATH)],
+            capture_output=True, text=True, timeout=5,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_vector_paths_and_percent_encoded_media_require_review(self):
         payload = "".join("%" + format(byte, "02x") for byte in b"<svg><path d='M0 0'/></svg>")
         for name, content in (("vector.svg", '<svg><path d="M0 0"/></svg>'),

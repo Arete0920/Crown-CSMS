@@ -57,6 +57,23 @@ class DevBlacklistWorkflowStageTests(unittest.TestCase):
         self.assertEqual(self.stage["environment"], "dev")
         self.assertEqual(self.stage["permissions"]["id-token"], "write")
 
+    def test_readonly_census_runs_on_manual_inspection_without_schema_application(self):
+        steps = {step.get("name"): step for step in self.inspect["steps"]}
+        for name in (
+            "Verify census evidence boundary (offline)",
+            "Collect DEV school counts (read-only, protected main)",
+            "Retain sanitized school count evidence",
+            "Discard local school count evidence",
+        ):
+            self.assertIn(name, steps)
+            self.assertIn("github.event_name == 'push'", steps[name]["if"])
+            self.assertIn("github.event_name == 'workflow_dispatch'", steps[name]["if"])
+        census = steps["Collect DEV school counts (read-only, protected main)"]
+        self.assertEqual(census["env"]["SHA"], "${{ inputs.expected_sha || github.sha }}")
+        self.assertIn("read_dev_school_census.py", census["run"])
+        self.assertNotIn("--apply", census["run"])
+        self.assertEqual(self.inspect["environment"], "dev")
+
     def test_only_explicit_single_mode_authorized(self):
         valid = [
             dict(BLACKLIST_MODE="true", CONFIRM_BLACKLIST="migrate-dev-blacklist",

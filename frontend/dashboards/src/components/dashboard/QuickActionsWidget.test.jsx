@@ -16,7 +16,7 @@ describe('QuickActionsWidget', () => {
       />,
     );
 
-    const link = screen.getByRole('link', { name: '→Open Billing' });
+    const link = screen.getByRole('link', { name: /^→\s*Open Billing$/ });
     expect(link.getAttribute('href')).toBe('/billing-dashboard');
   });
 });

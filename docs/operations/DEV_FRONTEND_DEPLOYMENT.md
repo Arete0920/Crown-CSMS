@@ -16,12 +16,12 @@ This mode establishes deployment identity and basic connectivity only. It does
 not establish owner-console, household, provisioning or tenant-isolation
 acceptance. The workflow summary explicitly records those evidence limits.
 
-Setting `dev_deploy_only=false` opts into the existing broader certification path,
-including API CORS/CSRF settings changes, browser writes, and synthetic tenant
-preparation. Dispatch that mode only with separately authorized scope. A workflow
-input is an execution control, not proof of owner authorization.
+The retired `dev_deploy_only=false` full buyer-invitation certification mode
+fails at the first DEV preview step, before SWA upload, Azure CORS/CSRF changes,
+browser writes, or synthetic-tenant preparation. Staff-authenticated salesperson
+acceptance is a separate governed gate under issue #427.
 
-Both modes still require the existing DEV environment/control path and explicit
+The supported DEV preview mode still requires the existing environment/control path and explicit
 deployment authority. No production deployment, payment activation, credential
 rotation, or live-school provisioning is granted by this document. Roll back the
 frontend by deploying its previously accepted source with a compatible verified

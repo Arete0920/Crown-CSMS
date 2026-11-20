@@ -11,8 +11,10 @@ from pathlib import Path
 
 try:
     from env_guard import validate_environment
+    from certify_audit_pack import REQUIRED_FILES
 except ImportError:
     from solomon_governance_c1.env_guard import validate_environment
+    from solomon_governance_c1.certify_audit_pack import REQUIRED_FILES
 
 
 MANIFEST_NAME = "99_BUNDLE_MANIFEST.json"
@@ -33,6 +35,19 @@ def fail(message: str) -> None:
     sys.exit(1)
 
 
+def validated_artifact_names(hashes: object) -> list[str]:
+    """Reject manifest-selected filenames outside the certified audit contract."""
+    if not isinstance(hashes, dict) or set(hashes) != set(REQUIRED_FILES):
+        fail("manifest artifact names must match required audit files")
+    return sorted(REQUIRED_FILES)
+
+
+def require_regular_file(path: Path) -> None:
+    """Do not follow bundle file symlinks outside the selected audit directory."""
+    if path.is_symlink() or not path.is_file():
+        fail(f"missing or linked audit file: {path.name}")
+
+
 def main() -> int:
     validate_environment()
     parser = argparse.ArgumentParser(description="Verify certified AUDIT_PACK bundle integrity")
@@ -49,8 +64,7 @@ def main() -> int:
     sha_path = bundle / SHA_NAME
 
     for path in [manifest_path, cert_path, sha_path]:
-        if not path.exists():
-            fail(f"missing integrity file: {path.name}")
+        require_regular_file(path)
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     cert = json.loads(cert_path.read_text(encoding="utf-8"))
@@ -64,10 +78,10 @@ def main() -> int:
     if manifest_hashes != cert_hashes:
         fail("manifest hashes do not match certification hashes")
 
-    for name, expected_hash in sorted(manifest_hashes.items()):
+    for name in validated_artifact_names(manifest_hashes):
+        expected_hash = manifest_hashes[name]
         path = bundle / name
-        if not path.exists():
-            fail(f"missing certified artifact: {name}")
+        require_regular_file(path)
 
         actual = sha256_file(path)
         if actual != expected_hash:

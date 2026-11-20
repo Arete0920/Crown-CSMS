@@ -398,6 +398,16 @@ jobs:
       id-token: write
     timeout-minutes: 45
     steps:
+      - name: Reject retired DEV full certification mode
+        shell: bash
+        env:
+          DEPLOY_ONLY: ${{ toJSON(inputs.dev_deploy_only) }}
+        run: |
+          set -euo pipefail
+          if [[ "$DEPLOY_ONLY" != "true" ]]; then
+            echo "::error::Retired DEV buyer-invitation certification is disabled; use dev_deploy_only=true for code-only preview. Staff-authenticated acceptance is separate."
+            exit 1
+          fi
       - name: Validate pinned DEV source
         env:
           SOURCE_SHA: ${{ inputs.dev_source_sha }}
@@ -609,7 +619,7 @@ jobs:
       - name: Install existing Playwright browser
         if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
-        run: npx playwright install chromium --with-deps
+        run: ./node_modules/.bin/playwright install chromium --with-deps
       - name: Execute existing live certification against DEV preview
         id: dev-certification-evidence
         if: toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-evidence-exporter.outcome == 'success'
