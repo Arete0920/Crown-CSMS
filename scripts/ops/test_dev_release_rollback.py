@@ -1,5 +1,6 @@
 """Offline, no-cloud tests for DEV prior-image capture and rollback safety."""
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -36,8 +37,9 @@ def fake_azure(*args, **kwargs):
 
 class DevRollbackContracts(unittest.TestCase):
     def test_capture_and_restore_exact_digest_without_private_settings(self):
-        with tempfile.TemporaryDirectory() as directory:
-            receipt = Path(directory) / "receipt.json"
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}):
+            receipt = Path(directory) / "crown-dev-auto-rollback.json"
             mutations = []
             with patch.object(rollback, "az", side_effect=lambda *a, **kw: (
                     mutations.append((a, kw)) if kw.get("json_mode") is False
@@ -60,10 +62,11 @@ class DevRollbackContracts(unittest.TestCase):
                 return {"linuxFxVersion": "DOCKER|untrusted.registry.invalid/latest"}
             return value
         with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
              patch.object(rollback, "az", side_effect=wrong_image), \
              patch.object(rollback, "health", return_value=healthy()):
             with self.assertRaisesRegex(rollback.Unsafe, "prior_immutable_app_image_unverified"):
-                rollback.capture(Path(directory) / "receipt.json")
+                rollback.capture(Path(directory) / "crown-dev-auto-rollback.json")
 
     def test_prior_runtime_configuration_drift_blocks_before_mutation(self):
         def unsafe_config(*args, **kwargs):
@@ -74,17 +77,19 @@ class DevRollbackContracts(unittest.TestCase):
                         row["value"] = "9000"
             return values
         with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
              patch.object(rollback, "az", side_effect=unsafe_config), \
              patch.object(rollback, "health", return_value=healthy()):
             with self.assertRaisesRegex(rollback.Unsafe, "prior_runtime_settings_not_rollback_compatible"):
-                rollback.capture(Path(directory) / "receipt.json")
+                rollback.capture(Path(directory) / "crown-dev-auto-rollback.json")
 
     def test_unhealthy_previous_artifact_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
              patch.object(rollback, "az", side_effect=fake_azure), \
              patch.object(rollback, "health", return_value=healthy("c" * 40)):
             with self.assertRaisesRegex(rollback.Unsafe, "prior_dev_runtime_not_healthy"):
-                rollback.capture(Path(directory) / "receipt.json")
+                rollback.capture(Path(directory) / "crown-dev-auto-rollback.json")
 
     def test_malformed_receipts_never_modify_azure(self):
         valid = {"status": "CAPTURED", "prior_sha": SHA,
@@ -101,8 +106,9 @@ class DevRollbackContracts(unittest.TestCase):
                  {"unexpected_setting": "bad"}]
         for change in cases:
             with self.subTest(change=change):
-                with tempfile.TemporaryDirectory() as directory:
-                    target = Path(directory) / "receipt.json"
+                with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}):
+                    target = Path(directory) / "crown-dev-auto-rollback.json"
                     target.write_text(json.dumps({**valid, **change}), encoding="utf-8")
                     with patch.object(rollback, "az", side_effect=AssertionError("AZURE_CALLED")):
                         with self.assertRaises(rollback.Unsafe):
@@ -114,12 +120,74 @@ class DevRollbackContracts(unittest.TestCase):
                  "prior_run_id": "1234567890",
                  "prior_workflow": "DEV Deploy (protected main)",
                  "captured_at_utc": "2026-11-14T13:00:00+00:00"}
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "receipt.json"
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}):
+            path = Path(directory) / "crown-dev-auto-rollback.json"
             path.write_text(json.dumps(valid), encoding="utf-8")
             with patch.object(rollback, "az", return_value={"digest": "sha256:" + "c"*64}):
                 with self.assertRaisesRegex(rollback.Unsafe, "prior_image_digest_changed_or_unavailable"):
                     rollback.restore(path)
+
+
+    def test_receipt_path_rejects_outside_and_untrusted_cli_paths_before_azure(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            tempfile.TemporaryDirectory() as outside,
+            patch.dict(os.environ, {"RUNNER_TEMP": directory}),
+            patch.object(rollback, "az", side_effect=AssertionError("AZURE_CALLED")),
+        ):
+            root = Path(directory)
+            rejected = (
+                root / "unexpected.json",
+                Path(outside) / "crown-dev-auto-rollback.json",
+                root / "nested" / "crown-dev-auto-rollback.json",
+                Path("../crown-dev-auto-rollback.json"),
+            )
+            for target in rejected:
+                with self.subTest(target=str(target)):
+                    with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_path_invalid"):
+                        rollback.capture(target)
+                    with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_path_invalid"):
+                        rollback.restore(target)
+
+            with patch.dict(os.environ, {"RUNNER_TEMP": ""}):
+                with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_path_invalid"):
+                    rollback.capture(root / "crown-dev-auto-rollback.json")
+
+    def test_symlinked_receipt_is_rejected_without_azure_calls(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            tempfile.TemporaryDirectory() as outside,
+            patch.dict(os.environ, {"RUNNER_TEMP": directory}),
+            patch.object(rollback, "az", side_effect=AssertionError("AZURE_CALLED")),
+        ):
+            target = Path(directory) / "crown-dev-auto-rollback.json"
+            external = Path(outside) / "external.json"
+            external.write_text("private", encoding="utf-8")
+            try:
+                target.symlink_to(external)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks not supported on this runner")
+            with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_path_invalid"):
+                rollback.capture(target)
+            with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_path_invalid"):
+                rollback.restore(target)
+            self.assertEqual(external.read_text(encoding="utf-8"), "private")
+
+    def test_restore_rejects_oversized_and_non_regular_receipts_without_azure(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"RUNNER_TEMP": directory}),
+            patch.object(rollback, "az", side_effect=AssertionError("AZURE_CALLED")),
+        ):
+            target = Path(directory) / "crown-dev-auto-rollback.json"
+            target.write_text(" " * 4097, encoding="utf-8")
+            with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_too_large"):
+                rollback.restore(target)
+            target.unlink()
+            target.mkdir()
+            with self.assertRaisesRegex(rollback.Unsafe, "rollback_receipt_not_regular"):
+                rollback.restore(target)
 
 
 if __name__ == "__main__":
