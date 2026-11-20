@@ -94,6 +94,41 @@ def test_activation_preflight_and_atomic_apply_on_disposable_sqlite_only(local_r
 
 
 @pytest.mark.django_db
+def test_existing_dev_aid_only_preflight_and_apply_do_not_stage_other_modules(local_runtime):
+    """Only institutional Aid policy and the authorized officer; no SGO or care."""
+    from aid.models import AidApplication, AidPolicy
+    from aftercare.models import DaycareChild
+    from core.models import Family, Student, UserRole
+    from jireh_sgo.models import SGOFamilyGrant, SGOOrganization, SGOProgram
+    from sandbox_demo.universal_demo import require_local_presenter
+    call_command("seed_permissions", stdout=StringIO())
+    with patch(COMMAND + ".require_hosted_presenter", side_effect=lambda sha: require_local_presenter()):
+        preflight = StringIO()
+        call_command("provision_universal_presenter", expected_sha=SHA,
+                     financial_aid_only=True, stdout=preflight)
+        assert not School.objects.exists()
+        assert '"scope": "FINANCIAL_AID_ONLY"' in preflight.getvalue()
+        result = StringIO()
+        call_command("provision_universal_presenter", expected_sha=SHA, apply=True,
+                     confirm_school_id=str(UNIVERSAL_SCHOOL_ID),
+                     financial_aid_only=True, stdout=result)
+    assert '"scope": "FINANCIAL_AID_ONLY"' in result.getvalue()
+    assert School.objects.count() == AidPolicy.objects.count() == 1
+    assert Student.objects.filter(
+        school_id=UNIVERSAL_SCHOOL_ID, family__family_name="Reed Family"
+    ).count() == 2
+    assert Family.objects.filter(school_id=UNIVERSAL_SCHOOL_ID, family_name="Reed Family").count() == 1
+    assert UserRole.objects.filter(school_id=UNIVERSAL_SCHOOL_ID, role_code="AID_DIRECTOR").count() == 1
+    assert not AidApplication.objects.exists()  # No invented submission or award.
+    assert not DaycareChild.objects.exists()
+    assert not SGOOrganization.objects.exists()
+    assert not SGOProgram.objects.exists()
+    assert not SGOFamilyGrant.objects.exists()
+
+
+
+
+@pytest.mark.django_db
 def test_module_failure_rolls_back_whole_activation(local_runtime, operator_secrets):
     from sandbox_demo.universal_demo import require_local_presenter
     from subscriptions.models import Plan
