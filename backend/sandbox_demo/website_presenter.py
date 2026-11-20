@@ -245,6 +245,8 @@ def website_demo_request_allowed(request, actor, claims):
     if school is None:
         return False
     key = claims.get("role")
+    if key != "parent":
+        return False
     persona = SANDBOX_PERSONAS.get(key)
     if (persona is None or not isinstance(actor, UserAccount)
             or not actor.is_active or actor.is_staff or actor.is_superuser
@@ -273,19 +275,14 @@ def website_demo_request_allowed(request, actor, claims):
         return False
     if DISALLOWED_PATH_PARTS.intersection(path.strip("/").split("/")):
         return False
-    method = request.method
-    if method in {"GET", "HEAD", "OPTIONS"}:
-        required_grant = SENSITIVE_DASHBOARD_READ_GRANTS.get(path.rstrip("/"))
-        if required_grant is not None:
-            from core.permissions import user_has_permission
-            return user_has_permission(actor, required_grant, school=school)
-        return (
-            path == "/api/v1/nav/"
-            or path in ROLE_READ_PATHS.get(key, ())
-            or any(path.startswith(prefix) for prefix in READ_PREFIXES)
-        )
-    # Public website sessions are read-only. Transactional demonstration
-    # remains exclusively on the separately authenticated presenter path.
+    if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return path in {
+            "/api/v1/nav/",
+            "/api/system/whoami/",
+            "/api/v1/presenter/jireh/aid/family/",
+            "/api/v1/aid/family/status/",
+        }
+    # This public token cannot write or read unrelated modules.
     return False
 
 

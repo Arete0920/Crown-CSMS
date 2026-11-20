@@ -42,27 +42,34 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
 ):
     prepare_presenter(apply=True)
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
-    with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.website_views.website_financial_aid_ready", return_value=True,
+    ):
         client = APIClient()
         available = client.get("/api/v1/sandbox/website-presenter/")
         assert available.status_code == 200
-        assert len(available.data["roles"]) == 9
+        assert len(available.data["roles"]) == 1
+        assert available.data["roles"][0]["key"] == "parent"
         session = client.post(
-            "/api/v1/sandbox/website-presenter/", {"role": "teacher"},
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
         )
         assert session.status_code == 201, session.content
         body = session.data
         assert body["demo_scope"] == DEMO_SCOPE
         assert not body.get("refresh")
-        assert body["username"] == presenter_username("teacher")
+        assert body["username"] == presenter_username("parent")
         token = decode_access(body["access"])
         assert token.ok
         assert token.payload["demo_scope"] == DEMO_SCOPE
-        actor = UserAccount.objects.get(username=presenter_username("teacher"))
+        actor = UserAccount.objects.get(username=presenter_username("parent"))
         request = RequestFactory().get("/api/v1/academics/classroom/workspace/")
-        assert website_demo_request_allowed(request, actor, token.payload)
+        assert not website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().get("/api/dashboards/summary/")
+        assert not website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().get("/api/v1/presenter/jireh/aid/family/")
+        assert website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().get("/api/v1/aid/family/status/")
         assert website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().post("/api/dashboards/summary/")
         assert not website_demo_request_allowed(request, actor, token.payload)
@@ -81,7 +88,7 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
             HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
         )
         assert not website_demo_request_allowed(request, actor, token.payload)
-        user = UserAccount.objects.get(username=presenter_username("teacher"))
+        user = UserAccount.objects.get(username=presenter_username("parent"))
         user.is_active = False
         user.save(update_fields=["is_active"])
         assert website_demo_school() is None
@@ -164,7 +171,14 @@ def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
         for role, paths in role_paths.items():
             assert website_demo_request_allowed(
                 factory.get("/api/v1/nav/"), actors[role], claims[role]
-            )
+            ) is (role == "parent")
+            for allowed_path in (
+                "/api/v1/presenter/jireh/aid/family/",
+                "/api/v1/aid/family/status/",
+            ):
+                assert website_demo_request_allowed(
+                    factory.get(allowed_path), actors[role], claims[role]
+                ) is (role == "parent")
             assert not website_demo_request_allowed(
                 factory.post("/api/v1/nav/"), actors[role], claims[role]
             )
@@ -177,7 +191,7 @@ def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
             )
             for path in paths:
                 get = factory.get(path)
-                assert website_demo_request_allowed(get, actors[role], claims[role])
+                assert not website_demo_request_allowed(get, actors[role], claims[role])
                 assert not website_demo_request_allowed(
                     factory.post(path), actors[role], claims[role]
                 )
@@ -238,7 +252,7 @@ def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
     ), patch("sandbox_demo.website_views.website_financial_aid_ready", return_value=True):
         # This test isolates role-scoping from the separate saved-case gate.
         client = APIClient()
-        for role in SANDBOX_PERSONAS:
+        for role in ("parent",):
             # Match website credential-omission on persona switches: a prior
             # demo JWT must not authorize the next session-issuance request.
             client.credentials()
@@ -345,18 +359,17 @@ def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True
-    ):
+    ), patch("sandbox_demo.website_views.website_financial_aid_ready", return_value=True):
         client = APIClient()
         issued = client.post(
-            "/api/v1/sandbox/website-presenter/", {"role": "teacher"},
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
         )
         assert issued.status_code == 201, issued.content
         token = issued.data["access"]
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         allowed = client.get("/api/dashboards/me/", HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID))
-        assert allowed.status_code == 200, allowed.content
-        assert allowed.data["school_id"] == str(UNIVERSAL_SCHOOL_ID)
+        assert allowed.status_code == 403, allowed.content
         denied = client.post("/api/v1/academics/submissions/", {}, format="json")
         assert denied.status_code == 403
         denied = client.post("/api/v1/presenter/admin/resolve-operational-exception/", {}, format="json")

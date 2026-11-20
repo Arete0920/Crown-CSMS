@@ -32,8 +32,7 @@ class WebsitePresenterEntryView(APIView):
             "available": True,
             "financial_aid_ready": website_financial_aid_ready(school),
             "school": {"id": str(school.pk), "name": school.name},
-            "roles": [{"key": key, "label": persona.label}
-                      for key, persona in SANDBOX_PERSONAS.items()],
+            "roles": [{"key": "parent", "label": SANDBOX_PERSONAS["parent"].label}],
         })
 
     @extend_schema(exclude=True)
@@ -46,7 +45,7 @@ class WebsitePresenterEntryView(APIView):
                 "code": "website_presenter_origin_denied",
             }, status=403)
         role = request.data.get("role") if isinstance(request.data, dict) else None
-        if not isinstance(role, str) or role not in SANDBOX_PERSONAS:
+        if role != "parent":
             return self._response({
                 "detail": "Unknown presenter role.",
                 "code": "website_presenter_role_invalid",
@@ -57,7 +56,7 @@ class WebsitePresenterEntryView(APIView):
                 "detail": "The fictional school is not ready.",
                 "code": "website_presenter_not_ready",
             }, status=503)
-        if role == "parent" and not website_financial_aid_ready(school):
+        if not website_financial_aid_ready(school):
             return self._response({
                 "detail": "The saved fictional Financial Aid case is not ready.",
                 "code": "website_jireh_case_not_ready",
