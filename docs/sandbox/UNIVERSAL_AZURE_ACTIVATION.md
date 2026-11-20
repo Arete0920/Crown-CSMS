@@ -5,6 +5,44 @@ credential rotation or database migration was performed for this assignment.
 This is an explicit future owner operation. Do not activate while prerequisites
 or unsupported-workflow acceptance remain unresolved.
 
+## Financial Aid-only activation option (source contract; NOT an approval)
+
+The salesperson-directed Financial Aid presentation is now the only customer-facing
+scope. After a separately approved exact-SHA DEV release and database identity
+verification, the existing owner command supports:
+
+```sh
+python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" --financial-aid-only
+# Owner-authorized mutation ONLY after verifying the preflight and rollback evidence:
+python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" \
+  --confirm-school-id cd216908-b692-5fa7-997b-743f811f1ea9 \
+  --financial-aid-only --apply
+```
+
+The narrow option retains the existing independent fictional **presenter school
+foundation**, creates the canonical Reed household with Avery and Jordan, and stages
+institutional Jireh financial-aid policy and officer grants. It **does not**
+stage SGO partners/programs/grants, daycare, extended care, Camp, admissions
+conversions or administrative module workflows. The underlying foundation
+still contains the standard generated school roster and dormant persona
+identities; do not claim that only two total school students are created.
+No new Azure resource or schema migration is implied.
+
+**Important:** This setup **does not** create an aid application, award or
+notification. The existing authorized private parent/officer workflow must
+submit and approve an illustrative Reed case, with independent persisted
+readback, before the public read-only family presentation is useful. Do not
+fabricate decisions, send real notifications, bypass authentication for
+writes, or use customer data. The website's one-click parent session never
+accepts write requests. Repeat cases require the separately authorized,
+history-preserving generation lifecycle.
+
+All existing exact-runtime restrictions, required approvals, outbound
+quarantine, read-only preflights, rollback prerequisites, and hosted
+acceptance gates in this document remain mandatory. This text authorizes
+**no deployment, Azure setting change, provisioning, credential action
+or database write**.
+
 ## Readiness and isolation
 
 | Workflow | Implemented source acceptance | Remaining release evidence |
