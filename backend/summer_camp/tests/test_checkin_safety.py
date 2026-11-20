@@ -424,3 +424,20 @@ def test_roster_does_not_offer_fresh_other_session_admission_over_open_custody(c
     assert rows[0]["requires_supervisor_reconciliation"] is True
     assert rows[0]["open_custody_count"] == 1
     assert not any(r["session_id"] == str(session.id) for r in rows)
+
+
+def test_future_dated_staff_assignment_cannot_clear_today_or_admit_camper(camp_case):
+    """A verified counselor who is not assigned until tomorrow cannot supervise today."""
+    school, _foreign, _student, session, _enrollment, when = camp_case
+    school.timezone = "UTC"
+    school.save(update_fields=["timezone"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = when.date() + timedelta(days=1)
+    assignment.save(update_fields=["assigned_date"])
+
+    ratio = compute_staff_ratio_status(school.id, session.id)
+    assert ratio["assigned_staff"] == 0
+    assert ratio["coverage_status"] == "GAP"
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
