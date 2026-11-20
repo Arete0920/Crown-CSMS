@@ -72,7 +72,10 @@ def test_preflight_is_read_only_and_duplicate_apply_refuses(local_runtime, capsy
     assert 'PRECHECK_ONLY' in capsys.readouterr().out
     assert not School.objects.exists()
     metrics = prepare_presenter(apply=True)
-    assert metrics["students"] == Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 703
+    assert metrics["students"] == Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 704
+    assert sorted(Student.objects.filter(
+        school_id=UNIVERSAL_SCHOOL_ID, family__family_name="Reed Family",
+    ).values_list("first_name", flat=True)) == ["Avery", "Jordan"]
     assert metrics["release_certified"] is False
     with pytest.raises(CommandError, match="already exists"):
         prepare_presenter(apply=True)
@@ -160,7 +163,7 @@ def test_reset_refuses_foreign_cascade_and_rolls_back(local_runtime):
     with pytest.raises(CommandError, match="foreign cascade"):
         prepare_presenter(apply=True, reset=True)
     assert AcademicEnrollment.objects.filter(pk=foreign.pk).exists()
-    assert Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 703
+    assert Student.objects.filter(school_id=UNIVERSAL_SCHOOL_ID).count() == 704
     assert prepare_presenter()["exists"]
 
 
