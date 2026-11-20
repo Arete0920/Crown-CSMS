@@ -619,7 +619,7 @@ jobs:
       - name: Install existing Playwright browser
         if: toJSON(inputs.dev_deploy_only) == 'false'
         working-directory: frontend/dashboards
-        run: npx playwright install chromium --with-deps
+        run: ./node_modules/.bin/playwright install chromium --with-deps
       - name: Execute existing live certification against DEV preview
         id: dev-certification-evidence
         if: toJSON(inputs.dev_deploy_only) == 'false' && steps.dev-evidence-exporter.outcome == 'success'
