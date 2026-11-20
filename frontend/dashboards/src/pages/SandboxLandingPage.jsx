@@ -171,7 +171,8 @@ export default function SandboxLandingPage() {
   }
 
   if (onWebsiteDemo) {
-    const financialAidParentReady = Array.isArray(websitePresenter?.roles)
+    const financialAidParentReady = websitePresenter?.financial_aid_ready === true
+      && Array.isArray(websitePresenter?.roles)
       && websitePresenter.roles.some((role) => role.key === "parent");
     return (
       <main className="sandbox-crown-layout">
@@ -188,7 +189,7 @@ export default function SandboxLandingPage() {
                 {launchingRole === "parent" ? "Opening financial aid…" : "Start Financial Aid walkthrough"}
               </button>
             ) : (
-              <p role="status">The Financial Aid presenter is not ready; no demonstration session will be issued.</p>
+              <p role="status">The saved Financial Aid case is not verified and ready; no demonstration session will be issued.</p>
             )}
           </section>
         </div>
