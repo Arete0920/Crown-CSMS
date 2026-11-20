@@ -27,6 +27,14 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
     return () => { cancelled = true; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  const verificationErrors = Array.isArray(result?.errors) ? result.errors : [];
+  const isVerified = Boolean(
+    context.sessionId &&
+    result?.status === "verified" &&
+    result.session_id === context.sessionId &&
+    (result.errors == null || (Array.isArray(result.errors) && result.errors.length === 0))
+  );
+
   function handleReset() {
     try { sessionStorage.removeItem("crown_aid_wizard_ctx_v1"); } catch { /* ignore */ }
     setContext({});
@@ -49,22 +57,25 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
         )}
 
         {error && (
-          <div className="crown-alert crown-alert--error">{error}</div>
+          <div role="alert" className="crown-alert crown-alert--error">{error}</div>
         )}
 
         {result && !loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
+              role={isVerified ? "status" : "alert"}
               style={{
-                background: "var(--crown-ok-bg)",
-                border: "1px solid var(--crown-ok)",
+                background: isVerified ? "var(--crown-ok-bg)" : "var(--crown-surface)",
+                border: isVerified ? "1px solid var(--crown-ok)" : "1px solid var(--crown-danger)",
                 borderRadius: 6,
                 padding: "16px",
-                color: "var(--crown-ok)",
+                color: isVerified ? "var(--crown-ok)" : "var(--crown-danger)",
                 fontWeight: 600,
               }}
             >
-              Financial aid setup complete! Status: {result.status}
+              {isVerified
+                ? `Financial aid setup complete! Status: ${result.status}`
+                : `Financial aid setup is not verified. Status: ${result.status || "unknown"}.`}
             </div>
 
             {/* Commit summary */}
@@ -84,19 +95,19 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
                 <div>
                   <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Errors</div>
                   <div style={{ fontWeight: 700, fontSize: 18 }}>
-                    {(result.errors?.length ?? 0) > 0 ? (
-                      <span style={{ color: "var(--crown-danger)" }}>{result.errors.length}</span>
+                    {verificationErrors.length > 0 ? (
+                      <span style={{ color: "var(--crown-danger)" }}>{verificationErrors.length}</span>
                     ) : 0}
                   </div>
                 </div>
               </div>
 
-              {result.errors?.length > 0 && (
+              {verificationErrors.length > 0 && (
                 <div style={{ marginTop: 12 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: "var(--crown-danger)", marginBottom: 6 }}>
                     Errors during commit:
                   </div>
-                  {result.errors.map((e, i) => (
+                  {verificationErrors.map((e, i) => (
                     <div key={i} style={{ fontSize: 12, color: "var(--crown-danger)" }}>{e}</div>
                   ))}
                 </div>
