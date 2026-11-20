@@ -106,7 +106,9 @@ def test_jireh_aid_director_grant_preserves_website_readiness_without_role_drift
         school = website_demo_school()
         assert school is not None
         client = APIClient()
-        assert client.get("/api/v1/sandbox/website-presenter/").status_code == 200
+        available = client.get("/api/v1/sandbox/website-presenter/")
+        assert available.status_code == 200
+        assert available.data["financial_aid_ready"] is False
         issued = client.post(
             "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
