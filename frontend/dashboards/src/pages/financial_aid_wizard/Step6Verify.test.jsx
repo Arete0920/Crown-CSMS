@@ -41,8 +41,8 @@ describe("Financial Aid setup verification truth", () => {
     });
     const { setContext } = renderStep();
 
-    expect(await screen.findByRole("status")).toHaveTextContent("Financial aid setup complete! Status: verified");
-    expect(screen.getByText("2")).toBeInTheDocument();
+    expect((await screen.findByRole("status")).textContent).toContain("Financial aid setup complete! Status: verified");
+    expect(screen.getByText("2")).toBeTruthy();
     expect(verifyAidSetup).toHaveBeenCalledWith(SESSION);
     expect(setContext).toHaveBeenCalledWith(expect.any(Function));
   });
@@ -51,8 +51,8 @@ describe("Financial Aid setup verification truth", () => {
     renderStep({ sessionId: SESSION, verify: { session_id: SESSION, status: "committed", awards_created: 2, errors: [] } });
 
     expect(verifyAidSetup).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("not verified");
-    expect(screen.queryByText(/Financial aid setup complete!/)).not.toBeInTheDocument();
+    expect(screen.getByRole("alert").textContent).toContain("not verified");
+    expect(screen.queryByText(/Financial aid setup complete!/)).toBeNull();
   });
 
   it.each([
@@ -65,15 +65,15 @@ describe("Financial Aid setup verification truth", () => {
     verifyAidSetup.mockResolvedValue(payload);
     renderStep();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(`Financial aid setup is not verified. Status: ${status}.`);
-    expect(screen.queryByText(/Financial aid setup complete!/)).not.toBeInTheDocument();
+    expect((await screen.findByRole("alert")).textContent).toContain(`Financial aid setup is not verified. Status: ${status}.`);
+    expect(screen.queryByText(/Financial aid setup complete!/)).toBeNull();
   });
 
   it("shows a rejected API response without claiming completion", async () => {
     verifyAidSetup.mockRejectedValue(new Error("Verification failed"));
     renderStep();
 
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Verification failed"));
-    expect(screen.queryByText(/Financial aid setup complete!/)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Verification failed"));
+    expect(screen.queryByText(/Financial aid setup complete!/)).toBeNull();
   });
 });
