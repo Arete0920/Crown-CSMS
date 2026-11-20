@@ -125,7 +125,7 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
         assert sorted(child["name"] for child in persisted.json()["students"]) == [
             "Avery Reed", "Jordan Reed",
         ]
-        assert persisted.json()["applications"][0]["id"] == application.pk
+        assert persisted.json()["applications"][0]["id"] == str(application.pk)
         blocked = website.post(BASE + "aid/family/", payload, format="json")
         assert blocked.status_code == 403, blocked.content
 
