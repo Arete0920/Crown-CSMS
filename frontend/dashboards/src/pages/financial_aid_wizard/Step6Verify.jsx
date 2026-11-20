@@ -27,6 +27,13 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
     return () => { cancelled = true; };
   }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  const isVerified = Boolean(
+    context.sessionId &&
+    result?.status === "verified" &&
+    result.session_id === context.sessionId &&
+    (result.errors == null || (Array.isArray(result.errors) && result.errors.length === 0))
+  );
+
   function handleReset() {
     try { sessionStorage.removeItem("crown_aid_wizard_ctx_v1"); } catch { /* ignore */ }
     setContext({});
@@ -55,16 +62,19 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
         {result && !loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div
+              role={isVerified ? "status" : "alert"}
               style={{
-                background: "var(--crown-ok-bg)",
-                border: "1px solid var(--crown-ok)",
+                background: isVerified ? "var(--crown-ok-bg)" : "var(--crown-surface)",
+                border: isVerified ? "1px solid var(--crown-ok)" : "1px solid var(--crown-danger)",
                 borderRadius: 6,
                 padding: "16px",
-                color: "var(--crown-ok)",
+                color: isVerified ? "var(--crown-ok)" : "var(--crown-danger)",
                 fontWeight: 600,
               }}
             >
-              Financial aid setup complete! Status: {result.status}
+              {isVerified
+                ? `Financial aid setup complete! Status: ${result.status}`
+                : `Financial aid setup is not verified. Status: ${result.status || "unknown"}.`}
             </div>
 
             {/* Commit summary */}
