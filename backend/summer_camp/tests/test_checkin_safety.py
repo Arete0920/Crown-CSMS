@@ -113,6 +113,9 @@ def test_checkin_uses_school_civil_date_across_utc_midnight(camp_case):
     session.start_date = date(2026, 7, 2)
     session.end_date = date(2026, 7, 2)
     session.save(update_fields=["start_date", "end_date"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = date(2026, 7, 2)
+    assignment.save(update_fields=["assigned_date"])
 
     attendance = checkin_camper(school.id, student.id, session.id, when=stamp)
     assert attendance.date == date(2026, 7, 2)
@@ -440,4 +443,22 @@ def test_future_dated_staff_assignment_cannot_clear_today_or_admit_camper(camp_c
     assert ratio["coverage_status"] == "GAP"
     with pytest.raises(ValueError, match="not cleared"):
         _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+
+def test_backdated_checkin_cannot_use_staff_assigned_after_attendance_day(camp_case):
+    school, _foreign, student, session, _enrollment, when = camp_case
+    school.timezone = "UTC"
+    school.save(update_fields=["timezone"])
+    previous_day = when - timedelta(days=1)
+    session.start_date = previous_day.date()
+    session.save(update_fields=["start_date"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = when.date()
+    assignment.save(update_fields=["assigned_date"])
+
+    # Staff exist and are verified today, but were not assigned yesterday.
+    assert compute_staff_ratio_status(school.id, session.id)["coverage_status"] == "OK"
+    with pytest.raises(ValueError, match="not cleared"):
+        checkin_camper(school.id, student.id, session.id, when=previous_day)
     _assert_no_attendance(camp_case)
