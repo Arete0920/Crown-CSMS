@@ -2,7 +2,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FinancialAidWizard from "./FinancialAidWizard.jsx";
-import { AUTH_CONTEXT_CHANGE_EVENT, clearBrowserAuthState, setAccessToken, setSelectedSchoolId } from "../utils/authClient.js";
+import { AUTH_CONTEXT_CHANGE_EVENT, authenticatedJson, clearBrowserAuthState, setAccessToken, setSelectedSchoolId } from "../utils/authClient.js";
+vi.mock("../utils/authClient.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  authenticatedJson: vi.fn(),
+}));
 vi.mock("../components/crown/CrownLayout.jsx", () => ({
   default: ({ children }) => <div>{children}</div>,
 }));
@@ -27,7 +31,7 @@ function signIn(id, school = "school-a") {
   setSelectedSchoolId(school);
   window.dispatchEvent(new Event(AUTH_CONTEXT_CHANGE_EVENT));
 }
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); authenticatedJson.mockReset(); });
 afterEach(() => { cleanup(); localStorage.clear(); sessionStorage.clear(); });
 describe("Financial Aid wizard authenticated school and account isolation", () => {
   it("removes legacy local aid drafts but retains unrelated drafts", async () => {
@@ -79,6 +83,32 @@ describe("Financial Aid wizard authenticated school and account isolation", () =
     expect(screen.getByRole("alert").textContent).toContain("Select a school");
     signIn("user-b");
     await waitFor(() => expect(screen.getByTestId("aid-cycle-session").textContent).toBe("No saved aid cycle"));
+  });
+  it("loads a sandbox session only after verified server identity", async () => {
+    setAccessToken("synthetic-sandbox-access");
+    setSelectedSchoolId("school-a");
+    authenticatedJson.mockResolvedValue({
+      ok: true,
+      user: { id: "sandbox-staff-1", school_id: "school-a" },
+      tenant: { resolved_school_id: "school-a" },
+    });
+    render(<FinancialAidWizard />);
+    expect((await screen.findByTestId("aid-cycle-session")).textContent).toBe("No saved aid cycle");
+    expect(authenticatedJson).toHaveBeenCalledWith("/api/system/whoami/");
+    expect(sessionStorage.getItem(PREFIX + ":school-a:sandbox-staff-1")).not.toContain("school-a-cycle");
+  });
+  it("fails closed if the sandbox identity is from another school", async () => {
+    setAccessToken("synthetic-sandbox-access");
+    setSelectedSchoolId("school-a");
+    authenticatedJson.mockResolvedValue({
+      ok: true,
+      user: { id: "other-school-staff", school_id: "school-b" },
+      tenant: { resolved_school_id: "school-b" },
+    });
+    render(<FinancialAidWizard />);
+    await waitFor(() => expect(authenticatedJson).toHaveBeenCalledWith("/api/system/whoami/"));
+    expect(screen.queryByTestId("aid-cycle-session")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("verified school staff identity");
   });
   it("fails closed with no authenticated user", () => {
     setAccessToken("test-token"); setSelectedSchoolId("school-a");

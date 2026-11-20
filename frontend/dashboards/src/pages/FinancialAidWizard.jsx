@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { clearFinancialAidWizardDrafts, getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
+import { authenticatedJson, clearFinancialAidWizardDrafts, getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import { useWizardDraft } from "../hooks/useWizardDraft";
@@ -33,6 +33,8 @@ function getAuthenticatedUserId() {
   try {
     const raw = sessionStorage.getItem("crown_current_user") || sessionStorage.getItem("crown_user");
     const user = raw ? JSON.parse(raw) : null;
+    const storedSchoolId = user?.school_id ?? user?.schoolId ?? user?.user?.school_id;
+    if (storedSchoolId && String(storedSchoolId) !== String(getSelectedSchoolId())) return "";
     const value = user?.id ?? user?.user?.id;
     if (typeof value !== "number" && typeof value !== "string") return "";
     const id = String(value).trim();
@@ -86,6 +88,38 @@ export default function FinancialAidWizard() {
       window.removeEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateAuth);
     };
   }, []);
+
+  // Sandbox role sessions do not persist a user ID in browser identity storage.
+  // Obtain a server-authenticated principal before loading any saved aid draft.
+  useEffect(() => {
+    if (!scope.schoolId || scope.userId) return;
+    const token = getAccessToken();
+    if (!token) return;
+    const requestedSchool = scope.schoolId;
+    const requestedAuthVersion = scope.authVersion;
+    let cancelled = false;
+    Promise.resolve()
+      .then(() => authenticatedJson("/api/system/whoami/"))
+      .then((result) => {
+        if (cancelled || getAccessToken() !== token || getSelectedSchoolId() !== requestedSchool) return;
+        if (result?.ok !== true) return;
+        const principal = String(result?.user?.id ?? "").trim();
+        if (!principal || principal === "None" || principal === "null") return;
+        const schools = [result?.user?.school_id, result?.tenant?.resolved_school_id]
+          .filter(Boolean).map(String);
+        if (!schools.includes(String(requestedSchool))) return;
+        setScope((current) => (
+          current.schoolId === requestedSchool &&
+          current.authVersion === requestedAuthVersion &&
+          !current.userId
+            ? { ...current, userId: principal }
+            : current
+        ));
+      })
+      .catch(() => { /* Remain fail-closed when authenticated identity cannot be verified. */ });
+    return () => { cancelled = true; };
+  }, [scope.schoolId, scope.userId, scope.authVersion]);
+
   if (!scope.schoolId) return (
     <CrownLayout title="Financial Aid Setup">
       <div role="alert" className="crown-alert crown-alert--error">Select a school to configure financial aid.</div>
