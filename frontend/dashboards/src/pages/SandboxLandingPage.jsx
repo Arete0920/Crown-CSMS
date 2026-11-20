@@ -117,9 +117,11 @@ export default function SandboxLandingPage() {
       const loopbackPresenter = !inviteId
         && selectedMode === "guided"
         && ["127.0.0.1", "localhost"].includes(globalThis.location?.hostname);
-      const targetRoute = loopbackPresenter
-        ? getSandboxLoginHref(persona.value, selectedTrack.key, selectedMode)
-        : (session.route || persona.route || "/school-admin-dashboard");
+      const targetRoute = onWebsiteDemo && persona.value === "parent"
+        ? "/sandbox/jireh-financial-aid"
+        : loopbackPresenter
+          ? getSandboxLoginHref(persona.value, selectedTrack.key, selectedMode)
+          : (session.route || persona.route || "/school-admin-dashboard");
       if (typeof globalThis.location?.assign === "function") {
         globalThis.location.assign(targetRoute);
       }
@@ -161,7 +163,36 @@ export default function SandboxLandingPage() {
           <section className="sandbox-experience-panel" aria-label="Fictional demonstration readiness">
             <h1>CROWN demonstration school</h1>
             <p>{websitePresenter === null ? "Checking demonstration availability..." : "The fictional demonstration school is not yet activated."}</p>
+            <p>An authorized Arete presenter must sign in before launching this fictional walkthrough. Prospects never need an account or password.</p>
+            <a href="/login?role=arete_presenter">Authorized staff sign in</a>
             <p>No school accounts, student records or credentials are available through this page.</p>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  if (onWebsiteDemo) {
+    const financialAidParentReady = websitePresenter?.financial_aid_ready === true
+      && Array.isArray(websitePresenter?.roles)
+      && websitePresenter.roles.some((role) => role.key === "parent");
+    return (
+      <main className="sandbox-crown-layout">
+        <div className="sandbox-experience">
+          <section className="sandbox-experience-panel" aria-label="Jireh Financial Aid sales demonstration">
+            <CrownLogo placement="loginBrand" className="sandbox-experience-logo" />
+            <h1>Jireh Financial Aid — guided family demonstration</h1>
+            <p>Walk through Miriam Reed's fictional school aid application for Avery and Jordan Reed, then inspect the recorded decisions for each child.</p>
+            <p><strong>Salesperson-guided and read-only.</strong> No prospect account or password is required. This presentation does not submit applications, approve awards, or move money.</p>
+            {launchError && <p role="alert">{launchError}</p>}
+            {financialAidParentReady ? (
+              <button type="button" onClick={() => launchPersona({ value: "parent", route: "/sandbox/jireh-financial-aid" })}
+                disabled={Boolean(launchingRole)}>
+                {launchingRole === "parent" ? "Opening financial aid…" : "Start Financial Aid walkthrough"}
+              </button>
+            ) : (
+              <p role="status">The saved Financial Aid case is not verified and ready; no demonstration session will be issued.</p>
+            )}
           </section>
         </div>
       </main>

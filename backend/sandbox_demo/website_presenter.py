@@ -44,6 +44,40 @@ READ_PREFIXES = (
     "/api/ledger/accounts/",
     "/api/admissions/",
 )
+
+# Exact registered dashboard reads. Keep these role-bound: a public demo
+# token is not a general-purpose permission to query another role's metrics.
+ROLE_READ_PATHS = {
+    "school_admin": frozenset({"/api/v1/admin/metrics/"}),
+    "teacher": frozenset({"/api/v1/teacher/metrics/"}),
+    "parent": frozenset({"/api/v1/parent/metrics/"}),
+    "student": frozenset({"/api/v1/student/metrics/"}),
+    "board": frozenset({
+        "/api/v1/board/metrics/", "/api/v1/board/dashboard/",
+        "/api/v1/board/snapshots/", "/api/v1/board/packets/",
+    }),
+}
+# Sensitive dashboard views have their own permission checks, but the
+# website token gate must enforce the same role grants for both URL aliases.
+# Strip the optional slash to cover the registered views and the legacy
+# no-slash dashboard summary fallback without granting another role access.
+SENSITIVE_DASHBOARD_READ_GRANTS = {
+    "/api/v1/dashboards/finance/summary": "finance.view",
+    "/api/dashboards/finance/summary": "finance.view",
+    "/api/v1/dashboards/admissions/funnel": "admissions.view",
+    "/api/dashboards/admissions/funnel": "admissions.view",
+    "/api/v1/dashboards/academics/enrollment": "academics.view",
+    "/api/dashboards/academics/enrollment": "academics.view",
+    # Stage-2 CFO endpoints use only IsAuthenticated in the underlying views.
+    # Website tokens must not expose schoolwide reconciliation/payout metrics
+    # to parent, student, teacher, admissions or childcare personas.
+    "/api/v1/finance/kpis": "finance.view",
+    "/api/v1/finance/chargebacks": "finance.view",
+    "/api/v1/finance/monthly-summary": "finance.view",
+    "/api/v1/finance/payout-audit": "finance.view",
+    "/api/v1/finance/dunning": "finance.view",
+}
+
 DISALLOWED_PATH_PARTS = frozenset({
     "ops", "platform", "payments", "webhooks", "credentials", "secrets",
     "provisioning", "export", "exports", "tokens", "api-keys",
@@ -80,11 +114,79 @@ def website_demo_school():
              SANDBOX_PERSONAS[expected_names[u["username"]]].role_code)
             for u in users
         }
-        if assigned != expected:
+        # The existing Jireh staging grants AID_DIRECTOR to this same fictional
+        # finance principal. Permit that one exact school-bound role only;
+        # unknown or cross-school roles must still fail closed.
+        finance_id = next(
+            str(user["id"]) for user in users
+            if expected_names[user["username"]] == "finance_director"
+        )
+        allowed_jireh_grant = {(finance_id, str(school.pk), "AID_DIRECTOR")}
+        if not expected.issubset(assigned) or assigned - expected - allowed_jireh_grant:
             return None
         return school
     except (CommandError, ValueError, TypeError):
         return None
+
+
+
+def website_financial_aid_ready(school):
+    """Expose only a boolean after verifying the persisted fictional Aid case.
+
+    Public website entry never returns a family's financial records. Missing,
+    ambiguous, mismatched or unapproved case data keeps launch unavailable.
+    """
+    from aid.models import AidApplication, AidAward, AidHouseholdMember
+    from core.models import AcademicYear, Student
+
+    parent = UserAccount.objects.select_related("guardian__family").filter(
+        school=school, username=presenter_username("parent", school.pk),
+        is_active=True,
+    ).first()
+    guardian = parent.guardian if parent else None
+    family = guardian.family if guardian else None
+    if family is None or family.school_id != school.pk:
+        return False
+
+    learners = list(Student.objects.filter(
+        school=school, family=family, status="ACTIVE",
+    ).values_list("id", "first_name", "last_name"))
+    if len(learners) != 2 or {
+        (first_name, last_name) for _, first_name, last_name in learners
+    } != {("Avery", "Reed"), ("Jordan", "Reed")}:
+        return False
+    student_ids = {pk for pk, _, _ in learners}
+
+    years = list(AcademicYear.objects.filter(school=school, is_current=True)[:2])
+    if len(years) != 1:
+        return False
+    year = years[0]
+
+    applications = list(AidApplication.objects.filter(
+        school=school, family=family, academic_year=year,
+        submitted_at__isnull=False,
+        status__in=(
+            AidApplication.STATUS_SUBMITTED, AidApplication.STATUS_UNDER_REVIEW,
+            AidApplication.STATUS_APPROVED,
+        ),
+    ).select_related("financial_profile")[:2])
+    if len(applications) != 1 or applications[0].financial_profile_id is None:
+        return False
+    application = applications[0]
+
+    submitted_student_ids = set(AidHouseholdMember.objects.filter(
+        profile=application.financial_profile,
+        role=AidHouseholdMember.ROLE_STUDENT,
+    ).values_list("student_id", flat=True))
+    if submitted_student_ids != student_ids:
+        return False
+
+    return AidAward.objects.filter(
+        school=school, academic_year=year, aid_application=application,
+        student_id__in=student_ids, awarded_cents__gt=0,
+        decision_status=AidAward.DECISION_ACCEPTED,
+        ledger_entry__school_id=school.pk,
+    ).exists()
 
 
 def website_demo_rate_limit(school, role):
@@ -143,6 +245,8 @@ def website_demo_request_allowed(request, actor, claims):
     if school is None:
         return False
     key = claims.get("role")
+    if key != "parent":
+        return False
     persona = SANDBOX_PERSONAS.get(key)
     if (persona is None or not isinstance(actor, UserAccount)
             or not actor.is_active or actor.is_staff or actor.is_superuser
@@ -171,11 +275,14 @@ def website_demo_request_allowed(request, actor, claims):
         return False
     if DISALLOWED_PATH_PARTS.intersection(path.strip("/").split("/")):
         return False
-    method = request.method
-    if method in {"GET", "HEAD", "OPTIONS"}:
-        return any(path.startswith(prefix) for prefix in READ_PREFIXES)
-    # Public website sessions are read-only. Transactional demonstration
-    # remains exclusively on the separately authenticated presenter path.
+    if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return path in {
+            "/api/v1/nav/",
+            "/api/system/whoami/",
+            "/api/v1/presenter/jireh/aid/family/",
+            "/api/v1/aid/family/status/",
+        }
+    # This public token cannot write or read unrelated modules.
     return False
 
 

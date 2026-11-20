@@ -1,4 +1,4 @@
-import { authenticatedJson } from "../utils/authClient";
+import { authenticatedJson, getAccessToken } from "../utils/authClient";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
@@ -63,8 +63,11 @@ export async function createSandboxSession({ inviteId, role, school, track, guid
 }
 
 export async function getWebsitePresenterState() {
+  const operatorToken = getAccessToken();
+  if (!operatorToken) return { available: false };
   const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/website-presenter/"), {
     credentials: "omit", cache: "no-store",
+    headers: { Authorization: `Bearer ${operatorToken}` },
   });
   if (!response.ok) return { available: false };
   const body = await response.json();
@@ -72,10 +75,15 @@ export async function getWebsitePresenterState() {
 }
 
 export async function createWebsitePresenterSession(role) {
+  const operatorToken = getAccessToken();
+  if (!operatorToken) throw new Error("Authorized presenter sign-in required.");
   const response = await globalThis.fetch(apiUrl("/api/v1/sandbox/website-presenter/"), {
     method: "POST",
     credentials: "omit",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${operatorToken}`,
+    },
     body: JSON.stringify({ role }),
   });
   if (!response.ok) {

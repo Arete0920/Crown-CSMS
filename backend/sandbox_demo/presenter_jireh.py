@@ -28,7 +28,7 @@ def actor_scope(request, roles):
         raise NotFound("Not found.") from exc
     user = request.user
     if (school is None or not user.is_active or user.is_staff or user.is_superuser
-            or user.school_id != school.pk or get_request_school_id(request) != school.pk):
+            or str(user.school_id) != str(school.pk) or get_request_school_id(request) != school.pk):
         raise NotFound("Not found.")
     if any(key in request.query_params for key in ("school_id", "family_id", "organization_id", "workspace_id", "invite_id")):
         raise ValidationError({"detail": "Untrusted presenter selector."})

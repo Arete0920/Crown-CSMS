@@ -53,6 +53,9 @@ jobs:
           python tools/tests/test_repository_identity_hygiene.py
           python scripts/ci/repository_identity_hygiene.py
 
+      - name: Verify audit bundle path boundaries
+        run: python -m unittest tools.tests.test_audit_bundle_path_boundary -v
+
       - name: Run pull-request hygiene
         if: github.event_name == 'pull_request'
         env:
@@ -162,7 +165,7 @@ jobs:
           set -euo pipefail
           archive="$(mktemp)"
           trap 'rm -f "$archive"' EXIT
-          curl --fail --silent --show-error --location --connect-timeout 15 --max-time 60 \
+          curl --proto '=https' --proto-redir '=https' --fail --silent --show-error --location --connect-timeout 15 --max-time 60 \
             https://github.com/rhysd/actionlint/releases/download/v1.7.1/actionlint_1.7.1_linux_amd64.tar.gz \
             --output "$archive"
           printf '%s  %s\n' f53c34493657dfea83b657e4b62cc68c25fbc383dff64c8d581613b037aacaa3 "$archive" | sha256sum --check --strict

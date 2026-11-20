@@ -1,5 +1,6 @@
-"""Public launcher for one owned fictional DEV school; no customer access."""
+"""Operator-controlled launcher for one owned fictional DEV school."""
 from django.db import transaction
+from core.models import UserAccount
 from drf_spectacular.utils import extend_schema
 from rest_framework import permissions
 from rest_framework.response import Response
@@ -8,13 +9,29 @@ from rest_framework.views import APIView
 from .catalog import SANDBOX_PERSONAS
 from .website_presenter import (
     DEMO_ORIGIN, issue_website_demo_session, website_demo_rate_limit,
-    website_demo_school,
+    website_demo_school, website_financial_aid_ready,
 )
 
 
 class WebsitePresenterEntryView(APIView):
     permission_classes = [permissions.AllowAny]
-    authentication_classes = []
+    # Use the established signed CROWN/tenant auth chain; never trust Origin
+    # as an identity claim. Buyers are spectators, not operator accounts.
+
+    @staticmethod
+    def _operator_authorized(request):
+        actor = request.user
+        if (not isinstance(actor, UserAccount)
+                or not actor.is_authenticated or not actor.is_active
+                or not actor.is_staff or not actor.is_superuser):
+            return False
+        claims = request.auth
+        if claims is not None and getattr(claims, "get", lambda key: None)("demo_scope"):
+            return False
+        # Revalidate persisted privileges rather than trusting JWT role labels.
+        return UserAccount.objects.filter(
+            pk=actor.pk, is_active=True, is_staff=True, is_superuser=True,
+        ).exists()
 
     def _response(self, data, status=200):
         response = Response(data, status=status)
@@ -23,6 +40,10 @@ class WebsitePresenterEntryView(APIView):
 
     @extend_schema(exclude=True)
     def get(self, request):
+        if not self._operator_authorized(request):
+            return self._response({
+                "available": False, "code": "website_presenter_operator_required",
+            }, status=403)
         school = website_demo_school()
         if school is None:
             return self._response({
@@ -30,9 +51,9 @@ class WebsitePresenterEntryView(APIView):
             }, status=503)
         return self._response({
             "available": True,
+            "financial_aid_ready": website_financial_aid_ready(school),
             "school": {"id": str(school.pk), "name": school.name},
-            "roles": [{"key": key, "label": persona.label}
-                      for key, persona in SANDBOX_PERSONAS.items()],
+            "roles": [{"key": "parent", "label": SANDBOX_PERSONAS["parent"].label}],
         })
 
     @extend_schema(exclude=True)
@@ -44,8 +65,13 @@ class WebsitePresenterEntryView(APIView):
                 "detail": "Demonstration origin not permitted.",
                 "code": "website_presenter_origin_denied",
             }, status=403)
+        if not self._operator_authorized(request):
+            return self._response({
+                "detail": "Authorized Arete presenter required.",
+                "code": "website_presenter_operator_required",
+            }, status=403)
         role = request.data.get("role") if isinstance(request.data, dict) else None
-        if not isinstance(role, str) or role not in SANDBOX_PERSONAS:
+        if role != "parent":
             return self._response({
                 "detail": "Unknown presenter role.",
                 "code": "website_presenter_role_invalid",
@@ -55,6 +81,11 @@ class WebsitePresenterEntryView(APIView):
             return self._response({
                 "detail": "The fictional school is not ready.",
                 "code": "website_presenter_not_ready",
+            }, status=503)
+        if not website_financial_aid_ready(school):
+            return self._response({
+                "detail": "The saved fictional Financial Aid case is not ready.",
+                "code": "website_jireh_case_not_ready",
             }, status=503)
         if not website_demo_rate_limit(school, role):
             return self._response({

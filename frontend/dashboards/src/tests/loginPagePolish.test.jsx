@@ -40,6 +40,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 async function renderSandboxLogin() {
@@ -205,6 +206,85 @@ describe("login page polish", () => {
         }),
       );
     });
+  });
+
+
+  it("uses existing verified platform-operator authentication for DEV guided launches", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://crown-api-dev.azurewebsites.net");
+    vi.stubGlobal("location", {
+      hostname: "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net",
+      search: "?role=arete_presenter",
+      href: "https://yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net/login?role=arete_presenter",
+    });
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({
+          ok: true, json: () => Promise.resolve({
+            access: "verified-operator-jwt", refresh: "must-not-be-persisted",
+          }),
+        });
+      }
+      if (String(url).endsWith("/api/v1/sandbox/website-presenter/")) {
+        return Promise.resolve({
+          ok: false, status: 503,
+          json: () => Promise.resolve({ code: "website_presenter_not_ready" }),
+        });
+      }
+      return Promise.resolve({ ok: false, status: 500 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+    expect(screen.getByRole("option", { name: "Arete Sales Presenter" })).toBeTruthy();
+    expect(screen.getByLabelText("Role").value).toBe("arete_presenter");
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "operator@arete.invalid" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "only-in-test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    await waitFor(() => expect(globalThis.location.href).toBe("/sandbox"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://crown-api-dev.azurewebsites.net/api/v1/sandbox/website-presenter/",
+      expect.objectContaining({
+        method: "GET", credentials: "omit",
+        headers: { Authorization: "Bearer verified-operator-jwt" },
+      }),
+    );
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("verified-operator-jwt");
+    expect(sessionStorage.getItem("crown.jwt.refresh")).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/api/v1/dashboards/me/"))).toBe(false);
+  });
+
+  it("rejects non-operators on DEV without retaining their signed token", async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_DEMO_MODE", "production");
+    vi.stubEnv("VITE_SANDBOX_MODE", "0");
+    vi.stubEnv("VITE_API_BASE_URL", "https://crown-api-dev.azurewebsites.net");
+    vi.stubGlobal("location", {
+      hostname: "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net",
+      search: "?role=arete_presenter", href: "/login?role=arete_presenter",
+    });
+    const fetchMock = vi.fn((url) => {
+      if (String(url).endsWith("/api/v1/auth/token/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ access: "not-operator" }) });
+      }
+      return Promise.resolve({
+        ok: false, status: 403,
+        json: () => Promise.resolve({ code: "website_presenter_operator_required" }),
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.resetModules();
+    const { default: LoginPage } = await import("../pages/LoginPage.jsx");
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nonoperator@example.invalid" } });
+    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "only-in-test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Sign In" }));
+    expect(await screen.findByText("Authorized Arete presenter access is required.")).toBeTruthy();
+    expect(globalThis.location.href).toBe("/login?role=arete_presenter");
+    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
   });
 
   it("does not expose a browser-selectable school in production", async () => {

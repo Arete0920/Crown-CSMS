@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from django.core.management.base import CommandError
 from rest_framework.test import APIClient
-from aid.models import AidApplication, AidAward
+from aid.models import AidApplication, AidAward, AidHouseholdMember
 from core.models import School, UserRole
 from jireh_sgo.models import SGOFamilyIntake, SGOProcessorAssignment, SGOAward, SGOMembership
 from sandbox_demo.test_universal_access import operator_secrets, login
@@ -27,18 +27,31 @@ def jireh(local_runtime, operator_secrets):
     return prepare_presenter_jireh(apply=True)
 
 
-def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, operator_secrets):
+def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, operator_secrets, settings):
     parent, _ = login("parent", operator_secrets)
     officer, _ = login("finance_director", operator_secrets)
+    from sandbox_demo.website_presenter import website_financial_aid_ready
+    presenter_school = School.objects.get(pk=jireh["school_id"])
+    assert not website_financial_aid_ready(presenter_school)
     data = parent.get(BASE + "aid/family/").json()
+    assert data["household"] == "Reed Family"
+    assert sorted(item["name"] for item in data["students"]) == ["Avery Reed", "Jordan Reed"]
+    applicant_ids = [item["id"] for item in data["students"]]
+    assert len(applicant_ids) == len(set(applicant_ids)) == 2
     payload = {"fictional_acknowledged": True, "scenario": data["scenarios"][0]["id"],
         "household_size": 4, "academic_year_id": data["academic_years"][0]["id"],
-        "student_ids": [data["students"][0]["id"]]}
+        "student_ids": applicant_ids}
     created = parent.post(BASE + "aid/family/", payload, format="json")
     assert created.status_code == 201, created.content
     application = AidApplication.objects.get(pk=created.json()["application"]["id"])
     assert application.status == AidApplication.STATUS_SUBMITTED
     assert application.financial_profile_id and application.submitted_at
+    assert {
+        str(student_id) for student_id in AidHouseholdMember.objects.filter(
+            profile_id=application.financial_profile_id,
+            role=AidHouseholdMember.ROLE_STUDENT,
+        ).values_list("student_id", flat=True)
+    } == set(applicant_ids)
     assert parent.post(BASE + "aid/family/", payload, format="json").status_code == 409
     for _ in range(2):
         assert str(parent.get(BASE + "aid/family/").json()["applications"][0]["id"]) == str(application.pk)
@@ -83,6 +96,39 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     assert credit.account.school_id == award.school_id
     assert credit.account.household_id == link.household_id
     assert compute_account_balance(credit.account) == Decimal("-250.00")
+    assert website_financial_aid_ready(presenter_school)
+
+    # An authorized operator can issue a passwordless, read-only viewer session
+    # only after the persisted two-child case and ledger-backed award.
+    from unittest.mock import patch
+    from sandbox_demo.test_website_presenter import _operator_client
+    from sandbox_demo.website_presenter import DEMO_ORIGIN
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
+    ):
+        website = _operator_client()
+        available = website.get("/api/v1/sandbox/website-presenter/")
+        assert available.status_code == 200, available.content
+        assert available.data["financial_aid_ready"] is True
+        issued = website.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert issued.status_code == 201, issued.content
+        website.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}",
+            HTTP_X_SCHOOL_ID=jireh["school_id"],
+        )
+        persisted = website.get(BASE + "aid/family/")
+        assert persisted.status_code == 200, persisted.content
+        assert sorted(child["name"] for child in persisted.json()["students"]) == [
+            "Avery Reed", "Jordan Reed",
+        ]
+        assert persisted.json()["applications"][0]["id"] == str(application.pk)
+        blocked = website.post(BASE + "aid/family/", payload, format="json")
+        assert blocked.status_code == 403, blocked.content
+
     assert not Payment.objects.filter(school_id=jireh["school_id"]).exists()
     audits = AidAuditEvent.objects.filter(school_id=jireh["school_id"], entity_id=str(award.pk))
     assert audits.filter(action="STUDENT_ACCOUNT_CREDIT_POSTED").count() == 1

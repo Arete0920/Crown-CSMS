@@ -40,13 +40,13 @@ jobs:
         run: npm ci
 
       - name: Verify crawler inventory and dashboard authorization contracts
-        run: npx vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx src/tests/sandboxPersonaLaunch.test.jsx src/tests/sandboxCommandCenter.test.jsx --reporter=verbose
+        run: ./node_modules/.bin/vitest run tests/certification/crawler-coverage-contract.test.ts src/tests/sandboxRoutes.test.jsx src/tests/sandboxPersonaLaunch.test.jsx src/tests/sandboxCommandCenter.test.jsx --reporter=verbose
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+        run: ./node_modules/.bin/playwright install chromium --with-deps
 
       - name: Browser-render CROWN standalone SVG assets in image context
-        run: npx playwright test tests/ui/crown-standalone-svg.spec.ts --reporter=line
+        run: ./node_modules/.bin/playwright test tests/ui/crown-standalone-svg.spec.ts --reporter=line
         env:
           CI: "1"
           VITE_DEV_BASE_URL: "http://localhost:4173"
@@ -61,7 +61,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Browser-verify Jireh marketing-site desktop and mobile presentation
-        run: npx playwright test --config playwright.jireh.config.ts --reporter=line
+        run: ./node_modules/.bin/playwright test --config playwright.jireh.config.ts --reporter=line
 
       - name: Upload Jireh visual evidence
         if: always()
@@ -85,13 +85,13 @@ jobs:
           VITE_DEMO_MODE: "sandbox"
 
       - name: Browser-verify standalone Jireh SGO shell at desktop and mobile
-        run: npx playwright test tests/ui/jireh-sgo-standalone-shell.spec.ts --reporter=line
+        run: ./node_modules/.bin/playwright test tests/ui/jireh-sgo-standalone-shell.spec.ts --reporter=line
         env:
           CI: "1"
           VITE_DEV_BASE_URL: "http://localhost:4173"
 
       - name: Browser-check navigation and anonymous school-route denial
-        run: npx playwright test tests/ui/nav-permissions.spec.ts tests/ui/anonymous-specialist-route-access.spec.ts --grep "anonymous public home|missing authority|anonymous CROWN school route denial" --reporter=line
+        run: ./node_modules/.bin/playwright test tests/ui/nav-permissions.spec.ts tests/ui/anonymous-specialist-route-access.spec.ts --grep "anonymous public home|missing authority|anonymous CROWN school route denial" --reporter=line
         env:
           CI: "1"
           VITE_DEV_BASE_URL: "http://localhost:4173"

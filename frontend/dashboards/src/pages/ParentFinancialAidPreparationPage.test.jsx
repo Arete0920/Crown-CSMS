@@ -71,6 +71,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  sessionStorage.removeItem("crown.website.presenter");
   setAccessToken("");
   setSelectedSchoolId("");
   vi.unstubAllEnvs();
@@ -304,4 +305,158 @@ it("uses the reserved presenter realm with the normal build and scoped synthetic
   render(<ParentFinancialAidPreparationPage />);
   await screen.findByRole("button", { name: "Submit fictional Financial Aid application" });
   expect(apiFetch).toHaveBeenCalledWith("/api/v1/presenter/jireh/aid/family/");
+});
+
+describe("Two-child Reed Jireh presenter status", () => {
+  const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
+  const avery = "44444444-4444-4444-8444-444444444444";
+  const jordan = "55555555-5555-4555-8555-555555555555";
+  const students = [
+    { id: avery, name: "Avery Reed" },
+    { id: jordan, name: "Jordan Reed" },
+  ];
+  const application = { ...saved, student_ids: [avery, jordan] };
+  const family = {
+    ...snapshot([application]), synthetic_only: true, household: "Reed Family",
+    students,
+  };
+  const award = {
+    id: "66666666-6666-4666-8666-666666666666",
+    student_id: avery, academic_year_id: YEAR, aid_application_id: APPLICATION,
+    awarded_cents: 25000, decision_status: "ACCEPTED",
+  };
+
+  beforeEach(() => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
+    setSelectedSchoolId(schoolId);
+  });
+
+  it("reads both children's saved award decisions without a second application", async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === "/api/v1/presenter/jireh/aid/family/") {
+        return jsonResponse(family);
+      }
+      if (path.startsWith("/api/v1/aid/family/status/?")) {
+        const params = new URLSearchParams(path.split("?")[1]);
+        expect(params.get("academic_year_id")).toBe(YEAR);
+        const student = params.get("student_id");
+        expect([avery, jordan]).toContain(student);
+        return jsonResponse({
+          application: { id: APPLICATION },
+          awards: student === avery ? [award] : [],
+        });
+      }
+      throw new Error("Unexpected Jireh endpoint: " + path);
+    });
+    render(<ParentFinancialAidPreparationPage />);
+    const panel = await screen.findByTestId("jireh-student-status");
+    expect(panel.textContent).not.toContain("No awards, eligibility decisions");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh student aid status" }));
+    await waitFor(() => expect(panel.textContent).toContain("ACCEPTED"));
+    expect(panel.textContent).toContain("Avery Reed");
+    expect(panel.textContent).toContain("Jordan Reed");
+    expect(panel.textContent).toContain("$250.00");
+    expect(panel.textContent).toContain("No award recorded for this student.");
+    const urls = apiFetch.mock.calls.map(([path]) => path);
+    expect(urls).toHaveLength(3);
+    expect(urls.filter((path) => path.startsWith("/api/v1/aid/family/status/?"))).toHaveLength(2);
+    expect(apiFetch.mock.calls.every(([, options]) => !options?.method)).toBe(true);
+  });
+
+  it("fails closed when a student's award points to a different child", async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === "/api/v1/presenter/jireh/aid/family/") return jsonResponse(family);
+      const params = new URLSearchParams(path.split("?")[1]);
+      return jsonResponse({
+        application: { id: APPLICATION },
+        awards: params.get("student_id") === avery
+          ? [{ ...award, student_id: jordan }]
+          : [],
+      });
+    });
+    render(<ParentFinancialAidPreparationPage />);
+    const panel = await screen.findByTestId("jireh-student-status");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh student aid status" }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert").textContent).toContain(
+        "did not match the verified family application"
+      );
+    });
+    expect(panel.textContent).not.toContain("$250.00");
+    expect(panel.textContent).not.toContain("ACCEPTED");
+  });
+});
+
+describe("Website Jireh Financial Aid guided replay", () => {
+  const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
+  const avery = "44444444-4444-4444-8444-444444444444";
+  const jordan = "55555555-5555-4555-8555-555555555555";
+  const students = [{ id: avery, name: "Avery Reed" }, { id: jordan, name: "Jordan Reed" }];
+  const application = { ...saved, student_ids: [avery, jordan] };
+
+  beforeEach(() => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
+    setSelectedSchoolId(schoolId);
+    sessionStorage.setItem("crown.website.presenter", "1");
+  });
+
+  it("replays saved family and application in three steps without offering any writes", async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === "/api/v1/presenter/jireh/aid/family/") {
+        return jsonResponse({
+          ...snapshot([application]), synthetic_only: true,
+          household: "Reed Family", students,
+        });
+      }
+      if (path.startsWith("/api/v1/aid/family/status/?")) {
+        const params = new URLSearchParams(path.split("?")[1]);
+        return jsonResponse({
+          application: { id: APPLICATION },
+          awards: params.get("student_id") === avery
+            ? [{
+                id: "66666666-6666-4666-8666-666666666666",
+                student_id: avery, academic_year_id: YEAR,
+                aid_application_id: APPLICATION, awarded_cents: 25000,
+                decision_status: "ACCEPTED",
+              }]
+            : [],
+        });
+      }
+      throw new Error("Unexpected endpoint: " + path);
+    });
+    render(<ParentFinancialAidPreparationPage />);
+    const walkthrough = await screen.findByTestId("jireh-website-walkthrough");
+    expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
+    expect(await screen.findByTestId("jireh-website-family")).toBeTruthy();
+    expect(walkthrough.textContent).toContain("Jordan Reed");
+    expect(walkthrough.textContent).toContain("Avery Reed");
+    expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "2. Saved application" }));
+    expect(await screen.findByTestId("jireh-saved-applications")).toBeTruthy();
+    expect(screen.queryByText(/Duplicate submission is disabled/)).toBeNull();
+    expect(screen.getByText(/Selected applicant students:/).textContent).toContain("Jordan Reed");
+    fireEvent.click(screen.getByRole("button", { name: "3. Aid decisions" }));
+    const panel = await screen.findByTestId("jireh-student-status");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh student aid status" }));
+    await waitFor(() => expect(panel.textContent).toContain("ACCEPTED"));
+    expect(panel.textContent).toContain("Jordan Reed");
+    expect(panel.textContent).toContain("$250.00");
+    expect(panel.textContent).toContain("No award recorded for this student.");
+    expect(apiFetch.mock.calls.every(([, opts]) => !opts?.method || opts.method === "GET")).toBe(true);
+  });
+
+  it("fails closed without a saved case and cannot fabricate a decision", async () => {
+    apiFetch.mockResolvedValue(jsonResponse({
+      ...snapshot([]), synthetic_only: true, household: "Reed Family", students,
+    }));
+    render(<ParentFinancialAidPreparationPage />);
+    await screen.findByTestId("jireh-website-walkthrough");
+    fireEvent.click(screen.getByRole("button", { name: "3. Aid decisions" }));
+    expect(await screen.findByText(/No submitted fictional application is available/)).toBeTruthy();
+    expect(screen.queryByTestId("jireh-student-status")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+  });
 });

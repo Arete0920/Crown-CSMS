@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from core.models import AcademicYear, Family, School
+from core.models import AcademicYear, CrownPermission, Family, RolePermission, School, UserRole
 from admissions.models import AdmissionsApplication
 from billing.models import Invoice, BillingRun
 from academics.models import Section, Course
@@ -132,6 +132,18 @@ class DashboardTenantIsolationTests(TestCase):
         
         self.client = APIClient()
     
+    def _grant_dashboard_read(self, permission_code):
+        # Positive tests must have real, school-bound grants; a tenant alone
+        # does not authorize finance or admissions information.
+        role_code = "HEAD_OF_SCHOOL"
+        UserRole.objects.get_or_create(
+            user=self.user_a, school=self.school_a, role_code=role_code,
+        )
+        permission, _ = CrownPermission.objects.get_or_create(code=permission_code)
+        RolePermission.objects.get_or_create(
+            role_code=role_code, permission=permission,
+        )
+
     # ===== Admissions Funnel Tests =====
     
     def test_admissions_funnel_missing_tenant_returns_400(self):
@@ -159,6 +171,7 @@ class DashboardTenantIsolationTests(TestCase):
     
     def test_admissions_funnel_correct_tenant_returns_200(self):
         """Correct tenant → 200 with school A data only"""
+        self._grant_dashboard_read("admissions.view")
         self.client.force_authenticate(user=self.user_a)
         response = self.client.get(
             "/api/v1/dashboards/admissions/funnel/",
@@ -180,6 +193,15 @@ class DashboardTenantIsolationTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
     
+    def test_admissions_funnel_same_school_without_grant_is_forbidden(self):
+        self.client.force_authenticate(user=self.user_a)
+        for prefix in ("/api/v1/dashboards/", "/api/dashboards/"):
+            response = self.client.get(
+                f"{prefix}admissions/funnel/",
+                HTTP_X_SCHOOL_ID=str(self.school_a.id),
+            )
+            self.assertEqual(response.status_code, 403)
+
     # ===== Finance Summary Tests =====
     
     def test_finance_summary_missing_tenant_returns_400(self):
@@ -190,6 +212,7 @@ class DashboardTenantIsolationTests(TestCase):
     
     def test_finance_summary_correct_tenant_returns_200(self):
         """Correct tenant → 200 with ledger-authoritative financial data."""
+        self._grant_dashboard_read("finance.view")
         self.client.force_authenticate(user=self.user_a)
         response = self.client.get(
             "/api/v1/dashboards/finance/summary/",
@@ -211,6 +234,15 @@ class DashboardTenantIsolationTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
     
+    def test_finance_summary_same_school_without_grant_is_forbidden(self):
+        self.client.force_authenticate(user=self.user_a)
+        for prefix in ("/api/v1/dashboards/", "/api/dashboards/"):
+            response = self.client.get(
+                f"{prefix}finance/summary/",
+                HTTP_X_SCHOOL_ID=str(self.school_a.id),
+            )
+            self.assertEqual(response.status_code, 403)
+
     # ===== Academics Enrollment Tests =====
     
     def test_academics_enrollment_missing_tenant_returns_400(self):

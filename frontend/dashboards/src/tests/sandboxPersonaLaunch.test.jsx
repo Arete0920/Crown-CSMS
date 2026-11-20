@@ -61,6 +61,7 @@ describe("Sandbox persona launch", () => {
   it("keeps the website presenter unavailable when its server-side readiness gate is closed", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(
       JSON.stringify({ available: false, code: "website_presenter_not_ready" }),
       { status: 503, headers: { "Content-Type": "application/json" } },
@@ -72,29 +73,42 @@ describe("Sandbox persona launch", () => {
     await screen.findByText("The fictional demonstration school is not yet activated.");
     expect(screen.queryByRole("button", { name: "Explore this role" })).toBeNull();
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("verified-operator-access");
   });
 
-  it("does not let an obsolete invite query suppress website demo roles", async () => {
+  it("does not offer a public launcher without an authenticated operator", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    expect(await screen.findByRole("link", { name: "Authorized staff sign in" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start Financial Aid walkthrough" })).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("opens only the Jireh family walkthrough despite an obsolete invite", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     window.location.search = "?invite=sbx_inv_retired";
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       available: true,
+      financial_aid_ready: true,
       school: { id: "cd216908-b692-5fa7-997b-743f811f1ea9", name: "Arete Fictional Presenter" },
-      roles: [{ key: "school_admin", label: "School Administrator" }],
+      roles: [{ key: "parent", label: "Parent" }, { key: "school_admin", label: "School Administrator" }],
     }), { status: 200, headers: { "Content-Type": "application/json" } }))));
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);
-
-    await screen.findByText(/Arete Fictional Presenter is the protected CROWN demonstration environment/);
-    expect(screen.getAllByRole("button", { name: "Explore this role" }).length).toBeGreaterThan(0);
+    expect(await screen.findByRole("button", { name: "Start Financial Aid walkthrough" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Explore this role" })).toBeNull();
+    expect(screen.queryByLabelText("Password")).toBeNull();
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("opens the fictional website presenter without a password or refresh token", async () => {
+  it("opens a read-only Financial Aid website session without a password or refresh token", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
     const endpoint = "/api/v1/sandbox/website-presenter/";
     vi.stubGlobal("fetch", vi.fn((url, options) => {
@@ -104,36 +118,72 @@ describe("Sandbox persona launch", () => {
         access: "website-access",
         school_id: schoolId,
         school_name: "Heritage Christian Academy - Arete Fictional Presenter",
-        role: "school_admin",
-        role_code: "HEAD_OF_SCHOOL",
-        username: "presenter.school-admin@fictional.crown.invalid",
-        email: "presenter.school-admin@fictional.crown.invalid",
-        route: "/school-admin-dashboard",
+        role: "parent",
+        role_code: "PARENT",
+        username: "presenter.parent@fictional.crown.invalid",
+        email: "presenter.parent@fictional.crown.invalid",
+        route: "/parent",
         demo_scope: "website_presenter_v1",
         command_center: { track: "school" },
       } : {
         available: true,
+        financial_aid_ready: true,
         school: { id: schoolId, name: "Heritage Christian Academy - Arete Fictional Presenter" },
-        roles: [{ key: "school_admin", label: "School Administrator" }],
+        roles: [{ key: "parent", label: "Parent" }, { key: "school_admin", label: "School Administrator" }],
       }), { status: launching ? 201 : 200, headers: { "Content-Type": "application/json" } }));
     }));
     const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
     render(<SandboxLandingPage />);
-    const launch = (await screen.findAllByRole("button", { name: "Explore this role" }))[0];
-    expect(screen.getAllByText(/Changes are disabled\./).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Saving or changing records requires an authorized staff account\./)).toBeTruthy();
-    expect(screen.queryByText("Heritage Christian Academy")).toBeNull();
+    const launch = await screen.findByRole("button", { name: "Start Financial Aid walkthrough" });
+    expect(screen.getByText(/This presentation does not submit applications/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Explore this role" })).toBeNull();
     expect(screen.queryByLabelText("Password")).toBeNull();
     fireEvent.click(launch);
     await waitFor(() => expect(sessionStorage.getItem("crown.jwt.access")).toBe("website-access"));
     expect(sessionStorage.getItem("crown.jwt.refresh")).toBe("");
     expect(sessionStorage.getItem("crown.school.id")).toBe(schoolId);
     expect(sessionStorage.getItem("crown.website.presenter")).toBe("1");
-    expect(window.location.href).toBe("/school-admin-dashboard");
+    expect(window.location.href).toBe("/sandbox/jireh-financial-aid");
     const post = globalThis.fetch.mock.calls.find(([, options]) => options?.method === "POST");
     expect(post).toBeTruthy();
     expect(post[1].credentials).toBe("omit");
-    expect(JSON.parse(post[1].body)).toEqual({ role: "school_admin" });
+    expect(new Headers(post[1].headers).get("Authorization")).toBe("Bearer verified-operator-access");
+    expect(JSON.parse(post[1].body)).toEqual({ role: "parent" });
+  });
+
+  it("does not launch if the website presenter has no authorized parent role", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      available: true,
+      financial_aid_ready: true,
+      school: { id: "cd216908-b692-5fa7-997b-743f811f1ea9", name: "Fictional school" },
+      roles: [{ key: "school_admin", label: "Administrator" }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    expect(await screen.findByText(/saved Financial Aid case is not verified and ready/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start Financial Aid walkthrough" })).toBeNull();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not offer a Financial Aid walkthrough without a verified saved case", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
+      available: true,
+      financial_aid_ready: false,
+      school: { id: "cd216908-b692-5fa7-997b-743f811f1ea9", name: "Arete Fictional Presenter" },
+      roles: [{ key: "parent", label: "Parent" }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }))));
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    expect(await screen.findByText(/saved Financial Aid case is not verified and ready/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start Financial Aid walkthrough" })).toBeNull();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("verified-operator-access");
   });
 
   it("starts a one-click role session without visible credential fields", async () => {
