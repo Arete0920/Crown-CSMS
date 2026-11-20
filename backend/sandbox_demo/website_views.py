@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from .catalog import SANDBOX_PERSONAS
 from .website_presenter import (
     DEMO_ORIGIN, issue_website_demo_session, website_demo_rate_limit,
-    website_demo_school,
+    website_demo_school, website_financial_aid_ready,
 )
 
 
@@ -30,6 +30,7 @@ class WebsitePresenterEntryView(APIView):
             }, status=503)
         return self._response({
             "available": True,
+            "financial_aid_ready": website_financial_aid_ready(school),
             "school": {"id": str(school.pk), "name": school.name},
             "roles": [{"key": key, "label": persona.label}
                       for key, persona in SANDBOX_PERSONAS.items()],
