@@ -27,6 +27,8 @@ try {
   const parent = await login('parent'); const pp = parent.page;
   step = 'aid_parent_submit_and_reload';
   await pp.goto(front + '/parent/financial-aid');
+  await pp.getByRole('checkbox', { name: 'Avery Reed', exact: true }).check();
+  await pp.getByRole('checkbox', { name: 'Jordan Reed', exact: true }).check();
   await pp.getByRole('checkbox', { name: /I confirm all application information is fictional/i }).check();
   await pp.getByRole('button', { name: 'Submit fictional Financial Aid application', exact: true }).click();
   await expect(pp.getByText(/submitted and independently verified/)).toBeVisible();
