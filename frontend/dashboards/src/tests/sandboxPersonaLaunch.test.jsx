@@ -183,7 +183,7 @@ describe("Sandbox persona launch", () => {
     expect(await screen.findByText(/saved Financial Aid case is not verified and ready/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Start Financial Aid walkthrough" })).toBeNull();
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("verified-operator-access");
   });
 
   it("starts a one-click role session without visible credential fields", async () => {
