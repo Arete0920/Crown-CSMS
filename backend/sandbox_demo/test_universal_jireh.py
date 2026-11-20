@@ -30,6 +30,9 @@ def jireh(local_runtime, operator_secrets):
 def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, operator_secrets):
     parent, _ = login("parent", operator_secrets)
     officer, _ = login("finance_director", operator_secrets)
+    from sandbox_demo.website_presenter import website_financial_aid_ready
+    presenter_school = School.objects.get(pk=jireh["school_id"])
+    assert not website_financial_aid_ready(presenter_school)
     data = parent.get(BASE + "aid/family/").json()
     assert data["household"] == "Reed Family"
     assert sorted(item["name"] for item in data["students"]) == ["Avery Reed", "Jordan Reed"]
@@ -93,6 +96,8 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     assert credit.account.school_id == award.school_id
     assert credit.account.household_id == link.household_id
     assert compute_account_balance(credit.account) == Decimal("-250.00")
+    assert website_financial_aid_ready(presenter_school)
+
     assert not Payment.objects.filter(school_id=jireh["school_id"]).exists()
     audits = AidAuditEvent.objects.filter(school_id=jireh["school_id"], entity_id=str(award.pk))
     assert audits.filter(action="STUDENT_ACCOUNT_CREDIT_POSTED").count() == 1
