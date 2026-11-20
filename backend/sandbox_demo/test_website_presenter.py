@@ -50,6 +50,18 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
         assert available.status_code == 200
         assert len(available.data["roles"]) == 1
         assert available.data["roles"][0]["key"] == "parent"
+        # A hidden role is not an authorization boundary: reject all other
+        # personas even when a caller bypasses the website's visible button.
+        from sandbox_demo.catalog import SANDBOX_PERSONAS
+        for other_role in SANDBOX_PERSONAS:
+            if other_role == "parent":
+                continue
+            denied = client.post(
+                "/api/v1/sandbox/website-presenter/",
+                {"role": other_role}, format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+            )
+            assert denied.status_code == 400, (other_role, denied.content)
+            assert denied.data["code"] == "website_presenter_role_invalid"
         session = client.post(
             "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
