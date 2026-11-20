@@ -113,6 +113,23 @@ def test_jireh_aid_director_grant_preserves_website_readiness_without_role_drift
         )
         assert issued.status_code == 201, issued.content
         assert issued.data["demo_scope"] == DEMO_SCOPE
+        with patch("sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True):
+            client.credentials(
+                HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}",
+                HTTP_X_SCHOOL_ID=str(school.pk),
+            )
+            family = client.get("/api/v1/presenter/jireh/aid/family/")
+            assert family.status_code == 200, family.content
+            assert sorted(child["name"] for child in family.json()["students"]) == [
+                "Avery Reed", "Jordan Reed",
+            ]
+            assert family.json()["applications"] == []
+            denied = client.post("/api/v1/presenter/jireh/aid/family/", {},
+                                 format="json")
+            assert denied.status_code == 403, denied.content
+            from aid.models import AidApplication
+            assert not AidApplication.objects.exists()
+            client.credentials()
 
         # The Jireh officer receives exactly one supplementary Aid role;
         # an unrelated parent's supplementary role still blocks issuance.
