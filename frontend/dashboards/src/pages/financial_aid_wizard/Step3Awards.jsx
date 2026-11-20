@@ -44,15 +44,30 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
   }
 
   async function handleContinue() {
-    const awards = rows
-      .filter((r) => r.application_id.trim() && r.student_id.trim())
-      .map((r) => ({
-        application_id: r.application_id.trim(),
-        student_id: r.student_id.trim(),
-        bucket: r.bucket,
-        amount: r.amount,
-        rationale: r.rationale.trim(),
-      }));
+    const populatedRows = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) =>
+        [row.application_id, row.student_id, row.amount, row.rationale]
+          .some((value) => String(value ?? "").trim())
+      );
+
+    const incomplete = populatedRows.find(({ row }) =>
+      !String(row.application_id ?? "").trim() ||
+      !String(row.student_id ?? "").trim() ||
+      !String(row.amount ?? "").trim()
+    );
+    if (incomplete) {
+      setError(`Award #${incomplete.index + 1}: application ID, student ID, and amount are required. Complete or remove this row.`);
+      return;
+    }
+
+    const awards = populatedRows.map(({ row }) => ({
+      application_id: String(row.application_id).trim(),
+      student_id: String(row.student_id).trim(),
+      bucket: row.bucket,
+      amount: row.amount,
+      rationale: String(row.rationale ?? "").trim(),
+    }));
 
     if (awards.length === 0) {
       setError("Add an application and student for at least one award, or use 'No Awards — Skip'.");
@@ -181,7 +196,7 @@ export default function Step3Awards({ context, setContext, goNext, goPrev, stepI
           + Add Award
         </button>
 
-        {error && <div className="crown-alert crown-alert--error">{error}</div>}
+        {error && <div role="alert" className="crown-alert crown-alert--error">{error}</div>}
 
         <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
           <button className="crown-btn crown-btn--ghost" onClick={goPrev} disabled={loading}>Back</button>
