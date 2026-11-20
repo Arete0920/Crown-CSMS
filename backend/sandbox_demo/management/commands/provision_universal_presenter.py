@@ -10,7 +10,7 @@ from sandbox_demo.universal_identity import UNIVERSAL_SCHOOL_ID
 from sandbox_demo.universal_demo import _prepare_presenter
 from sandbox_demo.universal_access import presenter_passwords
 from sandbox_demo.universal_care import prepare_presenter_care
-from sandbox_demo.universal_jireh import prepare_presenter_jireh
+from sandbox_demo.universal_jireh import prepare_presenter_jireh, stage_owner_fictional_aid_case
 from sandbox_demo.universal_admissions import prepare_presenter_admissions
 
 
@@ -22,6 +22,8 @@ class Command(BaseCommand):
         parser.add_argument("--apply", action="store_true")
         parser.add_argument("--financial-aid-only", action="store_true",
                             help="Stage only fictional institutional Aid; exclude care, admissions, admin and SGO.")
+        parser.add_argument("--stage-fictional-aid-case", action="store_true",
+                            help="Explicitly stage a synthetic submitted Reed case and noncash accepted award during initial Aid-only apply.")
         parser.add_argument("--confirm-school-id")
         parser.add_argument("--enable-password-login", action="store_true")
         parser.add_argument("--archive-classroom", action="store_true")
@@ -29,6 +31,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         sha = options["expected_sha"]
         require_hosted_presenter(sha)
+        if options["stage_fictional_aid_case"] and (
+            not options["apply"] or not options["financial_aid_only"]
+            or options["enable_password_login"] or options["archive_classroom"]
+        ):
+            raise CommandError("Synthetic case staging requires --financial-aid-only --apply without password initialization or classroom archive.")
         if options["enable_password_login"] and not options["apply"]:
             raise CommandError("Credential initialization requires explicit --apply.")
         if options["apply"] and not options["archive_classroom"] and options["confirm_school_id"] != str(UNIVERSAL_SCHOOL_ID):
@@ -63,6 +70,8 @@ class Command(BaseCommand):
             if options["apply"]:
                 if options["financial_aid_only"]:
                     result["jireh"] = prepare_presenter_jireh(apply=True, aid_only=True)
+                    if options["stage_fictional_aid_case"]:
+                        result["synthetic_case"] = stage_owner_fictional_aid_case()
                 else:
                     result["care"] = prepare_presenter_care(apply=True)
                     result["jireh"] = prepare_presenter_jireh(apply=True)

@@ -148,3 +148,93 @@ def test_local_commands_do_not_become_hosted_provisioners(local_runtime, setting
     for name in ("prepare_universal_presenter", "prepare_universal_care", "prepare_universal_jireh"):
         with django_assert_num_queries(0), pytest.raises(CommandError):
             call_command(name, apply=True, stdout=StringIO())
+
+@pytest.mark.django_db
+def test_owner_opt_in_stages_audited_non_cash_reed_case_atomically(local_runtime):
+    """No Azure access: only the isolated fictional local test runtime."""
+    from aid.models import AidApplication, AidAward, AidAuditEvent, AidBudgetTracker
+    from core.models import School, Student
+    from ledger.models import Credit, Payment
+    from aftercare.models import DaycareChild
+    from jireh_sgo.models import SGOFamilyGrant
+    from sandbox_demo.universal_demo import require_local_presenter
+    from sandbox_demo.website_presenter import website_financial_aid_ready
+
+    call_command("seed_permissions", stdout=StringIO())
+    with patch(COMMAND + ".require_hosted_presenter",
+               side_effect=lambda sha: require_local_presenter()):
+        result = StringIO()
+        call_command(
+            "provision_universal_presenter", expected_sha=SHA,
+            apply=True, financial_aid_only=True, stage_fictional_aid_case=True,
+            confirm_school_id=str(UNIVERSAL_SCHOOL_ID), stdout=result,
+        )
+    school = School.objects.get(pk=UNIVERSAL_SCHOOL_ID)
+    assert '"case_ready": true' in result.getvalue()
+    assert website_financial_aid_ready(school)
+    application = AidApplication.objects.get(school=school)
+    assert application.status == AidApplication.STATUS_SUBMITTED
+    assert application.submitted_at and application.financial_profile_id
+    assert Student.objects.filter(school=school, family=application.family).count() == 2
+    award = AidAward.objects.get(school=school, aid_application=application)
+    assert award.decision_status == AidAward.DECISION_ACCEPTED
+    assert award.awarded_cents == 25_000 and award.ledger_entry_id
+    assert award.decided_by_id is None
+    assert AidBudgetTracker.objects.get(
+        school=school, academic_year=application.academic_year,
+        bucket=AidAward.TYPE_NEED,
+    ).awarded_cents == 25_000
+    credit = Credit.objects.get(
+        school_id=school.pk, source=Credit.SOURCE_FINANCIAL_AID,
+        reference=f"aid_award:{award.pk}",
+    )
+    assert str(credit.amount) == "250.00"
+    assert not credit.is_void and credit.account.school_id == school.pk
+    assert not Payment.objects.filter(school_id=school.pk).exists()
+    assert not DaycareChild.objects.exists()
+    assert not SGOFamilyGrant.objects.exists()
+    assert AidAuditEvent.objects.filter(
+        school=school, entity_id=str(award.pk), action="AWARD_APPROVED",
+        actor_user__isnull=True,
+    ).count() == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("flags", [
+    {"financial_aid_only": True},
+    {"apply": True},
+    {"apply": True, "financial_aid_only": True, "enable_password_login": True},
+    {"apply": True, "financial_aid_only": True, "archive_classroom": True},
+])
+def test_owner_synthetic_case_requires_explicit_guarded_initial_apply(
+    local_runtime, flags,
+):
+    from sandbox_demo.universal_demo import require_local_presenter
+    with patch(COMMAND + ".require_hosted_presenter",
+               side_effect=lambda sha: require_local_presenter()):
+        with pytest.raises(CommandError, match="Synthetic case staging requires"):
+            call_command(
+                "provision_universal_presenter", expected_sha=SHA,
+                stage_fictional_aid_case=True, **flags, stdout=StringIO(),
+            )
+    assert not School.objects.exists()
+
+
+@pytest.mark.django_db
+def test_owner_synthetic_case_failure_rolls_back_initial_provision(local_runtime):
+    from sandbox_demo.universal_demo import require_local_presenter
+    call_command("seed_permissions", stdout=StringIO())
+    with patch(COMMAND + ".require_hosted_presenter",
+               side_effect=lambda sha: require_local_presenter()), patch(
+        COMMAND + ".stage_owner_fictional_aid_case",
+        side_effect=CommandError("synthetic case rollback probe"),
+    ):
+        with pytest.raises(CommandError, match="rollback probe"):
+            call_command(
+                "provision_universal_presenter", expected_sha=SHA,
+                apply=True, financial_aid_only=True,
+                stage_fictional_aid_case=True,
+                confirm_school_id=str(UNIVERSAL_SCHOOL_ID),
+                stdout=StringIO(),
+            )
+    assert not School.objects.exists() and not UserAccount.objects.exists()

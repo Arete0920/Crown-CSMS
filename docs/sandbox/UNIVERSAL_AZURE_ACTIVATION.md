@@ -19,6 +19,8 @@ python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" \
   --financial-aid-only --apply
 ```
 
+Optional **source-only capability**, not permission to mutate DEV: a separately approved initial `--apply` may also specify `--stage-fictional-aid-case`. That switch must appear with `--financial-aid-only`, explicit `--confirm-school-id`, and the exact approved source SHA. It stages a fixed, explicitly fictional two-child submission and $250 noncash accepted example inside the same atomic initial provisioning transaction. The application and award use existing Aid business services, carry synthetic provenance with no falsely attributed parent/officer decision, and must pass persisted ledger/Student Accounts checks. The switch defaults OFF, cannot initialize passwords, cannot replay on an existing presenter, and does not issue payment, invitation, email, or session tokens. Run it only after a separate documented owner-approved DEV release and provisioning authority. The public website remains read-only.
+
 The narrow option retains the existing independent fictional **presenter school
 foundation**, creates the canonical Reed household with Avery and Jordan, and stages
 institutional Jireh financial-aid policy and officer grants. It **does not**
@@ -28,12 +30,15 @@ still contains the standard generated school roster and dormant persona
 identities; do not claim that only two total school students are created.
 No new Azure resource or schema migration is implied.
 
-**Important:** This setup **does not** create an aid application, award or
-notification. The existing authorized private parent/officer workflow must
-submit and approve an illustrative Reed case, with independent persisted
-readback, before the public read-only family presentation is useful. Do not
-fabricate decisions, send real notifications, bypass authentication for
-writes, or use customer data. The website's one-click parent session never
+**Important:** Default staging **does not** create an aid application, award
+or notification. With the explicit synthetic-case opt-in described above,
+the approved initial provisioning command uses fixed fictional values and
+the existing Aid submit/approval services, recording its actual CLI source
+rather than claiming a human parent or officer made the decision. Without
+that opt-in, a separately authorized private parent/officer workflow and
+persisted readback are still required before public presentation. Do not
+fabricate human decisions, send real notifications, bypass public API
+authentication for writes, or use customer data. The website's one-click parent session never
 accepts write requests. Repeat cases require the separately authorized,
 history-preserving generation lifecycle.
 
