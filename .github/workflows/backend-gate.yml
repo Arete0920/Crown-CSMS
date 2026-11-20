@@ -54,6 +54,21 @@ jobs:
           # The full gate already fails on tenant AST tripwires (checks 4-6).
           python tools/verify_backend_gate.py
 
+      # The website has no public write path: prove the opt-in synthetic case
+      # can be staged only inside a disposable, test-owned SQLite transaction.
+      - name: Verify Jireh website fictional-case staging on isolated SQLite
+        env:
+          DJANGO_SETTINGS_MODULE: crown_api.settings
+          SECRET_KEY: ci-not-secret
+          DJANGO_SECRET_KEY: ci-not-secret
+          DEBUG: "0"
+          ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+          DATABASE_URL: sqlite:///./jireh-website-ci.sqlite3
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: |
+          python -m pytest -q backend/sandbox_demo/test_universal_activation.py \
+            --tb=short --no-header
+
       # The source branch may add the acceptance file before the parent
       # feature is merged; never replace this check with a new top-level
       # workflow (the canonical repository inventory has 49 workflows).
