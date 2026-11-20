@@ -44,7 +44,7 @@ describe("Financial Aid wizard preview and commit language", () => {
     );
 
     expect(screen.getByText("Total Staged Offer Amount")).toBeTruthy();
-    expect(screen.getByText("$125.00")).toBeTruthy();
+    expect(screen.getAllByText("$125.00")).toHaveLength(2);
     expect(screen.queryByText("Total Aid Amount")).toBeNull();
   });
 
