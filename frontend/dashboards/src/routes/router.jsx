@@ -204,6 +204,16 @@ export const router = createBrowserRouter([
     element: <SandboxCommandCenter />,
   },
   {
+    // Passwordless website presenter uses a parent-scoped read-only API token.
+    // This route never overrides the backend's per-method access boundary.
+    path: "/sandbox/jireh-financial-aid",
+    element: (
+      <RoleRouteGuard allowedRoles={["parent"]}>
+        <ParentFinancialAidPreparationPage />
+      </RoleRouteGuard>
+    ),
+  },
+  {
     path: PATHS.DASHBOARD,
     element: (IS_LAUNCH_PREVIEW
       ? <CrownLaunchDashboardPage activePath="/dashboard" />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import CrownLogo from "../components/brand/CrownLogo";
+import { clearBrowserAuthState } from "../utils/authClient.js";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
@@ -10,6 +11,9 @@ const ENABLE_SANDBOX_STUDENT = import.meta.env.VITE_SANDBOX_ENABLE_STUDENT !== "
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || "support@crown2026.local";
 const HERITAGE_SCHOOL_KEY = "heritage-core";
 const HERITAGE_SCHOOL_NAME = "Heritage Christian Academy";
+const WEBSITE_DEMO_HOST = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+const isWebsiteDemoLogin = () => !IS_SANDBOX
+  && globalThis.location?.hostname === WEBSITE_DEMO_HOST;
 
 function apiUrl(path) {
   if (path.startsWith("http")) return path;
@@ -226,10 +230,17 @@ async function fetchSchools(sandboxMode) {
 }
 
 export default function LoginPage() {
-  const roles = useMemo(() => (IS_SANDBOX ? SANDBOX_ROLES : PROD_ROLES), []);
+  const roles = useMemo(() => (IS_SANDBOX ? SANDBOX_ROLES
+    : isWebsiteDemoLogin()
+      ? [...PROD_ROLES, { value: "arete_presenter", label: "Arete Sales Presenter", route: "/sandbox" }]
+      : PROD_ROLES), []);
   const [schools, setSchools] = useState(fallbackSandboxSchools());
   const [selectedSchoolId, setSelectedSchoolId] = useState(DEMO_SCHOOL);
-  const [selectedRole, setSelectedRole] = useState(roles[0]?.value || "school_admin");
+  const [selectedRole, setSelectedRole] = useState(() => {
+    const query = new URLSearchParams(globalThis.location?.search || "");
+    return isWebsiteDemoLogin() && query.get("role") === "arete_presenter"
+      ? "arete_presenter" : (roles[0]?.value || "school_admin");
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -329,6 +340,29 @@ export default function LoginPage() {
         throw new Error("Login response missing access token.");
       }
 
+      if (isWebsiteDemoLogin() && role.value === "arete_presenter") {
+        // The already-authenticated platform operator may be schoolless.
+        // Reuse the real DEV launcher authorization as the single authority;
+        // its 503/not-ready response is also restricted to a verified operator.
+        const proof = await globalThis.fetch(apiUrl("/api/v1/sandbox/website-presenter/"), {
+          method: "GET",
+          credentials: "omit",
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${access}` },
+        });
+        if (!proof.ok) {
+          const body = await proof.json().catch(() => ({}));
+          if (proof.status !== 503 || body?.code !== "website_presenter_not_ready") {
+            throw new Error("Authorized Arete presenter access is required.");
+          }
+        }
+        // Do not mix a privileged operator token with a fictional viewer token,
+        // persist a refresh token, or grant any school role locally.
+        clearBrowserAuthState();
+        sessionStorage.setItem("crown.jwt.access", access);
+        globalThis.location.href = "/sandbox";
+        return;
+      }
       const identity = await fetchAuthenticatedIdentity(access);
       const authenticatedSchoolId = identity.user.school_id;
       const roleContext = await fetchAuthorizedRoleContext(access, authenticatedSchoolId);
@@ -726,7 +760,7 @@ export default function LoginPage() {
 
             {!IS_SANDBOX && globalThis.location?.hostname === "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net" && (
               <p className="login-subtitle">
-                <a href="/sandbox">Explore our fictional CROWN demonstration school — no password required</a>
+                <a href="/sandbox">Authorized Arete presentation — prospects need no account or password</a>
               </p>
             )}
 

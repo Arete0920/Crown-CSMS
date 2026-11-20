@@ -5,6 +5,7 @@ import pytest
 from django.db import transaction
 from django.test import RequestFactory
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from core.models import CrownPermission, RolePermission, School, UserAccount
 from crown_api.jwt_utils import decode_access
@@ -18,6 +19,21 @@ from sandbox_demo.website_presenter import (
 )
 
 
+def _operator_client():
+    """Real signed JWT for an existing platform operator, not a demo persona."""
+    operator = UserAccount(
+        username="arete-operator-test", email="arete-operator@fictional.crown.invalid",
+        is_staff=True, is_superuser=True, is_active=True,
+    )
+    operator.set_unusable_password()
+    operator.save()
+    client = APIClient()
+    client.credentials(
+        HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(operator).access_token}",
+    )
+    return client
+
+
 @pytest.mark.django_db
 def test_entry_default_off_and_rejects_other_origins(settings, django_assert_num_queries):
     settings.CROWN_WEBSITE_DEMO_ENABLED = False
@@ -25,8 +41,9 @@ def test_entry_default_off_and_rejects_other_origins(settings, django_assert_num
     with django_assert_num_queries(0):
         assert website_demo_school() is None
     unavailable = client.get("/api/v1/sandbox/website-presenter/")
-    assert unavailable.status_code == 503
+    assert unavailable.status_code == 403
     assert unavailable.data["available"] is False
+    assert unavailable.data["code"] == "website_presenter_operator_required"
     denied = client.post(
         "/api/v1/sandbox/website-presenter/",
         {"role": "teacher"}, format="json", HTTP_ORIGIN="https://evil.example.invalid",
@@ -37,32 +54,82 @@ def test_entry_default_off_and_rejects_other_origins(settings, django_assert_num
 
 
 @pytest.mark.django_db
+def test_origin_spoof_and_nonoperator_cannot_mint_fictional_jwt(local_runtime, settings):
+    from sandbox_demo.models import SandboxEvent
+
+    prepare_presenter(apply=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.website_views.website_financial_aid_ready", return_value=True,
+    ):
+        client = APIClient()
+        path = "/api/v1/sandbox/website-presenter/"
+        status = client.get(path)
+        assert status.status_code == 403
+        assert status.data["code"] == "website_presenter_operator_required"
+        denial = client.post(path, {"role": "parent"}, format="json", HTTP_ORIGIN=DEMO_ORIGIN)
+        assert denial.status_code == 403
+        assert denial.data["code"] == "website_presenter_operator_required"
+
+        staff = UserAccount(
+            username="nonoperator-staff", email="staff@fictional.crown.invalid",
+            is_staff=True, is_superuser=False, is_active=True,
+        )
+        staff.set_unusable_password()
+        staff.save()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {RefreshToken.for_user(staff).access_token}")
+        denied = client.post(path, {"role": "parent"}, format="json", HTTP_ORIGIN=DEMO_ORIGIN)
+        assert denied.status_code == 403
+        assert denied.data["code"] == "website_presenter_operator_required"
+        assert not SandboxEvent.objects.filter(event="website_presenter_session_issued_v1").exists()
+
+
+@pytest.mark.django_db
 def test_owned_fictional_role_issued_without_password_or_refresh(
     local_runtime, settings,
 ):
     prepare_presenter(apply=True)
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
-    with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
-        client = APIClient()
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.website_views.website_financial_aid_ready", return_value=True,
+    ):
+        client = _operator_client()
         available = client.get("/api/v1/sandbox/website-presenter/")
         assert available.status_code == 200
-        assert len(available.data["roles"]) == 9
+        assert len(available.data["roles"]) == 1
+        assert available.data["roles"][0]["key"] == "parent"
+        # A hidden role is not an authorization boundary: reject all other
+        # personas even when a caller bypasses the website's visible button.
+        from sandbox_demo.catalog import SANDBOX_PERSONAS
+        for other_role in SANDBOX_PERSONAS:
+            if other_role == "parent":
+                continue
+            denied = client.post(
+                "/api/v1/sandbox/website-presenter/",
+                {"role": other_role}, format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+            )
+            assert denied.status_code == 400, (other_role, denied.content)
+            assert denied.data["code"] == "website_presenter_role_invalid"
         session = client.post(
-            "/api/v1/sandbox/website-presenter/", {"role": "teacher"},
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
         )
         assert session.status_code == 201, session.content
         body = session.data
         assert body["demo_scope"] == DEMO_SCOPE
         assert not body.get("refresh")
-        assert body["username"] == presenter_username("teacher")
+        assert body["username"] == presenter_username("parent")
         token = decode_access(body["access"])
         assert token.ok
         assert token.payload["demo_scope"] == DEMO_SCOPE
-        actor = UserAccount.objects.get(username=presenter_username("teacher"))
+        actor = UserAccount.objects.get(username=presenter_username("parent"))
         request = RequestFactory().get("/api/v1/academics/classroom/workspace/")
-        assert website_demo_request_allowed(request, actor, token.payload)
+        assert not website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().get("/api/dashboards/summary/")
+        assert not website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().get("/api/v1/presenter/jireh/aid/family/")
+        assert website_demo_request_allowed(request, actor, token.payload)
+        request = RequestFactory().get("/api/v1/aid/family/status/")
         assert website_demo_request_allowed(request, actor, token.payload)
         request = RequestFactory().post("/api/dashboards/summary/")
         assert not website_demo_request_allowed(request, actor, token.payload)
@@ -81,10 +148,57 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
             HTTP_X_SCHOOL_ID="00000000-0000-0000-0000-000000000001",
         )
         assert not website_demo_request_allowed(request, actor, token.payload)
-        user = UserAccount.objects.get(username=presenter_username("teacher"))
+        # A newly issued viewer token cannot mint another demo token.
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {body['access']}")
+        refused = client.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert refused.status_code == 403
+        user = UserAccount.objects.get(username=presenter_username("parent"))
         user.is_active = False
         user.save(update_fields=["is_active"])
         assert website_demo_school() is None
+
+
+
+@pytest.mark.django_db
+def test_jireh_aid_director_grant_preserves_website_readiness_without_role_drift(
+    local_runtime, settings,
+):
+    from django.core.management import call_command
+    from io import StringIO
+    from core.models import UserRole
+    from sandbox_demo.universal_jireh import prepare_presenter_jireh
+
+    call_command("seed_permissions", stdout=StringIO())
+    prepare_presenter(apply=True)
+    prepare_presenter_jireh(apply=True, aid_only=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
+        school = website_demo_school()
+        assert school is not None
+        client = _operator_client()
+        available = client.get("/api/v1/sandbox/website-presenter/")
+        assert available.status_code == 200
+        assert available.data["financial_aid_ready"] is False
+        denied = client.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert denied.status_code == 503, denied.content
+        assert denied.data["code"] == "website_jireh_case_not_ready"
+        from aid.models import AidApplication
+        assert not AidApplication.objects.exists()
+
+        # The Jireh officer receives exactly one supplementary Aid role;
+        # an unrelated parent's supplementary role still blocks issuance.
+        parent = UserAccount.objects.get(username=presenter_username("parent"))
+        UserRole.objects.create(user=parent, school=school, role_code="FINANCE_DIRECTOR")
+        assert website_demo_school() is None
+        assert client.get("/api/v1/sandbox/website-presenter/").status_code == 503
+
 
 
 
@@ -124,7 +238,14 @@ def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
         for role, paths in role_paths.items():
             assert website_demo_request_allowed(
                 factory.get("/api/v1/nav/"), actors[role], claims[role]
-            )
+            ) is (role == "parent")
+            for allowed_path in (
+                "/api/v1/presenter/jireh/aid/family/",
+                "/api/v1/aid/family/status/",
+            ):
+                assert website_demo_request_allowed(
+                    factory.get(allowed_path), actors[role], claims[role]
+                ) is (role == "parent")
             assert not website_demo_request_allowed(
                 factory.post("/api/v1/nav/"), actors[role], claims[role]
             )
@@ -137,7 +258,7 @@ def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
             )
             for path in paths:
                 get = factory.get(path)
-                assert website_demo_request_allowed(get, actors[role], claims[role])
+                assert not website_demo_request_allowed(get, actors[role], claims[role])
                 assert not website_demo_request_allowed(
                     factory.post(path), actors[role], claims[role]
                 )
@@ -195,12 +316,11 @@ def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
     }
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
-    ):
-        client = APIClient()
-        for role in SANDBOX_PERSONAS:
-            # Match website credential-omission on persona switches: a prior
-            # demo JWT must not authorize the next session-issuance request.
-            client.credentials()
+    ), patch("sandbox_demo.website_views.website_financial_aid_ready", return_value=True):
+        # This test isolates role-scoping from the separate saved-case gate.
+        client = _operator_client()
+        for role in ("parent",):
+            # The signed staff account may launch; later scoped demo JWTs cannot.
             issued = client.post(
                 "/api/v1/sandbox/website-presenter/",
                 {"role": role}, format="json", HTTP_ORIGIN=DEMO_ORIGIN,
@@ -304,18 +424,17 @@ def test_signed_demo_session_cannot_reach_ops_or_foreign_school_over_http(
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True
-    ):
-        client = APIClient()
+    ), patch("sandbox_demo.website_views.website_financial_aid_ready", return_value=True):
+        client = _operator_client()
         issued = client.post(
-            "/api/v1/sandbox/website-presenter/", {"role": "teacher"},
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
             format="json", HTTP_ORIGIN=DEMO_ORIGIN,
         )
         assert issued.status_code == 201, issued.content
         token = issued.data["access"]
         client.credentials(HTTP_AUTHORIZATION=f"Bearer {token}")
         allowed = client.get("/api/dashboards/me/", HTTP_X_SCHOOL_ID=str(UNIVERSAL_SCHOOL_ID))
-        assert allowed.status_code == 200, allowed.content
-        assert allowed.data["school_id"] == str(UNIVERSAL_SCHOOL_ID)
+        assert allowed.status_code == 403, allowed.content
         denied = client.post("/api/v1/academics/submissions/", {}, format="json")
         assert denied.status_code == 403
         denied = client.post("/api/v1/presenter/admin/resolve-operational-exception/", {}, format="json")

@@ -5,6 +5,73 @@ credential rotation or database migration was performed for this assignment.
 This is an explicit future owner operation. Do not activate while prerequisites
 or unsupported-workflow acceptance remain unresolved.
 
+## Financial Aid-only activation option (source contract; NOT an approval)
+
+The salesperson-directed Financial Aid presentation is now the only customer-facing
+scope. After a separately approved exact-SHA DEV release and database identity
+verification, the existing owner command supports:
+
+```sh
+python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" --financial-aid-only
+# Owner-authorized mutation ONLY after verifying the preflight and rollback evidence:
+python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" \
+  --confirm-school-id cd216908-b692-5fa7-997b-743f811f1ea9 \
+  --financial-aid-only --apply
+```
+
+**Salesperson launch control:** The website GET/POST launcher now requires an existing,
+cryptographically authenticated CROWN operator with persisted active staff and
+superuser privileges. A matching `Origin` header does not establish identity.
+The authorized operator selects **Arete Sales Presenter** at
+`/login?role=arete_presenter` on the existing DEV preview SWA; the existing
+SimpleJWT login establishes their identity, and GET
+`/api/v1/sandbox/website-presenter/` independently verifies their persisted
+operator privileges (including when the fictional case is not ready).
+This operator route does not require a school-bound dashboard role.
+The operator signs in before opening the guided link; the separate parent viewer JWT is
+short-lived, read-only, and replaces the operator JWT in that browser tab.
+**Prospects never sign in or receive operator credentials.** Do not enable
+the website demo flag until an approved operator and the full live acceptance
+path are verified.
+
+Optional **source-only capability**, not permission to mutate DEV: a separately approved initial `--apply` may also specify `--stage-fictional-aid-case`. That switch must appear with `--financial-aid-only`, explicit `--confirm-school-id`, and the exact approved source SHA. It stages a fixed, explicitly fictional two-child submission and $250 noncash accepted example inside the same atomic initial provisioning transaction. The application and award use existing Aid business services, carry synthetic provenance with no falsely attributed parent/officer decision, and must pass persisted ledger/Student Accounts checks. The switch defaults OFF, cannot initialize passwords, cannot replay on an existing presenter, and does not issue payment, invitation, email, or session tokens. Run it only after a separate documented owner-approved DEV release and provisioning authority. The public website remains read-only.
+
+The narrow option retains the existing independent fictional **presenter school
+foundation**, creates the canonical Reed household with Avery and Jordan, and stages
+institutional Jireh financial-aid policy and officer grants. It **does not**
+stage SGO partners/programs/grants, daycare, extended care, Camp, admissions
+conversions or administrative module workflows. The underlying foundation
+still contains the standard generated school roster and dormant persona
+identities; do not claim that only two total school students are created.
+No new Azure resource or schema migration is implied.
+
+**Important:** Default staging **does not** create an aid application, award
+or notification. With the explicit synthetic-case opt-in described above,
+the approved initial provisioning command uses fixed fictional values and
+the existing Aid submit/approval services, recording its actual CLI source
+rather than claiming a human parent or officer made the decision. Without
+that opt-in, a separately authorized private parent/officer workflow and
+persisted readback are still required before public presentation. Do not
+fabricate human decisions, send real notifications, bypass public API
+authentication for writes, or use customer data. The website's one-click parent session never
+accepts write requests. Repeat cases require the separately authorized,
+history-preserving generation lifecycle.
+
+The public `GET /api/v1/sandbox/website-presenter/` response must expose
+`financial_aid_ready=true` before presenting the sales launch button. The
+read-only predicate verifies the canonical **two-child** Reed household, one
+submitted current-year Aid application with both students, and at least one
+accepted positive institutional award backed by a same-school noncash ledger
+entry. Missing or ambiguous records return `false`; a direct attempt to mint
+a public parent session before this state is ready returns HTTP 503. Do not
+force-enable the flag, prefill a fabricated award or bypass these checks.
+
+All existing exact-runtime restrictions, required approvals, outbound
+quarantine, read-only preflights, rollback prerequisites, and hosted
+acceptance gates in this document remain mandatory. This text authorizes
+**no deployment, Azure setting change, provisioning, credential action
+or database write**.
+
 ## Readiness and isolation
 
 | Workflow | Implemented source acceptance | Remaining release evidence |

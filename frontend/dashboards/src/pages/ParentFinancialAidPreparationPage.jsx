@@ -35,6 +35,10 @@ function errorMessage(error) {
 
 function FictionalFinancialAidPage({ hosted = false }) {
   const presenter = isUniversalPresenterSchool();
+  // Client-side presentation mode only. All API access remains validated by
+  // the server's school, role, method and website-token scope checks.
+  const websiteReadOnly = presenter && typeof sessionStorage !== "undefined"
+    && sessionStorage.getItem("crown.website.presenter") === "1";
   const endpoint = presenter ? "/api/v1/presenter/jireh/aid/family/" : hosted ? "/api/v1/buyer-demo/jireh/aid/family/" : ENDPOINT;
   const parentShell = getDashboardTemplate("parent");
   const [record, setRecord] = useState(null);
@@ -51,6 +55,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
   const [studentAidStatus, setStudentAidStatus] = useState([]);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
+  const [websiteStep, setWebsiteStep] = useState(0);
 
   const mountedRef = useRef(false);
   const revisionRef = useRef(0);
@@ -142,6 +147,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
       setStudentAidStatus([]);
       setStatusError("");
       setStatusLoading(false);
+      setWebsiteStep(0);
       void reload(next, revisionRef.current);
     }
 
@@ -313,21 +319,28 @@ function FictionalFinancialAidPage({ hosted = false }) {
     }
   }
 
+  // The public Jireh story is not a dashboard tour: omit unrelated
+  // navigation while retaining the normal shell for authenticated staff.
+  const DemoShell = websiteReadOnly ? "main" : CrownDashboardShell;
+  const shellProps = websiteReadOnly
+    ? { className: "launch-main" }
+    : {
+        activePath: "/parent/financial-aid",
+        schoolName: parentShell.schoolName,
+        user: parentShell.user,
+        updatesCount: parentShell.updatesCount,
+      };
   return (
-    <CrownDashboardShell
-      activePath="/parent/financial-aid"
-      schoolName={parentShell.schoolName}
-      user={parentShell.user}
-      updatesCount={parentShell.updatesCount}
-    >
+    <DemoShell {...shellProps}>
       <section className="crown-dashboard learning-workflow-page" data-testid="jireh-family-demo">
         <header className="crown-dashboard-hero">
           <div>
             <p className="crown-eyebrow">Jireh Financial Aid · school application</p>
             <h1>Family Financial Aid demonstration</h1>
             <p className="crown-dashboard-purpose">
-              Submit a fictional application and review its saved status.
-              This fictional demonstration is not a real Financial Aid application.
+              {websiteReadOnly
+                ? "Follow a saved fictional family application through its recorded financial-aid decisions. This guided view cannot submit or change records."
+                : "Submit a fictional application and review its saved status. This fictional demonstration is not a real Financial Aid application."}
             </p>
           </div>
         </header>
@@ -342,7 +355,29 @@ function FictionalFinancialAidPage({ hosted = false }) {
           {record ? (
             <>
               <p>Household: <strong>{record.household_name}</strong></p>
-              <form onSubmit={submit}>
+              {websiteReadOnly && (
+                <section aria-label="Financial Aid guided walkthrough" data-testid="jireh-website-walkthrough">
+                  <p><strong>Salesperson-guided read-only presentation.</strong> Every application and decision shown below is retrieved from existing school records. No form submissions or approvals are available on this link.</p>
+                  <nav aria-label="Financial Aid walkthrough steps">
+                    {["1. Meet the family", "2. Saved application", "3. Aid decisions"].map((label, index) => (
+                      <button key={label} type="button" aria-current={websiteStep === index ? "step" : undefined}
+                        onClick={() => setWebsiteStep(index)}>{label}</button>
+                    ))}
+                  </nav>
+                  {websiteStep === 0 && (
+                    <div data-testid="jireh-website-family">
+                      <h2>The Reed family</h2>
+                      <p>Family: <strong>{record.household_name}</strong></p>
+                      <p>Students: {record.students.map((student) => student.name).join(", ") || "No linked students recorded"}</p>
+                      <p>School year: {record.academic_years.find((year) => String(year.id) === String(yearId))?.name || "Not recorded"}</p>
+                    </div>
+                  )}
+                  {websiteStep === 2 && record.applications.length === 0 && (
+                    <p role="status">No submitted fictional application is available. Aid decisions cannot be demonstrated until the authorized case is prepared.</p>
+                  )}
+                </section>
+              )}
+              {!websiteReadOnly && <form onSubmit={submit}>
                 <div className="learning-record-detail-block">
                   <label htmlFor="jireh-demo-year">Financial Aid year</label>
                   <select id="jireh-demo-year" value={yearId} onChange={(event) => { clearSuccess(); setStudentAidStatus([]); setYearId(event.target.value); }} disabled={saving} required>
@@ -403,9 +438,9 @@ function FictionalFinancialAidPage({ hosted = false }) {
                     {saving ? "Submitting fictional application…" : "Submit fictional Financial Aid application"}
                   </button>
                 )}
-              </form>
+              </form>}
               {needsReconciliation ? <p role="status">Submission outcome unresolved. Refresh the saved status before proceeding; do not submit again.</p> : null}
-              <section aria-label="Saved Jireh applications" data-testid="jireh-saved-applications">
+              {(!websiteReadOnly || websiteStep === 1) && <section aria-label="Saved Jireh applications" data-testid="jireh-saved-applications">
                 <h2>{hosted ? "Saved fictional applications" : "Saved applications and offered awards"}</h2>
                 {hosted && !presenter && <p>No awards, eligibility decisions or funds are processed by this demonstration.</p>}
                 {record.applications.length === 0 ? <p>No school Financial Aid applications submitted yet.</p> : null}
@@ -429,8 +464,8 @@ function FictionalFinancialAidPage({ hosted = false }) {
                     </>}
                   </article>
                 ))}
-              </section>
-              {presenter && record.applications.length > 0 && (
+              </section>}
+              {presenter && record.applications.length > 0 && (!websiteReadOnly || websiteStep === 2) && (
                 <section aria-label="Verified student aid status" data-testid="jireh-student-status">
                   <h2>Student aid decisions</h2>
                   <p>Read each child's decision from the authorized family record. No payment or disbursement occurs here.</p>
@@ -461,7 +496,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
           ) : null}
         </section>
       </section>
-    </CrownDashboardShell>
+    </DemoShell>
   );
 }
 
