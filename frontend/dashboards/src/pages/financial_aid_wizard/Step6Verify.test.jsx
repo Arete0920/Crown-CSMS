@@ -81,6 +81,7 @@ describe("Financial Aid setup verification truth", () => {
         }}
         setContext={setContext}
         setStepIndex={setStepIndex}
+        schoolId="school-a"
         stepIndex={5}
         totalSteps={6}
         steps={["Year", "Buckets", "Awards", "Preview", "Commit", "Verify"]}
@@ -89,7 +90,7 @@ describe("Financial Aid setup verification truth", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Start New Aid Cycle" }));
 
-    expect(removeItem).toHaveBeenCalledWith("crown_wizard_draft:financial-aid-setup");
+    expect(removeItem).toHaveBeenCalledWith("crown_wizard_draft:financial-aid-setup:school-a");
     expect(setContext).toHaveBeenCalledWith({});
     expect(setStepIndex).toHaveBeenCalledWith(0);
     removeItem.mockRestore();
