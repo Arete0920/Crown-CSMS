@@ -193,6 +193,9 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
             with patch.object(certifier, "ROOT", checkout), patch.object(
                 certifier, "RUNTIME_PACK_ROOT", runtime,
             ):
+                # The old validator incorrectly accepted a linked ancestor.
+                with self.assertRaises(ValueError):
+                    certifier.validated_certification_bundle_path(bundle)
                 with self.assertRaises(ValueError):
                     certifier.write_text(bundle / certifier.CERT_NAME, "unsafe")
             self.assertFalse((bundle / certifier.CERT_NAME).exists())
