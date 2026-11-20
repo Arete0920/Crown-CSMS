@@ -589,3 +589,39 @@ def test_roster_never_discloses_malformed_foreign_tenant_attendance(monkeypatch)
     assert response.data["unlinked_attendance_count"] == 1
     assert all(row["student_id"] != outsider.pk for row in response.data["rows"])
     assert "ForeignChild" not in str(response.data)
+
+
+def test_am_roster_reports_other_session_open_custody_and_clears_on_release(monkeypatch):
+    """An AM scheduled child must be visibly flagged while prior PM custody is open."""
+    from rest_framework.test import APIClient
+    from aftercare import api
+
+    school, _household, child, receiver = setup_family()
+    permission, _ = CrownPermission.objects.get_or_create(code="extended_care.view")
+    RolePermission.objects.get_or_create(role_code="SUPPORT", permission=permission)
+    AftercareEnrollment.objects.filter(
+        school_fk=school, student_fk=child, care_session="AM",
+    ).update(days_of_week=["THU"])
+    yesterday_pm = AftercareAttendance.objects.create(
+        school_fk=school, student_fk=child, date=DAY,
+        care_session="PM", checkin_time=at(15, 0),
+    )
+    monkeypatch.setattr(api.timezone, "now", lambda: at(7, 15) + timedelta(days=1))
+    client = APIClient()
+    client.force_authenticate(user=receiver)
+    client.credentials(HTTP_X_SCHOOL_ID=str(school.id))
+    url = "/api/v1/aftercare/roster/today/?care_session=AM"
+
+    response = client.get(url)
+    assert response.status_code == 200, response.data
+    assert len(response.data["rows"]) == 1
+    row = response.data["rows"][0]
+    assert row["student_id"] == child.id
+    assert row["attendance"] is None
+    assert row["unresolved_other_session"] == "PM"
+
+    yesterday_pm.checkout_time = at(18, 0)
+    yesterday_pm.save(update_fields=["checkout_time"])
+    closed = client.get(url)
+    assert closed.status_code == 200, closed.data
+    assert closed.data["rows"][0]["unresolved_other_session"] is None
