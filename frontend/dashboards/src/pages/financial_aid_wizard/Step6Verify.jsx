@@ -3,7 +3,7 @@ import CrownWizardStepHeader from "../../components/crown/CrownWizardStepHeader.
 import { verifyAidSetup } from "../../api/aid_wizard.js";
 import "../../styles/crown-wizard.css";
 
-export default function Step6Verify({ context, setContext, setStepIndex, stepIndex, totalSteps, steps }) {
+export default function Step6Verify({ context, setContext, setStepIndex, stepIndex, totalSteps, steps, schoolId }) {
   const [result, setResult] = useState(context.verify || null);
   const [loading, setLoading] = useState(!context.verify);
   const [error, setError] = useState(null);
@@ -36,7 +36,9 @@ export default function Step6Verify({ context, setContext, setStepIndex, stepInd
   );
 
   function handleReset() {
-    try { localStorage.removeItem("crown_wizard_draft:financial-aid-setup"); } catch { /* ignore */ }
+    if (schoolId) {
+      try { localStorage.removeItem(`crown_wizard_draft:financial-aid-setup:${schoolId}`); } catch { /* ignore */ }
+    }
     setContext({});
     setStepIndex(0);
   }
