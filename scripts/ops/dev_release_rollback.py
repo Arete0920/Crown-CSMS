@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 import time
@@ -91,6 +92,23 @@ def check_receipt(data):
     return data
 
 
+def checked_receipt_path(path):
+    """Bind rollback evidence to this job's exact private runner receipt path."""
+    try:
+        runner_temp = os.environ.get("RUNNER_TEMP", "")
+        root = Path(runner_temp)
+        target = Path(path)
+        if (not runner_temp or not root.is_absolute() or not root.is_dir()
+                or root.is_symlink() or not target.is_absolute()
+                or target != root / "crown-dev-auto-rollback.json"
+                or target.is_symlink()
+                or target.parent.resolve(strict=True) != root.resolve(strict=True)):
+            raise Unsafe("rollback_receipt_path_invalid")
+    except (OSError, RuntimeError) as exc:
+        raise Unsafe("rollback_receipt_path_invalid") from exc
+    return target
+
+
 def acr_digest(image):
     record = az("acr", "repository", "show", "--name", REGISTRY,
                 "--image", image, "--query", "{digest:digest}")
@@ -101,6 +119,7 @@ def acr_digest(image):
 
 
 def capture(path):
+    target = checked_receipt_path(path)
     rows = az("webapp", "config", "appsettings", "list",
               "--resource-group", RG, "--name", APP)
     if not isinstance(rows, list):
@@ -139,8 +158,7 @@ def capture(path):
         "prior_workflow": values.get("DEPLOY_WORKFLOW"),
         "captured_at_utc": datetime.now(timezone.utc).isoformat(),
     })
-    target = Path(path)
-    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as out:
         json.dump(record, out, sort_keys=True)
         out.write("\n")
@@ -148,8 +166,17 @@ def capture(path):
 
 
 def restore(path, *, sleep=time.sleep):
+    target = checked_receipt_path(path)
     try:
-        receipt = check_receipt(json.loads(Path(path).read_text(encoding="utf-8")))
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+        fd = os.open(target, flags)
+        with os.fdopen(fd, "r", encoding="utf-8") as source:
+            if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                raise Unsafe("rollback_receipt_not_regular")
+            raw = source.read(4097)
+        if len(raw) > 4096:
+            raise Unsafe("rollback_receipt_too_large")
+        receipt = check_receipt(json.loads(raw))
     except (ValueError, OSError, TypeError) as exc:
         raise Unsafe("rollback_receipt_missing_or_invalid") from exc
     prior = receipt["prior_sha"]
