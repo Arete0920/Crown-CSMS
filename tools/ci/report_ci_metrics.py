@@ -3,10 +3,12 @@ from collections import Counter
 from datetime import datetime, timezone
 import json
 import os
+import stat
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 REPOSITORY = 'Arete0920/Crown-CSMS'
+REPORT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def seconds(start, end):
@@ -65,6 +67,28 @@ def summarize(run, jobs, artifacts):
     }
 
 
+
+def write_ci_report(report):
+    """Write only the checkout-root CI receipt; never follow linked targets."""
+    target = REPORT_ROOT / 'ci-metrics.json'
+    if (target.parent.resolve() != REPORT_ROOT.resolve() or target.is_symlink()
+            or (target.exists() and not target.is_file())):
+        raise ValueError('unsafe CI metrics report target')
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0)
+    fd = os.open(target, flags, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise ValueError('unsafe CI metrics report target')
+        with os.fdopen(fd, 'w', encoding='utf-8') as out:
+            fd = -1
+            out.truncate(0)
+            out.write(json.dumps(report, indent=2) + '\n')
+    finally:
+        if fd >= 0:
+            os.close(fd)
+
+
 def main():
     token = os.environ.get('GH_TOKEN', '').strip()
     if not token:
@@ -103,7 +127,7 @@ def main():
         'runs': records,
         'limits': 'Bounded workflow sample; not billing data, command equivalence, or a full PR history.',
     }
-    Path('ci-metrics.json').write_text(json.dumps(report, indent=2) + '\n')
+    write_ci_report(report)
     summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary_path:
         with open(summary_path, 'a') as output:
