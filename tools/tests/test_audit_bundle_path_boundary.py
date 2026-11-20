@@ -172,6 +172,33 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
                         certifier.write_text(invalid, "wrong location")
                 self.assertEqual(output.read_text(encoding="utf-8"), "second\n")
 
+    def test_certification_output_rejects_symlinked_runtime_ancestor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            checkout = base / "checkout"
+            checkout.mkdir()
+            outside = base / "outside"
+            outside.mkdir()
+            linked_governance = checkout / "governance"
+            try:
+                linked_governance.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on test platform")
+            runtime = linked_governance / "runtime"
+            runtime.mkdir()
+            bundle = runtime / "20260515T182250Z"
+            bundle.mkdir()
+            sentinel = outside / "keep.txt"
+            sentinel.write_text("DO NOT REMOVE", encoding="utf-8")
+            with patch.object(certifier, "ROOT", checkout), patch.object(
+                certifier, "RUNTIME_PACK_ROOT", runtime,
+            ):
+                with self.assertRaises(ValueError):
+                    certifier.write_text(bundle / certifier.CERT_NAME, "unsafe")
+            self.assertFalse((bundle / certifier.CERT_NAME).exists())
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+
     def test_certification_output_rejects_hardlinked_file(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
