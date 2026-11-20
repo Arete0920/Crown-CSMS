@@ -89,6 +89,42 @@ def test_owned_fictional_role_issued_without_password_or_refresh(
 
 
 @pytest.mark.django_db
+def test_jireh_aid_director_grant_preserves_website_readiness_without_role_drift(
+    local_runtime, settings,
+):
+    from django.core.management import call_command
+    from io import StringIO
+    from core.models import UserRole
+    from sandbox_demo.universal_jireh import prepare_presenter_jireh
+
+    call_command("seed_permissions", stdout=StringIO())
+    prepare_presenter(apply=True)
+    prepare_presenter_jireh(apply=True, aid_only=True)
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"):
+        school = website_demo_school()
+        assert school is not None
+        client = APIClient()
+        assert client.get("/api/v1/sandbox/website-presenter/").status_code == 200
+        issued = client.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert issued.status_code == 201, issued.content
+        assert issued.data["demo_scope"] == DEMO_SCOPE
+
+        # The Jireh officer receives exactly one supplementary Aid role;
+        # an unrelated parent's supplementary role still blocks issuance.
+        parent = UserAccount.objects.get(username=presenter_username("parent"))
+        UserRole.objects.create(user=parent, school=school, role_code="FINANCE_DIRECTOR")
+        assert website_demo_school() is None
+        assert client.get("/api/v1/sandbox/website-presenter/").status_code == 503
+
+
+
+
+@pytest.mark.django_db
 def test_website_role_dashboard_reads_are_exact_scoped_and_read_only(
     local_runtime, settings,
 ):
