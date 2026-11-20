@@ -57,7 +57,7 @@ export default function Step6Verify({ context, setContext, stepIndex, totalSteps
         )}
 
         {error && (
-          <div className="crown-alert crown-alert--error">{error}</div>
+          <div role="alert" className="crown-alert crown-alert--error">{error}</div>
         )}
 
         {result && !loading && (
