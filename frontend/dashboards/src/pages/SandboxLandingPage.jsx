@@ -163,6 +163,8 @@ export default function SandboxLandingPage() {
           <section className="sandbox-experience-panel" aria-label="Fictional demonstration readiness">
             <h1>CROWN demonstration school</h1>
             <p>{websitePresenter === null ? "Checking demonstration availability..." : "The fictional demonstration school is not yet activated."}</p>
+            <p>An authorized Arete presenter must sign in before launching this fictional walkthrough. Prospects never need an account or password.</p>
+            <a href="/login">Authorized staff sign in</a>
             <p>No school accounts, student records or credentials are available through this page.</p>
           </section>
         </div>

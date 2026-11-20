@@ -19,6 +19,16 @@ python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" \
   --financial-aid-only --apply
 ```
 
+**Salesperson launch control:** The website GET/POST launcher now requires an existing,
+cryptographically authenticated CROWN operator with persisted active staff and
+superuser privileges. A matching `Origin` header does not establish identity.
+The authorized operator signs in through the existing staff authentication
+workflow before opening the guided link; the separate parent viewer JWT is
+short-lived, read-only, and replaces the operator JWT in that browser tab.
+**Prospects never sign in or receive operator credentials.** Do not enable
+the website demo flag until an approved operator and the full live acceptance
+path are verified.
+
 Optional **source-only capability**, not permission to mutate DEV: a separately approved initial `--apply` may also specify `--stage-fictional-aid-case`. That switch must appear with `--financial-aid-only`, explicit `--confirm-school-id`, and the exact approved source SHA. It stages a fixed, explicitly fictional two-child submission and $250 noncash accepted example inside the same atomic initial provisioning transaction. The application and award use existing Aid business services, carry synthetic provenance with no falsely attributed parent/officer decision, and must pass persisted ledger/Student Accounts checks. The switch defaults OFF, cannot initialize passwords, cannot replay on an existing presenter, and does not issue payment, invitation, email, or session tokens. Run it only after a separate documented owner-approved DEV release and provisioning authority. The public website remains read-only.
 
 The narrow option retains the existing independent fictional **presenter school

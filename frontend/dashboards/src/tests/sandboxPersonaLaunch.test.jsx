@@ -61,6 +61,7 @@ describe("Sandbox persona launch", () => {
   it("keeps the website presenter unavailable when its server-side readiness gate is closed", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(
       JSON.stringify({ available: false, code: "website_presenter_not_ready" }),
       { status: 503, headers: { "Content-Type": "application/json" } },
@@ -72,12 +73,23 @@ describe("Sandbox persona launch", () => {
     await screen.findByText("The fictional demonstration school is not yet activated.");
     expect(screen.queryByRole("button", { name: "Explore this role" })).toBeNull();
     expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-    expect(sessionStorage.getItem("crown.jwt.access")).toBeNull();
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("verified-operator-access");
+  });
+
+  it("does not offer a public launcher without an authenticated operator", async () => {
+    window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
+    window.location.origin = "https://" + window.location.hostname;
+    const { default: SandboxLandingPage } = await import("../pages/SandboxLandingPage.jsx");
+    render(<SandboxLandingPage />);
+    expect(await screen.findByRole("link", { name: "Authorized staff sign in" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Start Financial Aid walkthrough" })).toBeNull();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it("opens only the Jireh family walkthrough despite an obsolete invite", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     window.location.search = "?invite=sbx_inv_retired";
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       available: true,
@@ -96,6 +108,7 @@ describe("Sandbox persona launch", () => {
   it("opens a read-only Financial Aid website session without a password or refresh token", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
     const endpoint = "/api/v1/sandbox/website-presenter/";
     vi.stubGlobal("fetch", vi.fn((url, options) => {
@@ -134,12 +147,14 @@ describe("Sandbox persona launch", () => {
     const post = globalThis.fetch.mock.calls.find(([, options]) => options?.method === "POST");
     expect(post).toBeTruthy();
     expect(post[1].credentials).toBe("omit");
+    expect(new Headers(post[1].headers).get("Authorization")).toBe("Bearer verified-operator-access");
     expect(JSON.parse(post[1].body)).toEqual({ role: "parent" });
   });
 
   it("does not launch if the website presenter has no authorized parent role", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       available: true,
       financial_aid_ready: true,
@@ -156,6 +171,7 @@ describe("Sandbox persona launch", () => {
   it("does not offer a Financial Aid walkthrough without a verified saved case", async () => {
     window.location.hostname = "yellow-forest-0eecc8b0f-devcertification.eastus2.7.azurestaticapps.net";
     window.location.origin = "https://" + window.location.hostname;
+    sessionStorage.setItem("crown.jwt.access", "verified-operator-access");
     vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(new Response(JSON.stringify({
       available: true,
       financial_aid_ready: false,
