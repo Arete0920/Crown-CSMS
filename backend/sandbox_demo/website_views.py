@@ -57,6 +57,11 @@ class WebsitePresenterEntryView(APIView):
                 "detail": "The fictional school is not ready.",
                 "code": "website_presenter_not_ready",
             }, status=503)
+        if role == "parent" and not website_financial_aid_ready(school):
+            return self._response({
+                "detail": "The saved fictional Financial Aid case is not ready.",
+                "code": "website_jireh_case_not_ready",
+            }, status=503)
         if not website_demo_rate_limit(school, role):
             return self._response({
                 "detail": "Demonstration entry rate limited.",
