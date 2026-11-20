@@ -119,6 +119,14 @@ def validated_certification_bundle_path(bundle: Path) -> Path:
     """Constrain certification writes to direct runtime audit bundle folders."""
     if RUNTIME_PACK_ROOT.is_symlink():
         raise ValueError("runtime audit root cannot be a symlink")
+    # ROOT is the resolved checkout. A symlink anywhere below it can redirect
+    # audit certification outputs outside the checked-out runtime directory.
+    if RUNTIME_PACK_ROOT.is_relative_to(ROOT):
+        component = ROOT
+        for part in RUNTIME_PACK_ROOT.relative_to(ROOT).parts:
+            component /= part
+            if component.is_symlink():
+                raise ValueError("runtime audit root cannot traverse a symlink")
     root = RUNTIME_PACK_ROOT.resolve()
     if ".." in bundle.parts or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", bundle.name):
         raise ValueError("invalid runtime audit bundle path")
