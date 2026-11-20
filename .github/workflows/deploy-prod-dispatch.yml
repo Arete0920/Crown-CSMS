@@ -876,7 +876,7 @@ jobs:
           RESPONSE=""
           HEALTH_FETCHED=false
           for i in {1..30}; do
-            if RESPONSE=$(curl --max-time 30 -fsSL "$HEALTH_URL"); then
+            if RESPONSE=$(curl --proto '=https' --proto-redir '=https' --max-time 30 -fsSL "$HEALTH_URL"); then
               HEALTH_FETCHED=true
               break
             fi
