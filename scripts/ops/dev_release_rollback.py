@@ -170,13 +170,15 @@ def restore(path, *, sleep=time.sleep):
     try:
         flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
         fd = os.open(target, flags)
-        with os.fdopen(fd, "r", encoding="utf-8") as source:
-            if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
                 raise Unsafe("rollback_receipt_not_regular")
-            raw = source.read(4097)
+            raw = os.read(fd, 4097)
+        finally:
+            os.close(fd)
         if len(raw) > 4096:
             raise Unsafe("rollback_receipt_too_large")
-        receipt = check_receipt(json.loads(raw))
+        receipt = check_receipt(json.loads(raw.decode("utf-8")))
     except (ValueError, OSError, TypeError) as exc:
         raise Unsafe("rollback_receipt_missing_or_invalid") from exc
     prior = receipt["prior_sha"]
