@@ -428,6 +428,7 @@ describe("Website Jireh Financial Aid guided replay", () => {
     });
     render(<ParentFinancialAidPreparationPage />);
     const walkthrough = await screen.findByTestId("jireh-website-walkthrough");
+    expect(screen.queryByRole("navigation", { name: "Primary" })).toBeNull();
     expect(await screen.findByTestId("jireh-website-family")).toBeTruthy();
     expect(walkthrough.textContent).toContain("Jordan Reed");
     expect(walkthrough.textContent).toContain("Avery Reed");
