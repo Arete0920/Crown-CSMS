@@ -164,7 +164,7 @@ export default function SandboxLandingPage() {
             <h1>CROWN demonstration school</h1>
             <p>{websitePresenter === null ? "Checking demonstration availability..." : "The fictional demonstration school is not yet activated."}</p>
             <p>An authorized Arete presenter must sign in before launching this fictional walkthrough. Prospects never need an account or password.</p>
-            <a href="/login">Authorized staff sign in</a>
+            <a href="/login?role=arete_presenter">Authorized staff sign in</a>
             <p>No school accounts, student records or credentials are available through this page.</p>
           </section>
         </div>

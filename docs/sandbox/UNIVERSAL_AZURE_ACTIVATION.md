@@ -22,8 +22,13 @@ python manage.py provision_universal_presenter --expected-sha "$EXPECTED_SHA" \
 **Salesperson launch control:** The website GET/POST launcher now requires an existing,
 cryptographically authenticated CROWN operator with persisted active staff and
 superuser privileges. A matching `Origin` header does not establish identity.
-The authorized operator signs in through the existing staff authentication
-workflow before opening the guided link; the separate parent viewer JWT is
+The authorized operator selects **Arete Sales Presenter** at
+`/login?role=arete_presenter` on the existing DEV preview SWA; the existing
+SimpleJWT login establishes their identity, and GET
+`/api/v1/sandbox/website-presenter/` independently verifies their persisted
+operator privileges (including when the fictional case is not ready).
+This operator route does not require a school-bound dashboard role.
+The operator signs in before opening the guided link; the separate parent viewer JWT is
 short-lived, read-only, and replaces the operator JWT in that browser tab.
 **Prospects never sign in or receive operator credentials.** Do not enable
 the website demo flag until an approved operator and the full live acceptance
