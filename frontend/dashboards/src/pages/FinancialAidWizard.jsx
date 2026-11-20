@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import { useWizardDraft } from "../hooks/useWizardDraft";
@@ -27,9 +28,9 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-export default function FinancialAidWizard() {
+function SchoolFinancialAidWizard({ schoolId }) {
   const [initialContext] = useState(() => ({}));
-  const { value, saveDraft, loaded } = useWizardDraft("financial-aid-setup", initialContext);
+  const { value, saveDraft, loaded } = useWizardDraft(`financial-aid-setup:${schoolId}`, initialContext);
 
   if (!loaded) {
     return null;
@@ -43,8 +44,37 @@ export default function FinancialAidWizard() {
           stepLabels={STEP_LABELS}
           initialContext={value}
           onContextChange={saveDraft}
+          stepProps={{ schoolId }}
         />
       </div>
     </CrownLayout>
   );
+}
+
+export default function FinancialAidWizard() {
+  const [schoolId, setSchoolId] = useState(getSelectedSchoolId);
+
+  useEffect(() => {
+    // Legacy drafts have no tenant ownership and must never be restored.
+    try { globalThis.localStorage.removeItem("crown_wizard_draft:financial-aid-setup"); } catch { /* unavailable storage */ }
+    const updateSchool = () => setSchoolId(getSelectedSchoolId());
+    window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, updateSchool);
+    window.addEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateSchool);
+    return () => {
+      window.removeEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, updateSchool);
+      window.removeEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateSchool);
+    };
+  }, []);
+
+  if (!schoolId) {
+    return (
+      <CrownLayout title="Financial Aid Setup">
+        <div role="alert" className="crown-alert crown-alert--error">
+          Select a school to configure financial aid.
+        </div>
+      </CrownLayout>
+    );
+  }
+
+  return <SchoolFinancialAidWizard key={schoolId} schoolId={schoolId} />;
 }
