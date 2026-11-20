@@ -1,4 +1,5 @@
 """Boundary tests for manifest-selected audit evidence files."""
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -144,6 +145,103 @@ class AuditBundlePathBoundaryTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 certifier.write_text(output, "overwritten")
             self.assertEqual(outside.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+
+    def test_certification_output_accepts_only_direct_runtime_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            runtime = base / "runtime"
+            runtime.mkdir()
+            bundle = runtime / "20260515T182250Z"
+            bundle.mkdir()
+            with patch.object(certifier, "RUNTIME_PACK_ROOT", runtime):
+                output = bundle / certifier.CERT_NAME
+                certifier.write_text(output, "first\n")
+                self.assertEqual(output.read_text(encoding="utf-8"), "first\n")
+                certifier.write_text(output, "second")
+                self.assertEqual(output.read_text(encoding="utf-8"), "second\n")
+                if os.name == "posix":
+                    self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+                for invalid in (
+                    base / certifier.CERT_NAME,
+                    runtime / certifier.CERT_NAME,
+                    bundle / "unexpected.json",
+                    base / "outside" / certifier.CERT_NAME,
+                ):
+                    with self.subTest(path=invalid), self.assertRaises(ValueError):
+                        certifier.write_text(invalid, "wrong location")
+                self.assertEqual(output.read_text(encoding="utf-8"), "second\n")
+
+    def test_certification_output_rejects_symlinked_runtime_ancestor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            checkout = base / "checkout"
+            checkout.mkdir()
+            outside = base / "outside"
+            outside.mkdir()
+            linked_governance = checkout / "governance"
+            try:
+                linked_governance.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable on test platform")
+            runtime = linked_governance / "runtime"
+            runtime.mkdir()
+            bundle = runtime / "20260515T182250Z"
+            bundle.mkdir()
+            sentinel = outside / "keep.txt"
+            sentinel.write_text("DO NOT REMOVE", encoding="utf-8")
+            with patch.object(certifier, "ROOT", checkout), patch.object(
+                certifier, "RUNTIME_PACK_ROOT", runtime,
+            ):
+                # The old validator incorrectly accepted a linked ancestor.
+                with self.assertRaises(ValueError):
+                    certifier.validated_certification_bundle_path(bundle)
+                with self.assertRaises(ValueError):
+                    certifier.write_text(bundle / certifier.CERT_NAME, "unsafe")
+            self.assertFalse((bundle / certifier.CERT_NAME).exists())
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+
+    def test_certification_output_rejects_hardlinked_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            runtime = base / "runtime"
+            runtime.mkdir()
+            bundle = runtime / "20260515T182250Z"
+            bundle.mkdir()
+            outside = base / "outside.txt"
+            outside.write_text("DO NOT REMOVE", encoding="utf-8")
+            output = bundle / certifier.CERT_NAME
+            try:
+                os.link(outside, output)
+            except (OSError, NotImplementedError):
+                self.skipTest("hardlinks unavailable on test platform")
+            with patch.object(certifier, "RUNTIME_PACK_ROOT", runtime):
+                with self.assertRaises(ValueError):
+                    certifier.write_text(output, "overwritten")
+            self.assertEqual(outside.read_text(encoding="utf-8"), "DO NOT REMOVE")
+
+    def test_certification_output_rejects_directory_and_linked_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            runtime = base / "runtime"
+            runtime.mkdir()
+            bundle = runtime / "20260515T182250Z"
+            bundle.mkdir()
+            output = bundle / certifier.CERT_NAME
+            output.mkdir()
+            with patch.object(certifier, "RUNTIME_PACK_ROOT", runtime):
+                with self.assertRaises(ValueError):
+                    certifier.write_text(output, "overwritten")
+                outside = base / "outside"
+                outside.mkdir()
+                linked = runtime / "linked"
+                try:
+                    linked.symlink_to(outside, target_is_directory=True)
+                except (OSError, NotImplementedError):
+                    self.skipTest("symlinks unavailable on test platform")
+                with self.assertRaises(ValueError):
+                    certifier.write_text(linked / certifier.CERT_NAME, "overwritten")
 
 
 if __name__ == "__main__":

@@ -19,6 +19,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import stat
 import re
 import subprocess
 import sys
@@ -79,9 +81,23 @@ def sha256_file(path: Path) -> str:
 
 
 def write_text(path: Path, text: str) -> None:
-    if path.is_symlink() or (path.exists() and not path.is_file()):
-        raise ValueError("audit certification output must be a regular file")
-    path.write_text(text.rstrip("\n") + "\n", encoding="utf-8", newline="\n")
+    if (not path.is_absolute() or path.name not in {SHA_NAME, CERT_NAME}
+            or path.parent != validated_certification_bundle_path(path.parent)
+            or path.is_symlink() or (path.exists() and not path.is_file())):
+        raise ValueError("audit certification output outside safe runtime bundle")
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise ValueError("audit certification output must be a single regular file")
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as output:
+            fd = -1
+            output.truncate(0)
+            output.write(text.rstrip("\n") + "\n")
+    finally:
+        if fd >= 0:
+            os.close(fd)
 
 
 def write_json(path: Path, payload: dict) -> None:
@@ -103,6 +119,14 @@ def validated_certification_bundle_path(bundle: Path) -> Path:
     """Constrain certification writes to direct runtime audit bundle folders."""
     if RUNTIME_PACK_ROOT.is_symlink():
         raise ValueError("runtime audit root cannot be a symlink")
+    # ROOT is the resolved checkout. A symlink anywhere below it can redirect
+    # audit certification outputs outside the checked-out runtime directory.
+    if RUNTIME_PACK_ROOT.is_relative_to(ROOT):
+        component = ROOT
+        for part in RUNTIME_PACK_ROOT.relative_to(ROOT).parts:
+            component /= part
+            if component.is_symlink():
+                raise ValueError("runtime audit root cannot traverse a symlink")
     root = RUNTIME_PACK_ROOT.resolve()
     if ".." in bundle.parts or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", bundle.name):
         raise ValueError("invalid runtime audit bundle path")
