@@ -235,7 +235,8 @@ def test_signed_website_roles_cannot_read_other_personas_sensitive_dashboards(
     }
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
-    ):
+    ), patch("sandbox_demo.website_views.website_financial_aid_ready", return_value=True):
+        # This test isolates role-scoping from the separate saved-case gate.
         client = APIClient()
         for role in SANDBOX_PERSONAS:
             # Match website credential-omission on persona switches: a prior
