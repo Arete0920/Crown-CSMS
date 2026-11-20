@@ -71,6 +71,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  sessionStorage.removeItem("crown.website.presenter");
   setAccessToken("");
   setSelectedSchoolId("");
   vi.unstubAllEnvs();
@@ -384,5 +385,77 @@ describe("Two-child Reed Jireh presenter status", () => {
     });
     expect(panel.textContent).not.toContain("$250.00");
     expect(panel.textContent).not.toContain("ACCEPTED");
+  });
+});
+
+describe("Website Jireh Financial Aid guided replay", () => {
+  const schoolId = "cd216908-b692-5fa7-997b-743f811f1ea9";
+  const avery = "44444444-4444-4444-8444-444444444444";
+  const jordan = "55555555-5555-4555-8555-555555555555";
+  const students = [{ id: avery, name: "Avery Reed" }, { id: jordan, name: "Jordan Reed" }];
+  const application = { ...saved, student_ids: [avery, jordan] };
+
+  beforeEach(() => {
+    vi.stubEnv("VITE_LOCAL_DEMO", "0");
+    vi.stubEnv("VITE_HOSTED_JIREH_DEMO", "0");
+    setSelectedSchoolId(schoolId);
+    sessionStorage.setItem("crown.website.presenter", "1");
+  });
+
+  it("replays saved family and application in three steps without offering any writes", async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === "/api/v1/presenter/jireh/aid/family/") {
+        return jsonResponse({
+          ...snapshot([application]), synthetic_only: true,
+          household: "Reed Family", students,
+        });
+      }
+      if (path.startsWith("/api/v1/aid/family/status/?")) {
+        const params = new URLSearchParams(path.split("?")[1]);
+        return jsonResponse({
+          application: { id: APPLICATION },
+          awards: params.get("student_id") === avery
+            ? [{
+                id: "66666666-6666-4666-8666-666666666666",
+                student_id: avery, academic_year_id: YEAR,
+                aid_application_id: APPLICATION, awarded_cents: 25000,
+                decision_status: "ACCEPTED",
+              }]
+            : [],
+        });
+      }
+      throw new Error("Unexpected endpoint: " + path);
+    });
+    render(<ParentFinancialAidPreparationPage />);
+    const walkthrough = await screen.findByTestId("jireh-website-walkthrough");
+    expect(await screen.findByTestId("jireh-website-family")).toBeTruthy();
+    expect(walkthrough.textContent).toContain("Jordan Reed");
+    expect(walkthrough.textContent).toContain("Avery Reed");
+    expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "2. Saved application" }));
+    expect(await screen.findByTestId("jireh-saved-applications")).toBeTruthy();
+    expect(screen.getByText(/Duplicate submission is disabled/)).toBeNull();
+    expect(screen.getByText(/Selected applicant students:/).textContent).toContain("Jordan Reed");
+    fireEvent.click(screen.getByRole("button", { name: "3. Aid decisions" }));
+    const panel = await screen.findByTestId("jireh-student-status");
+    fireEvent.click(screen.getByRole("button", { name: "Refresh student aid status" }));
+    await waitFor(() => expect(panel.textContent).toContain("ACCEPTED"));
+    expect(panel.textContent).toContain("Jordan Reed");
+    expect(panel.textContent).toContain("$250.00");
+    expect(panel.textContent).toContain("No award recorded for this student.");
+    expect(apiFetch.mock.calls.every(([, opts]) => !opts?.method || opts.method === "GET")).toBe(true);
+  });
+
+  it("fails closed without a saved case and cannot fabricate a decision", async () => {
+    apiFetch.mockResolvedValue(jsonResponse({
+      ...snapshot([]), synthetic_only: true, household: "Reed Family", students,
+    }));
+    render(<ParentFinancialAidPreparationPage />);
+    await screen.findByTestId("jireh-website-walkthrough");
+    fireEvent.click(screen.getByRole("button", { name: "3. Aid decisions" }));
+    expect(await screen.findByText(/No submitted fictional application is available/)).toBeTruthy();
+    expect(screen.queryByTestId("jireh-student-status")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
+    expect(apiFetch).toHaveBeenCalledTimes(1);
   });
 });
