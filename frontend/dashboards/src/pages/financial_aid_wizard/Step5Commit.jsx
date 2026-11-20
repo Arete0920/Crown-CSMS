@@ -30,7 +30,7 @@ export default function Step5Commit({ context, setContext, goNext, goPrev, stepI
     <div>
       <CrownWizardStepHeader
         title="Commit Aid Setup"
-        subtitle="Review and confirm. This will create AidAward records in the database."
+        subtitle="Review staged offers before committing. New eligible offers will be recorded in the database."
         stepIndex={stepIndex}
         totalSteps={totalSteps}
         steps={steps}
@@ -49,11 +49,11 @@ export default function Step5Commit({ context, setContext, goNext, goPrev, stepI
               <div style={{ fontWeight: 600 }}>{(context.buckets || []).join(", ") || "None"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Awards to Create</div>
+              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Staged Awards</div>
               <div style={{ fontWeight: 600 }}>{awards.length}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Total Aid</div>
+              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Total Staged Offer Amount</div>
               <div style={{ fontWeight: 600 }}>
                 ${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
@@ -70,8 +70,8 @@ export default function Step5Commit({ context, setContext, goNext, goPrev, stepI
             style={{ marginTop: 2 }}
           />
           <span style={{ fontSize: 13 }}>
-            I confirm this setup is correct. AidAward records will be created for all
-            staged awards. This action is idempotent — re-running will not create duplicates.
+            I confirm this setup is correct. Eligible new offered awards will be recorded.
+            Existing active offers are skipped. No payments or disbursements are made by this action.
           </span>
         </label>
 
