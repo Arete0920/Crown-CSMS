@@ -585,3 +585,31 @@ it("rejects different PM attendance ID, care date, and pickup contact during rec
   expect(screen.getByText("Checked out")).toBeTruthy();
   expect(api.checkoutStudent).toHaveBeenCalledTimes(1);
 });
+
+
+it("blocks a fresh AM check-in when the roster reports unresolved PM custody", async () => {
+  api.fetchRosterToday.mockResolvedValue({
+    care_session: "AM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], unresolved_other_session: "PM" }],
+    unlinked_attendance_count: 0,
+  });
+  render(<AftercareRosterPage careSession="AM" />);
+  expect(await screen.findByText("Synthetic Child")).toBeTruthy();
+  expect(screen.getByText(/Unresolved PM custody.*supervisor reconciliation required/i)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Check In" })).toBeNull();
+  expect(api.checkinStudent).not.toHaveBeenCalled();
+});
+
+it("blocks a PM pickup when the roster reports simultaneous open AM custody", async () => {
+  api.fetchRosterToday.mockResolvedValue({
+    care_session: "PM", date: "2026-10-30", dow: "FRI",
+    rows: [{ ...rows[0], care_session: "PM", unresolved_other_session: "AM",
+      attendance: { id: 19, date: "2026-10-30", checkin_time: "2026-10-30T15:00:00Z", checkout_time: null } }],
+    unlinked_attendance_count: 0,
+  });
+  render(<AftercareRosterPage careSession="PM" />);
+  expect(await screen.findByText("Synthetic Child")).toBeTruthy();
+  expect(screen.getByText(/Unresolved AM custody.*supervisor reconciliation required/i)).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Verify Pickup" })).toBeNull();
+  expect(api.checkoutStudent).not.toHaveBeenCalled();
+});
