@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import CrownLogo from "../components/brand/CrownLogo";
-import { clearBrowserAuthState } from "../utils/authClient.js";
+import { clearBrowserAuthState, clearFinancialAidWizardDrafts } from "../utils/authClient.js";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const DEMO_SCHOOL = import.meta.env.VITE_DEMO_SCHOOL_ID || "19801b59-8c05-4c84-9312-5d792e4e839d";
@@ -177,6 +177,7 @@ function persistAuthenticatedSession(payload, role, selectedSchoolId, email, aut
   const schoolId = currentUser.school_id || selectedSchoolId || DEMO_SCHOOL;
   const serializedUser = JSON.stringify(currentUser);
   const serializedRoles = JSON.stringify(currentUser.roles || [role.value]);
+  clearFinancialAidWizardDrafts();
 
   sessionStorage.removeItem("crown.website.presenter");
   sessionStorage.setItem("crown.jwt.access", access);

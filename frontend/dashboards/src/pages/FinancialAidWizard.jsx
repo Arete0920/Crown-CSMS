@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
+import { clearFinancialAidWizardDrafts, getAccessToken, getSelectedSchoolId, SCHOOL_CONTEXT_CHANGE_EVENT, AUTH_CONTEXT_CHANGE_EVENT } from "../utils/authClient.js";
 import CrownLayout from "../components/crown/CrownLayout.jsx";
 import CrownWizard from "../components/crown/CrownWizard.jsx";
 import { useWizardDraft } from "../hooks/useWizardDraft";
@@ -28,14 +28,23 @@ const STEP_LABELS = [
   "Verify",
 ];
 
-function SchoolFinancialAidWizard({ schoolId }) {
+function getAuthenticatedUserId() {
+  if (!getAccessToken()) return "";
+  try {
+    const raw = sessionStorage.getItem("crown_current_user") || sessionStorage.getItem("crown_user");
+    const user = raw ? JSON.parse(raw) : null;
+    const value = user?.id ?? user?.user?.id;
+    if (typeof value !== "number" && typeof value !== "string") return "";
+    const id = String(value).trim();
+    return id && id !== "None" && id !== "null" ? id : "";
+  } catch { return ""; }
+}
+
+function SchoolFinancialAidWizard({ schoolId, userId }) {
   const [initialContext] = useState(() => ({}));
-  const { value, saveDraft, loaded } = useWizardDraft(`financial-aid-setup:${schoolId}`, initialContext);
-
-  if (!loaded) {
-    return null;
-  }
-
+  const draftKey = "financial-aid-setup:" + schoolId + ":" + userId;
+  const { value, saveDraft, loaded } = useWizardDraft(draftKey, initialContext, { storage: "session" });
+  if (!loaded) return null;
   return (
     <CrownLayout title="Financial Aid Setup" subtitle="Configure aid year, active buckets, and create awards for the aid cycle">
       <div className="crown-card" style={{ padding: "22px 24px" }}>
@@ -44,7 +53,7 @@ function SchoolFinancialAidWizard({ schoolId }) {
           stepLabels={STEP_LABELS}
           initialContext={value}
           onContextChange={saveDraft}
-          stepProps={{ schoolId }}
+          stepProps={{ draftKey }}
         />
       </div>
     </CrownLayout>
@@ -52,29 +61,43 @@ function SchoolFinancialAidWizard({ schoolId }) {
 }
 
 export default function FinancialAidWizard() {
-  const [schoolId, setSchoolId] = useState(getSelectedSchoolId);
-
+  const [scope, setScope] = useState(() => ({
+    schoolId: getSelectedSchoolId(),
+    userId: getAuthenticatedUserId(),
+    authVersion: 0,
+  }));
   useEffect(() => {
-    // Legacy drafts have no tenant ownership and must never be restored.
-    try { globalThis.localStorage.removeItem("crown_wizard_draft:financial-aid-setup"); } catch { /* unavailable storage */ }
-    const updateSchool = () => setSchoolId(getSelectedSchoolId());
+    // Older local drafts have no reliable staff ownership and are never migrated.
+    clearFinancialAidWizardDrafts({ includeSession: false });
+    const updateSchool = () => setScope((previous) => ({
+      ...previous,
+      schoolId: getSelectedSchoolId(),
+      userId: getAuthenticatedUserId(),
+    }));
+    const updateAuth = () => setScope((previous) => ({
+      schoolId: getSelectedSchoolId(),
+      userId: getAuthenticatedUserId(),
+      authVersion: previous.authVersion + 1,
+    }));
     window.addEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, updateSchool);
-    window.addEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateSchool);
+    window.addEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateAuth);
     return () => {
       window.removeEventListener(SCHOOL_CONTEXT_CHANGE_EVENT, updateSchool);
-      window.removeEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateSchool);
+      window.removeEventListener(AUTH_CONTEXT_CHANGE_EVENT, updateAuth);
     };
   }, []);
-
-  if (!schoolId) {
-    return (
-      <CrownLayout title="Financial Aid Setup">
-        <div role="alert" className="crown-alert crown-alert--error">
-          Select a school to configure financial aid.
-        </div>
-      </CrownLayout>
-    );
-  }
-
-  return <SchoolFinancialAidWizard key={schoolId} schoolId={schoolId} />;
+  if (!scope.schoolId) return (
+    <CrownLayout title="Financial Aid Setup">
+      <div role="alert" className="crown-alert crown-alert--error">Select a school to configure financial aid.</div>
+    </CrownLayout>
+  );
+  if (!scope.userId) return (
+    <CrownLayout title="Financial Aid Setup">
+      <div role="alert" className="crown-alert crown-alert--error">
+        Sign in with a verified school staff identity to configure financial aid.
+      </div>
+    </CrownLayout>
+  );
+  return <SchoolFinancialAidWizard key={scope.schoolId + ":" + scope.userId + ":" + scope.authVersion}
+    schoolId={scope.schoolId} userId={scope.userId} />;
 }
