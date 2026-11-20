@@ -60,6 +60,7 @@ describe("Financial Aid setup verification truth", () => {
     [{ session_id: SESSION, errors: [] }, "unknown"],
     [{ session_id: "another-session", status: "verified", errors: [] }, "verified"],
     [{ session_id: SESSION, status: "verified", errors: ["Rejected award"] }, "verified"],
+    [{ session_id: SESSION, status: "verified", errors: "malformed" }, "verified"],
   ])("rejects incomplete or untrusted verification results %#", async (payload, status) => {
     verifyAidSetup.mockResolvedValue(payload);
     renderStep();
