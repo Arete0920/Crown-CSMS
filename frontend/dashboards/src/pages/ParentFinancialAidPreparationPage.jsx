@@ -319,13 +319,19 @@ function FictionalFinancialAidPage({ hosted = false }) {
     }
   }
 
+  // The public Jireh story is not a dashboard tour: omit unrelated
+  // navigation while retaining the normal shell for authenticated staff.
+  const DemoShell = websiteReadOnly ? "main" : CrownDashboardShell;
+  const shellProps = websiteReadOnly
+    ? { className: "launch-main" }
+    : {
+        activePath: "/parent/financial-aid",
+        schoolName: parentShell.schoolName,
+        user: parentShell.user,
+        updatesCount: parentShell.updatesCount,
+      };
   return (
-    <CrownDashboardShell
-      activePath="/parent/financial-aid"
-      schoolName={parentShell.schoolName}
-      user={parentShell.user}
-      updatesCount={parentShell.updatesCount}
-    >
+    <DemoShell {...shellProps}>
       <section className="crown-dashboard learning-workflow-page" data-testid="jireh-family-demo">
         <header className="crown-dashboard-hero">
           <div>
@@ -490,7 +496,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
           ) : null}
         </section>
       </section>
-    </CrownDashboardShell>
+    </DemoShell>
   );
 }
 
