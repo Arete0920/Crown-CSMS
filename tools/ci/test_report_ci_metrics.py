@@ -75,7 +75,7 @@ class MetricsTests(unittest.TestCase):
                                         'GITHUB_STEP_SUMMARY': str(summary_path)}), \
                  patch.object(metrics, 'urlopen', side_effect=[BytesIO(json.dumps(r).encode())
                                                              for r in responses]), \
-                 patch.object(metrics, 'Path', return_value=report_path):
+                 patch.object(metrics, 'REPORT_ROOT', Path(directory)):
                 with self.assertRaises(SystemExit) as failure:
                     metrics.main()
             self.assertNotEqual(failure.exception.code, 0)
@@ -150,7 +150,7 @@ class MetricsTests(unittest.TestCase):
                                         'GITHUB_STEP_SUMMARY': str(summary_path)}), \
                  patch.object(metrics, 'urlopen', side_effect=[BytesIO(json.dumps(r).encode())
                                                              for r in responses]), \
-                 patch.object(metrics, 'Path', return_value=report_path):
+                 patch.object(metrics, 'REPORT_ROOT', Path(directory)):
                 metrics.main()
             report = json.loads(report_path.read_text())
             self.assertEqual(report['invalid_timing_runs'], [])
@@ -160,6 +160,49 @@ class MetricsTests(unittest.TestCase):
             self.assertEqual(report['skipped_lifecycle_anomaly_count'], 1)
             self.assertEqual(report['artifact_bytes'], 123)
             self.assertIn('1 skipped-job lifecycle timing anomalies', summary_path.read_text())
+
+
+    def test_ci_report_write_is_bounded_to_report_root_and_replaces_regular_file(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(metrics, 'REPORT_ROOT', Path(directory)):
+            output = Path(directory) / 'ci-metrics.json'
+            metrics.write_ci_report({'run': 1})
+            self.assertEqual(json.loads(output.read_text(encoding='utf-8')), {'run': 1})
+            metrics.write_ci_report({'run': 2})
+            self.assertEqual(json.loads(output.read_text(encoding='utf-8')), {'run': 2})
+            if os.name == 'posix':
+                self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+
+    def test_ci_report_rejects_symlink_and_hardlink_without_overwriting_external_data(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             tempfile.TemporaryDirectory() as outside, \
+             patch.object(metrics, 'REPORT_ROOT', Path(directory)):
+            output = Path(directory) / 'ci-metrics.json'
+            external = Path(outside) / 'protected.json'
+            external.write_text('KEEP', encoding='utf-8')
+            try:
+                output.symlink_to(external)
+            except (OSError, NotImplementedError):
+                self.skipTest('symlinks unsupported')
+            with self.assertRaises((OSError, ValueError)):
+                metrics.write_ci_report({'run': 1})
+            self.assertEqual(external.read_text(encoding='utf-8'), 'KEEP')
+            output.unlink()
+            try:
+                os.link(external, output)
+            except (OSError, NotImplementedError):
+                self.skipTest('hardlinks unsupported')
+            with self.assertRaises((OSError, ValueError)):
+                metrics.write_ci_report({'run': 1})
+            self.assertEqual(external.read_text(encoding='utf-8'), 'KEEP')
+
+    def test_ci_report_rejects_nonregular_targets(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(metrics, 'REPORT_ROOT', Path(directory)):
+            target = Path(directory) / 'ci-metrics.json'
+            target.mkdir()
+            with self.assertRaises((OSError, ValueError)):
+                metrics.write_ci_report({'run': 1})
 
 
 if __name__ == '__main__':

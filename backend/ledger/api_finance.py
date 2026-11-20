@@ -13,6 +13,8 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
+from core.permissions import CrownModulePermission
+
 from households.scoping import get_request_school_id
 from ledger.models import Payment
 from ledger.models_dunning import Chargeback, DailyPayoutAudit, DunningRecord
@@ -42,7 +44,7 @@ def _processor_transactions_for_school(school_id):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def finance_kpis(request):
     """Return reconciliation summary and revenue totals for the school."""
     school_id, err = _school_id_or_400(request)
@@ -64,7 +66,7 @@ def finance_kpis(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def chargeback_metrics(request):
     """Return open chargeback count and disputed totals."""
     school_id, err = _school_id_or_400(request)
@@ -90,7 +92,7 @@ def chargeback_metrics(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def monthly_financial_summary(request):
     """Return monthly rollup: revenue, chargebacks, net."""
     school_id, err = _school_id_or_400(request)
@@ -102,7 +104,7 @@ def monthly_financial_summary(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def payout_audit_list(request):
     """Return up to 30 most recent daily payout audit records."""
     school_id, err = _school_id_or_400(request)
@@ -129,7 +131,7 @@ def payout_audit_list(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, CrownModulePermission("finance.view")])
 def dunning_status(request):
     """Return count of dunning records by status."""
     school_id, err = _school_id_or_400(request)

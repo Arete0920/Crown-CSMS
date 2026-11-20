@@ -28,6 +28,7 @@ const AUTH_STORAGE_KEYS = [
   "crown.role", "crown.active.role", "crown.school.id", "crown.school.name",
   "schoolId", "crown.demo.role", "crown.demo.school_id",
   "crown.demo.guidance", "crown.demo.tour", "crown.sandbox.command_center",
+  "crown.website.presenter",
 ];
 
 function isSandboxBuild() {
@@ -52,9 +53,10 @@ export function clearBrowserAuthState() {
 
 function expireBrowserSession() {
   if (isSandboxBuild()) return;
+  const websiteDemo = sessionStorage.getItem("crown.website.presenter") === "1";
   clearBrowserAuthState();
   if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-    window.location.replace("/login?reason=session-expired");
+    window.location.replace(websiteDemo ? "/sandbox" : "/login?reason=session-expired");
   }
 }
 
