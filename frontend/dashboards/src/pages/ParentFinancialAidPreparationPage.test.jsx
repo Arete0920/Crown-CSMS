@@ -434,7 +434,7 @@ describe("Website Jireh Financial Aid guided replay", () => {
     expect(screen.queryByRole("button", { name: "Submit fictional Financial Aid application" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "2. Saved application" }));
     expect(await screen.findByTestId("jireh-saved-applications")).toBeTruthy();
-    expect(screen.getByText(/Duplicate submission is disabled/)).toBeNull();
+    expect(screen.queryByText(/Duplicate submission is disabled/)).toBeNull();
     expect(screen.getByText(/Selected applicant students:/).textContent).toContain("Jordan Reed");
     fireEvent.click(screen.getByRole("button", { name: "3. Aid decisions" }));
     const panel = await screen.findByTestId("jireh-student-status");
