@@ -44,6 +44,28 @@ def seed_presenter_family(school):
     year = AcademicYear.objects.get(school=school, is_current=True)
     CoreEnrollment.objects.create(school=school, student=student, academic_year=year,
                                   grade_level=grade, start_date=year.start_date, status="ENROLLED")
+    # The Jireh sales case uses Miriam Reed's two children in one verified household.
+    # Jordan has a canonical/portal identity but no separate student login.
+    jordan_id = uuid.uuid5(school.pk, "presenter:jordan-reed")
+    jordan_portal = PortalStudent.objects.create(
+        id=jordan_id, school_id=school.pk, household=household,
+        first_name="Jordan", last_name="Reed", grade_level="7",
+    )
+    jordan = Student.objects.create(
+        id=jordan_id, school=school, family=guardian.family,
+        student_number="HCA-PARENT-JORDAN", first_name="Jordan", last_name="Reed",
+        dob=date(2013, 2, 15), current_grade_level=grade, status="ACTIVE",
+    )
+    StudentIdentityLink.objects.create(
+        school=school, core_student=jordan, compatibility_student=jordan_portal,
+        source=StudentIdentityLink.SOURCE_RECONCILIATION,
+        verification_status=StudentIdentityLink.STATUS_VERIFIED,
+        evidence_reference="fictional:universal-presenter:canonical-family:jordan:v1",
+    )
+    CoreEnrollment.objects.create(
+        school=school, student=jordan, academic_year=year,
+        grade_level=grade, start_date=year.start_date, status="ENROLLED",
+    )
     term = Term.objects.create(school_id=school.pk, academic_year=year, code=TERM_CODE,
                                name="Fall 2026", school_year=year.name)
     course = Course.objects.create(school_id=school.pk, code=COURSE_CODE, name="Grade 7 English Language Arts")
@@ -52,8 +74,9 @@ def seed_presenter_family(school):
     TeacherAssignment.objects.create(school_id=school.pk, section=section, staff=teacher.staff)
     enrollment = Enrollment.objects.create(school_id=school.pk, section=section, student=portal_student)
     category = AssignmentCategory.objects.create(school_id=school.pk, section=section, name="Classwork")
-    return {"family_student_id": str(stable_id), "family_section_id": str(section.pk),
-            "family_enrollment_id": str(enrollment.pk), "family_category_id": str(category.pk)}
+    return {"family_student_id": str(stable_id), "family_jordan_student_id": str(jordan_id),
+            "family_section_id": str(section.pk), "family_enrollment_id": str(enrollment.pk),
+            "family_category_id": str(category.pk)}
 
 
 def archive_presenter_classroom():

@@ -175,15 +175,42 @@ def inspect(environment=None, reader=read_az):
     return response
 
 
+def checked_receipt_path(value):
+    """Permit only the existing private Actions runner metadata receipt."""
+    runner_temp = os.environ.get("RUNNER_TEMP", "")
+    root = Path(runner_temp)
+    path = Path(value)
+    try:
+        if (
+            not runner_temp or not root.is_absolute() or not root.is_dir()
+            or root.is_symlink() or not path.is_absolute()
+            or path != root / "crown269-dev-reference-metadata.json"
+            or path.is_symlink()
+            or path.parent.resolve(strict=True) != root.resolve(strict=True)
+            or path.exists()
+        ):
+            raise ValueError("unsafe receipt path")
+    except (OSError, RuntimeError) as exc:
+        raise ValueError("unsafe receipt path") from exc
+    return path
+
+
 def main(argv=None):
     args = sys.argv[1:] if argv is None else argv
     if len(args) != 2 or args[0] != "--receipt":
         print("USAGE: --receipt NEW_LOCAL_JSON_PATH", file=sys.stderr)
         return 2
+    try:
+        receipt = checked_receipt_path(args[1])
+    except (OSError, ValueError):
+        print("BLOCKED_LOCAL_RECEIPT_PATH_INVALID", file=sys.stderr)
+        return 3
     outcome = inspect()
     serialized = json.dumps(outcome, sort_keys=True, indent=2) + "\n"
     try:
-        with Path(args[1]).open("x", encoding="utf-8") as fp:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(receipt, flags, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fp:
             fp.write(serialized)
     except OSError:
         print("BLOCKED_LOCAL_RECEIPT_NOT_CREATED_OR_ALREADY_EXISTS", file=sys.stderr)
