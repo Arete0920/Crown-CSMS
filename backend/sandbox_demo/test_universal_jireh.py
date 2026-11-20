@@ -27,7 +27,7 @@ def jireh(local_runtime, operator_secrets):
     return prepare_presenter_jireh(apply=True)
 
 
-def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, operator_secrets):
+def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, operator_secrets, settings):
     parent, _ = login("parent", operator_secrets)
     officer, _ = login("finance_director", operator_secrets)
     from sandbox_demo.website_presenter import website_financial_aid_ready
@@ -97,6 +97,36 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     assert credit.account.household_id == link.household_id
     assert compute_account_balance(credit.account) == Decimal("-250.00")
     assert website_financial_aid_ready(presenter_school)
+
+    # Passwordless website launch is now permitted only after the persisted
+    # two-child submission and approved, ledger-backed illustrative award.
+    from unittest.mock import patch
+    from sandbox_demo.website_presenter import DEMO_ORIGIN
+    settings.CROWN_WEBSITE_DEMO_ENABLED = True
+    with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
+        "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
+    ):
+        website = APIClient()
+        available = website.get("/api/v1/sandbox/website-presenter/")
+        assert available.status_code == 200, available.content
+        assert available.data["financial_aid_ready"] is True
+        issued = website.post(
+            "/api/v1/sandbox/website-presenter/", {"role": "parent"},
+            format="json", HTTP_ORIGIN=DEMO_ORIGIN,
+        )
+        assert issued.status_code == 201, issued.content
+        website.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {issued.data['access']}",
+            HTTP_X_SCHOOL_ID=jireh["school_id"],
+        )
+        persisted = website.get(BASE + "aid/family/")
+        assert persisted.status_code == 200, persisted.content
+        assert sorted(child["name"] for child in persisted.json()["students"]) == [
+            "Avery Reed", "Jordan Reed",
+        ]
+        assert persisted.json()["applications"][0]["id"] == application.pk
+        blocked = website.post(BASE + "aid/family/", payload, format="json")
+        assert blocked.status_code == 403, blocked.content
 
     assert not Payment.objects.filter(school_id=jireh["school_id"]).exists()
     audits = AidAuditEvent.objects.filter(school_id=jireh["school_id"], entity_id=str(award.pk))
