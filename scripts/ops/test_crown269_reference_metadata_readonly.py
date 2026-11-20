@@ -1,6 +1,8 @@
 """Synthetic-only boundary tests for CROWN #269 Azure reference evidence."""
 import importlib.util
 import json
+import os
+import tempfile
 from pathlib import Path
 import re
 import subprocess
@@ -214,6 +216,59 @@ class MetadataReadOnlyTests(unittest.TestCase):
             runner.return_value.stderr = "RAW_UNSAFE_CANARY"
             self.assertIsNone(mod.read_az(["account", "show"]))
         self.assertNotIn("RAW_UNSAFE_CANARY", json.dumps(mod.inspect({},reader=lambda args: None)))
+
+
+    def test_cli_accepts_exact_private_runner_receipt_once(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
+             patch.object(mod, "inspect", return_value={
+                 "overall": "PASS_TWO_REFERENCE_METADATA_ONLY_OTHER_269_ITEMS_OPEN",
+                 "checks": [],
+             }) as inspect:
+            path = Path(directory) / "crown269-dev-reference-metadata.json"
+            self.assertEqual(mod.main(["--receipt", str(path)]), 0)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["checks"], [])
+            if os.name == "posix":
+                self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            # Existing evidence is never overwritten or inspected again.
+            self.assertEqual(mod.main(["--receipt", str(path)]), 3)
+            self.assertEqual(inspect.call_count, 1)
+
+    def test_cli_rejects_escaped_and_noncanonical_receipts_before_azure(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             tempfile.TemporaryDirectory() as outside, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
+             patch.object(mod, "inspect", side_effect=AssertionError("AZURE_CALLED")):
+            candidates = (
+                "relative.json",
+                str(Path(directory) / "wrong.json"),
+                str(Path(directory) / "nested" / "crown269-dev-reference-metadata.json"),
+                str(Path(outside) / "crown269-dev-reference-metadata.json"),
+            )
+            for candidate in candidates:
+                with self.subTest(candidate=candidate):
+                    self.assertEqual(mod.main(["--receipt", candidate]), 3)
+            with patch.dict(os.environ, {"RUNNER_TEMP": ""}):
+                target = Path(directory) / "crown269-dev-reference-metadata.json"
+                self.assertEqual(mod.main(["--receipt", str(target)]), 3)
+
+    def test_cli_rejects_symlinks_and_unsafe_existing_targets(self):
+        with tempfile.TemporaryDirectory() as directory, \
+             tempfile.TemporaryDirectory() as outside, \
+             patch.dict(os.environ, {"RUNNER_TEMP": directory}), \
+             patch.object(mod, "inspect", side_effect=AssertionError("AZURE_CALLED")):
+            target = Path(directory) / "crown269-dev-reference-metadata.json"
+            other = Path(outside) / "canary.json"
+            other.write_text("KEEP", encoding="utf-8")
+            try:
+                target.symlink_to(other)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlinks unavailable")
+            self.assertEqual(mod.main(["--receipt", str(target)]), 3)
+            self.assertEqual(other.read_text(encoding="utf-8"), "KEEP")
+            target.unlink()
+            target.mkdir()
+            self.assertEqual(mod.main(["--receipt", str(target)]), 3)
 
 
 if __name__ == "__main__":
