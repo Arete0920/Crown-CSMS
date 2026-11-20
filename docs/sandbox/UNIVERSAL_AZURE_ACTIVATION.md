@@ -37,6 +37,15 @@ writes, or use customer data. The website's one-click parent session never
 accepts write requests. Repeat cases require the separately authorized,
 history-preserving generation lifecycle.
 
+The public `GET /api/v1/sandbox/website-presenter/` response must expose
+`financial_aid_ready=true` before presenting the sales launch button. The
+read-only predicate verifies the canonical **two-child** Reed household, one
+submitted current-year Aid application with both students, and at least one
+accepted positive institutional award backed by a same-school noncash ledger
+entry. Missing or ambiguous records return `false`; a direct attempt to mint
+a public parent session before this state is ready returns HTTP 503. Do not
+force-enable the flag, prefill a fabricated award or bypass these checks.
+
 All existing exact-runtime restrictions, required approvals, outbound
 quarantine, read-only preflights, rollback prerequisites, and hosted
 acceptance gates in this document remain mandatory. This text authorizes
