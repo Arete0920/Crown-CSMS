@@ -11,7 +11,7 @@ from .models import SandboxEvent
 from .management.commands.seed_hosted_jireh_buyer import _seed_fictional_aid_policy
 
 
-def prepare_presenter_jireh(*, apply=False):
+def prepare_presenter_jireh(*, apply=False, aid_only=False):
     require_presenter_runtime()
     with transaction.atomic():
         school = _owned_school()
@@ -35,6 +35,12 @@ def prepare_presenter_jireh(*, apply=False):
             return result
         _seed_fictional_aid_policy(school, year)
         UserRole.objects.get_or_create(school=school, user=officer, role_code="AID_DIRECTOR")
+        if aid_only:
+            SandboxEvent.objects.create(
+                event="universal_presenter_jireh_aid_only_staged_v1", school=str(school.pk),
+                track="school", guidance="ops", persona="operator",
+            )
+            return {**result, "mode": "STAGED", "scope": "FINANCIAL_AID_ONLY"}
         for state, name in (("DE", "Delaware"), ("PA", "Pennsylvania")):
             # Same fictional partner shape as the existing buyer generator;
             # new independently owned records, never real organization access.
