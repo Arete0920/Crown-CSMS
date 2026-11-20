@@ -48,6 +48,9 @@ function FictionalFinancialAidPage({ hosted = false }) {
   const [householdSize, setHouseholdSize] = useState("3");
   const [acknowledged, setAcknowledged] = useState(false);
   const [needsReconciliation, setNeedsReconciliation] = useState(false);
+  const [studentAidStatus, setStudentAidStatus] = useState([]);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusError, setStatusError] = useState("");
 
   const mountedRef = useRef(false);
   const revisionRef = useRef(0);
@@ -91,6 +94,8 @@ function FictionalFinancialAidPage({ hosted = false }) {
       })) };
     }
     setRecord(data);
+    setStudentAidStatus([]);
+    setStatusError("");
     setYearId((previous) =>
       data.academic_years.some((year) => year.id === previous)
         ? previous : data.academic_years[0]?.id || ""
@@ -134,6 +139,9 @@ function FictionalFinancialAidPage({ hosted = false }) {
       setError("");
       setSaving(false);
       setNeedsReconciliation(false);
+      setStudentAidStatus([]);
+      setStatusError("");
+      setStatusLoading(false);
       void reload(next, revisionRef.current);
     }
 
@@ -263,6 +271,48 @@ function FictionalFinancialAidPage({ hosted = false }) {
     }
   }
 
+  async function refreshStudentAidStatus() {
+    if (!presenter || !record || !yearId || saving || statusLoading) return;
+    const origin = identitySnapshot();
+    const revision = revisionRef.current;
+    if (discardStale(origin, revision)) return;
+    setStatusLoading(true);
+    setStatusError("");
+    setStudentAidStatus([]);
+    try {
+      // The canonical family/status endpoint verifies the parent relationship
+      // separately for each child. Do not treat an application POST as award proof.
+      const rows = await Promise.all(record.students.map(async (student) => {
+        const params = new URLSearchParams({
+          student_id: String(student.id),
+          academic_year_id: String(yearId),
+        });
+        const response = await apiFetch("/api/v1/aid/family/status/?" + params);
+        if (response.ok === false) throw new Error("Student aid status was not available.");
+        const data = await response.json();
+        if (
+          !data?.application
+          || !record.applications.some((app) => String(app.id) === String(data.application.id))
+          || !Array.isArray(data.awards)
+          || data.awards.some((award) =>
+            String(award.student_id) !== String(student.id)
+            || String(award.academic_year_id) !== String(yearId)
+            || String(award.aid_application_id) !== String(data.application.id))
+        ) {
+          throw new Error("Student aid status did not match the verified family application.");
+        }
+        return { id: student.id, name: student.name, awards: data.awards };
+      }));
+      if (discardStale(origin, revision)) return;
+      setStudentAidStatus(rows);
+    } catch (failure) {
+      if (discardStale(origin, revision)) return;
+      setStatusError(errorMessage(failure));
+    } finally {
+      if (!discardStale(origin, revision)) setStatusLoading(false);
+    }
+  }
+
   return (
     <CrownDashboardShell
       activePath="/parent/financial-aid"
@@ -295,7 +345,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
               <form onSubmit={submit}>
                 <div className="learning-record-detail-block">
                   <label htmlFor="jireh-demo-year">Financial Aid year</label>
-                  <select id="jireh-demo-year" value={yearId} onChange={(event) => { clearSuccess(); setYearId(event.target.value); }} disabled={saving} required>
+                  <select id="jireh-demo-year" value={yearId} onChange={(event) => { clearSuccess(); setStudentAidStatus([]); setYearId(event.target.value); }} disabled={saving} required>
                     {record.academic_years.map((year) => <option key={year.id} value={year.id}>{year.name}</option>)}
                   </select>
                 </div>
@@ -357,7 +407,7 @@ function FictionalFinancialAidPage({ hosted = false }) {
               {needsReconciliation ? <p role="status">Submission outcome unresolved. Refresh the saved status before proceeding; do not submit again.</p> : null}
               <section aria-label="Saved Jireh applications" data-testid="jireh-saved-applications">
                 <h2>{hosted ? "Saved fictional applications" : "Saved applications and offered awards"}</h2>
-                {hosted && <p>No awards, eligibility decisions or funds are processed by this demonstration.</p>}
+                {hosted && !presenter && <p>No awards, eligibility decisions or funds are processed by this demonstration.</p>}
                 {record.applications.length === 0 ? <p>No school Financial Aid applications submitted yet.</p> : null}
                 {record.applications.map((application) => (
                   <article key={application.id} className="learning-record-detail-card">
@@ -380,6 +430,32 @@ function FictionalFinancialAidPage({ hosted = false }) {
                   </article>
                 ))}
               </section>
+              {presenter && record.applications.length > 0 && (
+                <section aria-label="Verified student aid status" data-testid="jireh-student-status">
+                  <h2>Student aid decisions</h2>
+                  <p>Read each child's decision from the authorized family record. No payment or disbursement occurs here.</p>
+                  <button type="button" disabled={saving || statusLoading} onClick={refreshStudentAidStatus}>
+                    Refresh student aid status
+                  </button>
+                  {statusLoading && <p role="status">Verifying each student's aid status…</p>}
+                  {statusError && <p role="alert">{statusError}</p>}
+                  {studentAidStatus.map((student) => (
+                    <article key={student.id} className="learning-record-detail-card">
+                      <h3>{student.name}</h3>
+                      {student.awards.length === 0
+                        ? <p>No award recorded for this student.</p>
+                        : student.awards.map((award) => (
+                          <p key={award.id}>
+                            Award status: <strong>{award.decision_status}</strong> ·
+                            Recorded amount: {new Intl.NumberFormat("en-US", {
+                              style: "currency", currency: "USD",
+                            }).format(award.awarded_cents / 100)}
+                          </p>
+                        ))}
+                    </article>
+                  ))}
+                </section>
+              )}
               <button type="button" disabled={saving} onClick={refreshStatus}>Refresh saved status</button>
             </>
           ) : null}

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from django.core.management.base import CommandError
 from rest_framework.test import APIClient
-from aid.models import AidApplication, AidAward
+from aid.models import AidApplication, AidAward, AidHouseholdMember
 from core.models import School, UserRole
 from jireh_sgo.models import SGOFamilyIntake, SGOProcessorAssignment, SGOAward, SGOMembership
 from sandbox_demo.test_universal_access import operator_secrets, login
@@ -31,14 +31,24 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     parent, _ = login("parent", operator_secrets)
     officer, _ = login("finance_director", operator_secrets)
     data = parent.get(BASE + "aid/family/").json()
+    assert data["household"] == "Reed Family"
+    assert sorted(item["name"] for item in data["students"]) == ["Avery Reed", "Jordan Reed"]
+    applicant_ids = [item["id"] for item in data["students"]]
+    assert len(applicant_ids) == len(set(applicant_ids)) == 2
     payload = {"fictional_acknowledged": True, "scenario": data["scenarios"][0]["id"],
         "household_size": 4, "academic_year_id": data["academic_years"][0]["id"],
-        "student_ids": [data["students"][0]["id"]]}
+        "student_ids": applicant_ids}
     created = parent.post(BASE + "aid/family/", payload, format="json")
     assert created.status_code == 201, created.content
     application = AidApplication.objects.get(pk=created.json()["application"]["id"])
     assert application.status == AidApplication.STATUS_SUBMITTED
     assert application.financial_profile_id and application.submitted_at
+    assert {
+        str(student_id) for student_id in AidHouseholdMember.objects.filter(
+            profile_id=application.financial_profile_id,
+            role=AidHouseholdMember.ROLE_STUDENT,
+        ).values_list("student_id", flat=True)
+    } == set(applicant_ids)
     assert parent.post(BASE + "aid/family/", payload, format="json").status_code == 409
     for _ in range(2):
         assert str(parent.get(BASE + "aid/family/").json()["applications"][0]["id"]) == str(application.pk)
