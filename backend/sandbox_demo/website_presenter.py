@@ -129,6 +129,66 @@ def website_demo_school():
         return None
 
 
+
+def website_financial_aid_ready(school):
+    """Expose only a boolean after verifying the persisted fictional Aid case.
+
+    Public website entry never returns a family's financial records. Missing,
+    ambiguous, mismatched or unapproved case data keeps launch unavailable.
+    """
+    from aid.models import AidApplication, AidAward, AidHouseholdMember
+    from core.models import AcademicYear, Student
+
+    parent = UserAccount.objects.select_related("guardian__family").filter(
+        school=school, username=presenter_username("parent", school.pk),
+        is_active=True,
+    ).first()
+    guardian = parent.guardian if parent else None
+    family = guardian.family if guardian else None
+    if family is None or family.school_id != school.pk:
+        return False
+
+    learners = list(Student.objects.filter(
+        school=school, family=family, status="ACTIVE",
+    ).values_list("id", "first_name", "last_name"))
+    if len(learners) != 2 or {
+        (first_name, last_name) for _, first_name, last_name in learners
+    } != {("Avery", "Reed"), ("Jordan", "Reed")}:
+        return False
+    student_ids = {pk for pk, _, _ in learners}
+
+    years = list(AcademicYear.objects.filter(school=school, is_current=True)[:2])
+    if len(years) != 1:
+        return False
+    year = years[0]
+
+    applications = list(AidApplication.objects.filter(
+        school=school, family=family, academic_year=year,
+        submitted_at__isnull=False,
+        status__in=(
+            AidApplication.STATUS_SUBMITTED, AidApplication.STATUS_UNDER_REVIEW,
+            AidApplication.STATUS_APPROVED,
+        ),
+    ).select_related("financial_profile")[:2])
+    if len(applications) != 1 or applications[0].financial_profile_id is None:
+        return False
+    application = applications[0]
+
+    submitted_student_ids = set(AidHouseholdMember.objects.filter(
+        profile=application.financial_profile,
+        role=AidHouseholdMember.ROLE_STUDENT,
+    ).values_list("student_id", flat=True))
+    if submitted_student_ids != student_ids:
+        return False
+
+    return AidAward.objects.filter(
+        school=school, academic_year=year, aid_application=application,
+        student_id__in=student_ids, awarded_cents__gt=0,
+        decision_status=AidAward.DECISION_ACCEPTED,
+        ledger_entry__school_id=school.pk,
+    ).exists()
+
+
 def website_demo_rate_limit(school, role):
     """Bound issuance atomically in the existing database, without Redis."""
     if not connection.in_atomic_block:
