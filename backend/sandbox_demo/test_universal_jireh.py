@@ -98,15 +98,16 @@ def test_parent_submits_canonical_aid_and_officer_commits_offered_award(jireh, o
     assert compute_account_balance(credit.account) == Decimal("-250.00")
     assert website_financial_aid_ready(presenter_school)
 
-    # Passwordless website launch is now permitted only after the persisted
-    # two-child submission and approved, ledger-backed illustrative award.
+    # An authorized operator can issue a passwordless, read-only viewer session
+    # only after the persisted two-child case and ledger-backed award.
     from unittest.mock import patch
+    from sandbox_demo.test_website_presenter import _operator_client
     from sandbox_demo.website_presenter import DEMO_ORIGIN
     settings.CROWN_WEBSITE_DEMO_ENABLED = True
     with patch("sandbox_demo.website_presenter.require_hosted_presenter"), patch(
         "sandbox_demo.buyer_workspace.hosted_buyer_mode", return_value=True,
     ):
-        website = APIClient()
+        website = _operator_client()
         available = website.get("/api/v1/sandbox/website-presenter/")
         assert available.status_code == 200, available.content
         assert available.data["financial_aid_ready"] is True
