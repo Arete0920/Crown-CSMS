@@ -46,6 +46,7 @@ director = UserAccount.objects.filter(email__icontains="director").first()
 if not director:
     director = UserAccount.objects.create_user(
         school=school,
+        username="director@test.local",
         email="director@test.local",
         password="testpass",
         first_name="Test",
