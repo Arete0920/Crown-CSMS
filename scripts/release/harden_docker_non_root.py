@@ -1,7 +1,18 @@
 from pathlib import Path
 
-candidates = [Path("Dockerfile"), Path("backend/Dockerfile")]
+root = Path.cwd().resolve()
+candidates = [root / "Dockerfile", root / "backend/Dockerfile"]
 changed = []
+
+# Fail before any write if a candidate can escape the checkout or is not a regular file.
+for path in candidates:
+    if (
+        path.is_symlink()
+        or path.parent.is_symlink()
+        or not path.resolve(strict=False).is_relative_to(root)
+        or (path.exists() and not path.is_file())
+    ):
+        raise SystemExit("Refusing unsafe Dockerfile path")
 
 for path in candidates:
     if not path.exists():
@@ -20,6 +31,6 @@ USER crownapp
 """
 
     path.write_text(text.rstrip() + "\n\n" + hardening + "\n", encoding="utf-8")
-    changed.append(str(path))
+    changed.append(str(path.relative_to(root)))
 
 print("updated:", changed)
