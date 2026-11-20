@@ -8,9 +8,21 @@ Recommended position:
 after authentication middleware and before tenant isolation middleware.
 """
 
+import os
 import pathlib
+import stat
 
-settings_path = pathlib.Path("backend/crown_api/settings.py")
+repo_root = pathlib.Path(__file__).resolve().parents[2]
+settings_dir = repo_root / "backend" / "crown_api"
+settings_path = settings_dir / "settings.py"
+if (
+    (repo_root / "backend").is_symlink()
+    or settings_dir.is_symlink()
+    or settings_path.is_symlink()
+    or not settings_path.is_file()
+    or settings_path.resolve().parent != settings_dir
+):
+    raise SystemExit("Refusing unsafe observability settings path")
 text = settings_path.read_text(encoding="utf-8")
 
 middleware = '"core.observability.middleware.RequestCorrelationMiddleware"'
@@ -45,5 +57,17 @@ LOGGING.setdefault("loggers", {})["crown.request"] = {
 }
 '''
 
-settings_path.write_text(text, encoding="utf-8")
+flags = os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+fd = os.open(settings_path, flags)
+try:
+    info = os.fstat(fd)
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+        raise SystemExit("Refusing unsafe observability settings target")
+    os.ftruncate(fd, 0)
+    with os.fdopen(fd, "w", encoding="utf-8") as output:
+        fd = -1
+        output.write(text)
+finally:
+    if fd >= 0:
+        os.close(fd)
 print("observability settings patched")
