@@ -114,7 +114,15 @@ def website_demo_school():
              SANDBOX_PERSONAS[expected_names[u["username"]]].role_code)
             for u in users
         }
-        if assigned != expected:
+        # The existing Jireh staging grants AID_DIRECTOR to this same fictional
+        # finance principal. Permit that one exact school-bound role only;
+        # unknown or cross-school roles must still fail closed.
+        finance_id = next(
+            str(user["id"]) for user in users
+            if expected_names[user["username"]] == "finance_director"
+        )
+        allowed_jireh_grant = {(finance_id, str(school.pk), "AID_DIRECTOR")}
+        if not expected.issubset(assigned) or assigned - expected - allowed_jireh_grant:
             return None
         return school
     except (CommandError, ValueError, TypeError):
