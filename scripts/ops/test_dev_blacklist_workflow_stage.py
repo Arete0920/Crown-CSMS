@@ -135,5 +135,86 @@ class DevBlacklistWorkflowStageTests(unittest.TestCase):
                       if step.get("name") == "Verify both fail-closed migration-stage contracts without Azure"))
 
 
+
+class DevReleaseForensicsSafetyTests(unittest.TestCase):
+    """DEV release evidence is an isolated, manual-only Azure read."""
+
+    def setUp(self):
+        data = workflow()
+        self.inputs = data["on"]["workflow_dispatch"]["inputs"] if "on" in data else data[True]["workflow_dispatch"]["inputs"]
+        self.jobs = data["jobs"]
+        self.job = self.jobs["dev-release-forensics"]
+        self.steps = self.job["steps"]
+
+    def test_manual_opt_in_is_off_by_default_and_excludes_other_jobs(self):
+        self.assertEqual(len(self.inputs), 10)
+        self.assertEqual(self.inputs["confirm_dev_support"]["type"], "string")
+        self.assertEqual(self.inputs["confirm_dev_support"]["default"], "")
+        self.assertIn("github.event_name == 'workflow_dispatch'", self.job["if"])
+        self.assertIn("github.ref == 'refs/heads/main'", self.job["if"])
+        self.assertIn("inputs.confirm_dev_support == 'dev-release-forensics-only'", self.job["if"])
+        self.assertEqual(self.job["environment"], "dev")
+        self.assertEqual(self.job["permissions"], {"contents": "read", "id-token": "write"})
+        self.assertIn("inputs.confirm_dev_support == 'crown269-reference-metadata-only'",
+                      self.jobs["two-fixed-reference-gets"]["if"])
+        for name in ("inspect", "stage-reviewed-dev-migrations"):
+            self.assertIn("inputs.confirm_dev_support != 'dev-release-forensics-only'", self.jobs[name]["if"])
+
+    def test_azure_login_follows_source_and_authority_guards(self):
+        names = [step.get('name', '') for step in self.steps]
+        auth = names.index('Login with existing DEV federation')
+        self.assertLess(names.index('Reject mixed authority or stale main before Azure login'), auth)
+        self.assertLess(names.index('Verify accepted source is current main'), auth)
+        guard = self.steps[0]['run']
+        self.assertIn('test ' + chr(34) + chr(36) + 'EXPECTED' + chr(34) + ' = ' + chr(34) + chr(36) + 'GITHUB_SHA' + chr(34), guard)
+        for key in ('APPLY_SUPPORT', 'APPLY_LEGACY', 'APPLY_BLACKLIST', 'COMPARE', 'INSPECT'):
+            self.assertIn('test ' + chr(34) + chr(36) + key + chr(34) + ' = false', guard)
+        self.assertIn('test "$CONFIRM_SUPPORT" = dev-release-forensics-only', guard)
+        for key in ('CONFIRM_LEGACY', 'CONFIRM_BLACKLIST', 'RECEIPT'):
+            self.assertIn('test -z ' + chr(34) + chr(36) + key + chr(34), guard)
+
+    def test_mixed_authority_fails_before_login(self):
+        guard = self.steps[0]["run"]
+        env = {
+            **os.environ, "GITHUB_REPOSITORY_ID": "1339719218",
+            "GITHUB_SHA": SHA, "EXPECTED": SHA,
+            "APPLY_SUPPORT": "false", "APPLY_LEGACY": "false",
+            "APPLY_BLACKLIST": "false", "COMPARE": "false",
+            "INSPECT": "false", "CONFIRM_SUPPORT": "dev-release-forensics-only",
+            "CONFIRM_LEGACY": "", "CONFIRM_BLACKLIST": "",
+            "RECEIPT": "",
+        }
+        def run(**overrides):
+            return subprocess.run(["bash", "-e", "-c", guard],
+                                  env={**env, **overrides}, capture_output=True,
+                                  text=True, timeout=4).returncode
+        self.assertEqual(run(), 0)
+        for change in ({"GITHUB_REPOSITORY_ID": "123"},
+                       {"EXPECTED": "b" * 40},
+                       {"APPLY_SUPPORT": "true"},
+                       {"APPLY_LEGACY": "true"},
+                       {"APPLY_BLACKLIST": "true"},
+                       {"COMPARE": "true"},
+                       {"INSPECT": "true"},
+                       {"CONFIRM_SUPPORT": ""},
+                       {"CONFIRM_SUPPORT": "migrate-dev-support"},
+                       {"RECEIPT": RECOVERY}):
+            with self.subTest(change=change):
+                self.assertNotEqual(run(**change), 0)
+
+    def test_collector_uses_only_read_commands_and_redacted_metadata(self):
+        collector = next(s["run"] for s in self.steps
+                         if s.get("name") == "Collect sanitized DEV configuration-change evidence")
+        self.assertIn('"activity-log", "list"', collector)
+        self.assertIn('"webapp", "config", "show"', collector)
+        self.assertIn('"webapp", "config", "appsettings", "list"', collector)
+        self.assertIn("caller_hash", collector)
+        self.assertNotIn('"caller": caller', collector)
+        self.assertIn('report["activity"]["status"] != "COLLECTED"', collector)
+        self.assertIn("any(value == \"UNVERIFIED\"", collector)
+        self.assertNotIn("az webapp config set", collector)
+        self.assertNotIn("az webapp config container set", collector)
+
+
 if __name__ == "__main__":
     unittest.main()

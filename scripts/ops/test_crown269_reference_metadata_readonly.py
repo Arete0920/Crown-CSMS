@@ -168,7 +168,7 @@ class MetadataReadOnlyTests(unittest.TestCase):
         jobs = data["jobs"]
         self.assertEqual(set(jobs), {
             "support-contract-tests", "inspect", "stage-reviewed-dev-migrations",
-            "two-fixed-reference-gets",
+            "two-fixed-reference-gets", "dev-release-forensics",
         })
         check = jobs["two-fixed-reference-gets"]
         clause = check["if"]
@@ -207,6 +207,7 @@ class MetadataReadOnlyTests(unittest.TestCase):
         self.assertEqual(inputs["confirm_dev_support"]["type"], "string")
         self.assertEqual(inputs["confirm_dev_support"]["default"], "")
         self.assertIn("crown269-reference-metadata-only", inputs["confirm_dev_support"]["description"])
+        self.assertIn("dev-release-forensics-only", inputs["confirm_dev_support"]["description"])
         self.assertEqual(data["jobs"]["two-fixed-reference-gets"]["permissions"]["id-token"], "write")
 
     def test_cli_failure_does_not_echo_output(self):
