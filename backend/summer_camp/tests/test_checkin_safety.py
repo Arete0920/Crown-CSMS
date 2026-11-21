@@ -23,7 +23,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def camp_case(django_user_model):
     when = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
-    school = School.objects.create(name="Safe Camp Checkin")
+    school = School.objects.create(name="Safe Camp Checkin", timezone="UTC")
     SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     other_school = School.objects.create(name="Unrelated Camp")
     household = Household.objects.create(school_id=school.id, name="Synthetic Family")
@@ -55,7 +55,7 @@ def camp_case(django_user_model):
         username="synthetic-camp-checkin-staff", email="camp-checkin-staff@example.test", password="unused", school=school,
     )
     assignment = SummerCampStaffAssignment.objects.create(
-        school=school, session=session, staff_user=staff, role="COUNSELOR",
+        school=school, session=session, staff_user=staff, role="COUNSELOR", assigned_date=when.date(),
     )
     reviewer = django_user_model.objects.create_user(
         username="synthetic-camp-credential-reviewer", email="camp-credential-reviewer@example.test", password="unused", school=school,
@@ -113,6 +113,9 @@ def test_checkin_uses_school_civil_date_across_utc_midnight(camp_case):
     session.start_date = date(2026, 7, 2)
     session.end_date = date(2026, 7, 2)
     session.save(update_fields=["start_date", "end_date"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = date(2026, 7, 2)
+    assignment.save(update_fields=["assigned_date"])
 
     attendance = checkin_camper(school.id, student.id, session.id, when=stamp)
     assert attendance.date == date(2026, 7, 2)
@@ -424,3 +427,38 @@ def test_roster_does_not_offer_fresh_other_session_admission_over_open_custody(c
     assert rows[0]["requires_supervisor_reconciliation"] is True
     assert rows[0]["open_custody_count"] == 1
     assert not any(r["session_id"] == str(session.id) for r in rows)
+
+
+def test_future_dated_staff_assignment_cannot_clear_today_or_admit_camper(camp_case):
+    """A verified counselor who is not assigned until tomorrow cannot supervise today."""
+    school, _foreign, _student, session, _enrollment, when = camp_case
+    school.timezone = "UTC"
+    school.save(update_fields=["timezone"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = when.date() + timedelta(days=1)
+    assignment.save(update_fields=["assigned_date"])
+
+    ratio = compute_staff_ratio_status(school.id, session.id)
+    assert ratio["assigned_staff"] == 0
+    assert ratio["coverage_status"] == "GAP"
+    with pytest.raises(ValueError, match="not cleared"):
+        _admit(camp_case)
+    _assert_no_attendance(camp_case)
+
+
+def test_backdated_checkin_cannot_use_staff_assigned_after_attendance_day(camp_case):
+    school, _foreign, student, session, _enrollment, when = camp_case
+    school.timezone = "UTC"
+    school.save(update_fields=["timezone"])
+    previous_day = when - timedelta(days=1)
+    session.start_date = previous_day.date()
+    session.save(update_fields=["start_date"])
+    assignment = SummerCampStaffAssignment.objects.get(school=school, session=session)
+    assignment.assigned_date = when.date()
+    assignment.save(update_fields=["assigned_date"])
+
+    # Staff exist and are verified today, but were not assigned yesterday.
+    assert compute_staff_ratio_status(school.id, session.id)["coverage_status"] == "OK"
+    with pytest.raises(ValueError, match="not cleared"):
+        checkin_camper(school.id, student.id, session.id, when=previous_day)
+    _assert_no_attendance(camp_case)

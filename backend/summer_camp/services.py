@@ -388,7 +388,7 @@ def checkin_camper(school_id, student_id, session_id, when=None, note=""):
     enrollment = active[0]
 
     # Recompute rather than trusting a readiness value cached at enrollment.
-    readiness = compute_camper_readiness(school_id, enrollment.id)
+    readiness = compute_camper_readiness(school_id, enrollment.id, on_date=attendance_day)
     if readiness["status"] != "READY":
         raise ValueError("Camper is not cleared for check-in.")
 
@@ -590,7 +590,11 @@ def verify_staff_credentials(school_id, assignment_id, reviewer, evidence_ref):
     return assignment
 
 
-def compute_staff_ratio_status(school_id, session_id):
+def compute_staff_ratio_status(school_id, session_id, *, on_date=None):
+    # Coverage is valid only from a counselor's assignment start date.
+    # The default is the school's civil day, never the server's UTC date.
+    if on_date is None:
+        on_date = camp_school_local_date(school_id, timezone.now())
     session = SummerCampSession.objects.get(id=session_id, school_id=school_id)
     config = ensure_config(school_id)
     registered = SummerCampEnrollment.objects.filter(
@@ -606,6 +610,7 @@ def compute_staff_ratio_status(school_id, session_id):
             credential_status=SummerCampStaffAssignment.CREDENTIAL_VERIFIED,
             credential_verified_by__school_id=school_id,
             credential_verified_at__isnull=False,
+            assigned_date__lte=on_date,
         ).exclude(credential_evidence_ref="").values("staff_user_id").distinct().count()
     )
     return {
@@ -674,7 +679,7 @@ def record_incident(
 
 
 @transaction.atomic
-def compute_camper_readiness(school_id, enrollment_id):
+def compute_camper_readiness(school_id, enrollment_id, *, on_date=None):
     enrollment = SummerCampEnrollment.objects.get(id=enrollment_id, school_id=school_id)
     blockers = []
 
@@ -706,7 +711,7 @@ def compute_camper_readiness(school_id, enrollment_id):
     if not has_pickup_contact:
         blockers.append("PICKUP_CONTACT_MISSING")
 
-    ratio = compute_staff_ratio_status(school_id, enrollment.session_id)
+    ratio = compute_staff_ratio_status(school_id, enrollment.session_id, on_date=on_date)
     if ratio["coverage_status"] != "OK":
         blockers.append("STAFF_REVIEW_REQUIRED")
 
