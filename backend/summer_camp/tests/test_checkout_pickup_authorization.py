@@ -194,7 +194,7 @@ def test_school_civil_midnight_checkin_release_needs_approved_staff_evidence():
     c.enrollment.payment_status, c.enrollment.balance_due_cents = "PAID_IN_FULL", 0
     c.enrollment.save(update_fields=["form_status", "health_status", "payment_status", "balance_due_cents"])
     assignment = SummerCampStaffAssignment.objects.create(school=c.school, session=c.session,
-                                                           staff_user=c.actor, role="COUNSELOR")
+                                                           staff_user=c.actor, role="COUNSELOR", assigned_date=DAY)
     reviewer = UserAccount.objects.create_user(username="camp-independent-reviewer", email="camp-independent-reviewer@example.test",
                                                school=c.school, password="synthetic")
     UserRole.objects.create(user=reviewer, school=c.school, role_code="HEAD_OF_SCHOOL")
