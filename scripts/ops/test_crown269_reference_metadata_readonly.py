@@ -168,7 +168,7 @@ class MetadataReadOnlyTests(unittest.TestCase):
         jobs = data["jobs"]
         self.assertEqual(set(jobs), {
             "support-contract-tests", "inspect", "stage-reviewed-dev-migrations",
-            "two-fixed-reference-gets",
+            "two-fixed-reference-gets", "dev-release-forensics",
         })
         check = jobs["two-fixed-reference-gets"]
         clause = check["if"]
@@ -203,7 +203,9 @@ class MetadataReadOnlyTests(unittest.TestCase):
         import yaml
         data = yaml.load(WF.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
         inputs = data["on"]["workflow_dispatch"]["inputs"]
-        self.assertEqual(len(inputs), 10)
+        self.assertEqual(len(inputs), 11)
+        self.assertEqual(inputs["dev_release_forensics"]["type"], "boolean")
+        self.assertEqual(inputs["dev_release_forensics"]["default"], "false")
         self.assertEqual(inputs["confirm_dev_support"]["type"], "string")
         self.assertEqual(inputs["confirm_dev_support"]["default"], "")
         self.assertIn("crown269-reference-metadata-only", inputs["confirm_dev_support"]["description"])
