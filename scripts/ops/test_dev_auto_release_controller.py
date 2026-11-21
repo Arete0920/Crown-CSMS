@@ -127,6 +127,74 @@ class ReleaseControllerContracts(unittest.TestCase):
                                       probe=lambda _: observed())
         self.assertFalse(client.dispatched)
 
+    @staticmethod
+    def orphan_queue_client(*, run_updates=None, jobs_count=0, extra_queue=False):
+        """Only external GitHub API responses are simulated; check the real guard."""
+        client = FakeGithub()
+        original_api = client.api
+        run = {
+            "id": 40587751947,
+            "status": "queued",
+            "conclusion": None,
+            "event": "workflow_dispatch",
+            "path": ".github/workflows/deploy-dev.yml",
+            "head_sha": "e834dff25527002aab19aa10b8bc2842a8d974d0",
+            "head_branch": "main",
+            "created_at": "2026-10-27T21:33:19Z",
+            "updated_at": "2026-10-27T21:33:19Z",
+            "run_attempt": 1,
+            "repository": {"full_name": "Arete0920/Crown-CSMS"},
+        }
+        run.update(run_updates or {})
+
+        def api(method, endpoint, data=None):
+            if method == "GET" and endpoint == (
+                "/actions/workflows/deploy-dev.yml/runs?status=queued&per_page=100"
+            ):
+                runs = [{"id": 40587751947}]
+                if extra_queue:
+                    runs.append({"id": 12345678901})
+                return {"total_count": len(runs), "workflow_runs": runs}
+            if method == "GET" and endpoint == "/actions/runs/40587751947":
+                return run
+            if method == "GET" and endpoint == "/actions/runs/40587751947/jobs?per_page=100":
+                return {"total_count": jobs_count, "jobs": [{}] * jobs_count}
+            return original_api(method, endpoint, data)
+
+        client.api = api
+        return client
+
+    def test_verified_phantom_does_not_block_controller(self):
+        # Known 2026-10-27 run has zero jobs and a source revision that cannot
+        # pass the historical exact-main guard. It cannot hold DEV indefinitely.
+        client = self.orphan_queue_client()
+        controller.assert_no_concurrent_manual(client, B)
+
+    def test_all_other_queued_runs_still_block(self):
+        cases = [
+            {"id": 40587751948},
+            {"head_sha": "f" * 40},
+            {"head_branch": "rc/demo"},
+            {"event": "push"},
+            {"status": "in_progress"},
+            {"path": ".github/workflows/deploy-dashboard.yml"},
+            {"updated_at": "2026-11-21T11:29:08Z"},
+            {"run_attempt": 2},
+            {"repository": {"full_name": "someone-else/repo"}},
+        ]
+        for changes in cases:
+            with self.subTest(changes=changes):
+                client = self.orphan_queue_client(run_updates=changes)
+                with self.assertRaisesRegex(controller.Blocked, "another_dev_workflow_is_active"):
+                    controller.assert_no_concurrent_manual(client, B)
+
+    def test_phantom_with_jobs_or_second_queued_release_still_blocks(self):
+        for opts in ({"jobs_count": 1}, {"extra_queue": True}):
+            with self.subTest(opts=opts):
+                client = self.orphan_queue_client(**opts)
+                with self.assertRaisesRegex(controller.Blocked, "another_dev_workflow_is_active"):
+                    controller.assert_no_concurrent_manual(client, B)
+
     def test_unhealthy_dev_blocks_before_writes(self):
         client = FakeGithub()
         with self.assertRaisesRegex(controller.Blocked, "existing_dev_runtime_safety_unverified"):

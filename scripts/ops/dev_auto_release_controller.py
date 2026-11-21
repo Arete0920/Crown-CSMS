@@ -175,6 +175,35 @@ def assert_no_concurrent_manual(client, workflow):
         if type(total) is not int or total > 100:
             raise Blocked("unbounded_active_release_inventory")
         if total > 0:
+            # GitHub reports the 2026-10-27 dispatch as queued, yet returns
+            # HTTP 409 ("not been queued yet") when cancel/force-cancel is
+            # attempted, and HTTP 403 on delete. Verify immutable identity
+            # and zero jobs on EACH invocation; every other run blocks.
+            if (workflow == BACKEND and status == "queued" and total == 1
+                    and isinstance(payload.get("workflow_runs"), list)
+                    and len(payload["workflow_runs"]) == 1
+                    and isinstance(payload["workflow_runs"][0], dict)
+                    and payload["workflow_runs"][0].get("id") == 40587751947):
+                stale = client.api("GET", "/actions/runs/40587751947")
+                jobs = client.api("GET", "/actions/runs/40587751947/jobs?per_page=100")
+                if (isinstance(stale, dict)
+                        and stale.get("id") == 40587751947
+                        and stale.get("status") == "queued"
+                        and stale.get("conclusion") is None
+                        and stale.get("event") == "workflow_dispatch"
+                        and stale.get("path") == RUN_BASE + BACKEND
+                        and stale.get("head_sha") == "e834dff25527002aab19aa10b8bc2842a8d974d0"
+                        and stale.get("head_branch") == "main"
+                        and stale.get("created_at") == "2026-10-27T21:33:19Z"
+                        and stale.get("updated_at") == "2026-10-27T21:33:19Z"
+                        and stale.get("run_attempt") == 1
+                        and isinstance(stale.get("repository"), dict)
+                        and stale["repository"].get("full_name") == REPO
+                        and isinstance(jobs, dict)
+                        and type(jobs.get("total_count")) is int
+                        and jobs["total_count"] == 0
+                        and jobs.get("jobs") == []):
+                    continue
             raise Blocked("another_dev_workflow_is_active")
 
 
