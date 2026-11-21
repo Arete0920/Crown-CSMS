@@ -293,14 +293,17 @@ jobs:
                                  "status": status.get("value", "") if isinstance(status, dict) else "UNVERIFIED",
                                  "correlation_id": corr if re.fullmatch(r"[a-fA-F0-9-]{36}", str(corr)) else "UNVERIFIED",
                                  "caller_hash": hashlib.sha256(caller.encode()).hexdigest()[:12] if isinstance(caller, str) and caller else "UNAVAILABLE"})
-              report["activity"] = {"status": "PARTIAL" if len(logs) == 1000 else "COLLECTED",
+              report["activity"] = {"status": "PARTIAL" if len(logs) >= 1000 or len(events) > 100 else "COLLECTED",
                                     "matching_count": len(events), "events": events[:100]}
           except (RuntimeError, subprocess.TimeoutExpired, ValueError, TypeError):
               report["activity"] = {"status": "UNAVAILABLE", "events": []}
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
               out.write("## DEV release configuration forensics (not certification)\n\n")
               out.write("~~~json\n" + json.dumps(report, indent=2, sort_keys=True) + "\n~~~\n")
-          if report["image"] in ("UNVERIFIED", "UNAVAILABLE") or report["identity"] == "UNAVAILABLE" or report["activity"]["status"] != "COLLECTED":
+          if (report["image"] in ("UNVERIFIED", "UNAVAILABLE")
+                  or not isinstance(report["identity"], dict)
+                  or any(value == "UNVERIFIED" for value in report["identity"].values())
+                  or report["activity"]["status"] != "COLLECTED"):
               raise SystemExit("Azure evidence incomplete: do not deploy.")
           PY
       - name: End Azure session
