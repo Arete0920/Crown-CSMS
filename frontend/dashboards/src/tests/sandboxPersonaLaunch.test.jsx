@@ -51,6 +51,10 @@ describe("Sandbox persona launch", () => {
     sessionStorage.setItem(aidKey, "prior-persona-student-awards");
     localStorage.setItem("crown_wizard_draft:financial-aid-setup:school-a", "legacy-award");
     sessionStorage.setItem("crown_wizard_draft:billing-setup", "retain-unrelated-draft");
+    sessionStorage.setItem("crown_current_user", JSON.stringify({ id: "previous-staff", school_id: "school-a" }));
+    sessionStorage.setItem("crown_user", JSON.stringify({ id: "previous-staff", school_id: "school-a" }));
+    sessionStorage.setItem("crown_user_roles", '["school_admin"]');
+    sessionStorage.setItem("crown.website.presenter", "1");
 
     storeSandboxSession({
       access: "fresh-persona-access",
@@ -66,6 +70,10 @@ describe("Sandbox persona launch", () => {
     expect(localStorage.getItem("crown_wizard_draft:financial-aid-setup:school-a")).toBeNull();
     expect(sessionStorage.getItem("crown_wizard_draft:billing-setup")).toBe("retain-unrelated-draft");
     expect(sessionStorage.getItem("crown.jwt.access")).toBe("fresh-persona-access");
+    expect(sessionStorage.getItem("crown_current_user")).toBeNull();
+    expect(sessionStorage.getItem("crown_user")).toBeNull();
+    expect(sessionStorage.getItem("crown_user_roles")).toBeNull();
+    expect(sessionStorage.getItem("crown.website.presenter")).toBeNull();
   });
 
   it("shows staff-only access on hosted DEV without persona launch or invite lookup", async () => {
