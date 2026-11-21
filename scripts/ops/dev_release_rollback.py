@@ -147,9 +147,14 @@ def capture(path):
         raise Unsafe("prior_build_sha_unavailable")
     config = az("webapp", "config", "show", "--resource-group", RG, "--name", APP)
     image = IMAGE_PREFIX + ":dev-" + sha
-    if not isinstance(config, dict) or config.get("linuxFxVersion") != "DOCKER|" + image:
+    if not isinstance(config, dict):
         raise Unsafe("prior_immutable_app_image_unverified")
     digest = acr_digest(REPO + ":dev-" + sha)
+    if config.get("linuxFxVersion") not in (
+        "DOCKER|" + image,
+        "DOCKER|" + IMAGE_PREFIX + "@" + digest,
+    ):
+        raise Unsafe("prior_immutable_app_image_unverified")
     assert_health(sha, health())
     record = check_receipt({
         "status": "CAPTURED", "prior_sha": sha, "prior_image": image,

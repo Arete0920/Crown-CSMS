@@ -55,6 +55,32 @@ class DevRollbackContracts(unittest.TestCase):
             self.assertIn("BUILD_SHA=" + SHA, mutations[1][0])
             self.assertNotIn("SENSITIVE_NOT_TO_BE_WRITTEN", str(mutations))
 
+    def test_capture_requires_pinned_image_to_match_the_sha_tag_digest(self):
+        for configured_digest in (DIGEST, "sha256:" + "c" * 64):
+            with self.subTest(configured_digest=configured_digest):
+                def digest_pinned_azure(*args, **kwargs):
+                    if args[:3] == ("webapp", "config", "show"):
+                        return {"linuxFxVersion": (
+                            "DOCKER|crownregistry.azurecr.io/crown2026@" + configured_digest
+                        )}
+                    return fake_azure(*args, **kwargs)
+
+                with (
+                    tempfile.TemporaryDirectory() as directory,
+                    patch.dict(os.environ, {"RUNNER_TEMP": directory}),
+                    patch.object(rollback, "az", side_effect=digest_pinned_azure),
+                    patch.object(rollback, "health", return_value=healthy()),
+                ):
+                    receipt = Path(directory) / "crown-dev-auto-rollback.json"
+                    if configured_digest == DIGEST:
+                        evidence = rollback.capture(receipt)
+                        self.assertEqual(evidence["prior_image"], IMAGE)
+                        self.assertEqual(evidence["prior_digest"], DIGEST)
+                    else:
+                        with self.assertRaises(rollback.Unsafe):
+                            rollback.capture(receipt)
+                        self.assertFalse(receipt.exists())
+
     def test_unknown_existing_image_fails_before_any_mutation(self):
         def wrong_image(*args, **kwargs):
             value = fake_azure(*args, **kwargs)
