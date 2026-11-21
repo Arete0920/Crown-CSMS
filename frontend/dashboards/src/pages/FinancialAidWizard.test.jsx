@@ -45,14 +45,22 @@ describe("Financial Aid wizard authenticated school and account isolation", () =
     expect(localStorage.getItem(PREFIX)).toBeNull();
     expect(localStorage.getItem("crown_wizard_draft:billing-setup")).toBe("preserve billing");
   });
-  it("restores a same-account same-school draft without mixing schools", async () => {
+  it("restores a verified same-account draft without mixing schools", async () => {
     signIn("user-a");
     render(<FinancialAidWizard />);
     await screen.findByTestId("aid-cycle-session");
     fireEvent.click(screen.getByRole("button", { name: "Stage synthetic award" }));
     await waitFor(() => expect(sessionStorage.getItem(A_KEY)).toContain("school-a-cycle"));
     expect(localStorage.getItem(A_KEY)).toBeNull();
+    // The original session identity belongs to school A. Switching to school B
+    // must first be verified by the canonical authenticated whoami endpoint.
+    authenticatedJson.mockResolvedValue({
+      ok: true,
+      user: { id: "user-a", school_id: "school-a" },
+      tenant: { resolved_school_id: "school-b" },
+    });
     setSelectedSchoolId("school-b");
+    await waitFor(() => expect(authenticatedJson).toHaveBeenCalledWith("/api/system/whoami/"));
     await waitFor(() => expect(screen.getByTestId("aid-cycle-session").textContent).toBe("No saved aid cycle"));
     expect(sessionStorage.getItem(B_KEY)).not.toContain("school-a-cycle");
     setSelectedSchoolId("school-a");
@@ -80,7 +88,7 @@ describe("Financial Aid wizard authenticated school and account isolation", () =
     clearBrowserAuthState();
     expect(sessionStorage.getItem(A_KEY)).toBeNull();
     expect(sessionStorage.getItem("crown_wizard_draft:billing-setup")).toBe("keep");
-    expect(screen.getByRole("alert").textContent).toContain("Select a school");
+    await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("Select a school"));
     signIn("user-b");
     await waitFor(() => expect(screen.getByTestId("aid-cycle-session").textContent).toBe("No saved aid cycle"));
   });
