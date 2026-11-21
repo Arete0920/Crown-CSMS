@@ -76,7 +76,7 @@ describe("Financial Aid wizard authenticated school and account isolation", () =
     sessionStorage.setItem("crown_current_user", JSON.stringify({ id: "user-b" }));
     window.dispatchEvent(new Event(AUTH_CONTEXT_CHANGE_EVENT));
     await waitFor(() => expect(screen.getByTestId("aid-cycle-session").textContent).toBe("No saved aid cycle"));
-    expect(sessionStorage.getItem(OTHER_USER_KEY)).not.toContain("school-a-cycle");
+    expect(sessionStorage.getItem(OTHER_USER_KEY) ?? "").not.toContain("school-a-cycle");
   });
   it("purges the financial aid draft on logout without clearing other wizard drafts", async () => {
     signIn("user-a");
