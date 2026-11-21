@@ -1,4 +1,4 @@
-import { authenticatedJson, getAccessToken } from "../utils/authClient";
+import { authenticatedJson, clearFinancialAidWizardDrafts, getAccessToken } from "../utils/authClient";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
@@ -94,6 +94,8 @@ export async function createWebsitePresenterSession(role) {
 }
 
 export function storeSandboxSession(session) {
+  // A fresh sandbox persona must not inherit a previous session's Financial Aid draft.
+  clearFinancialAidWizardDrafts();
   sessionStorage.setItem("crown.jwt.access", session.access);
   sessionStorage.setItem("crown.jwt.refresh", session.refresh || "");
   sessionStorage.setItem("crown.school.id", session.school_id);

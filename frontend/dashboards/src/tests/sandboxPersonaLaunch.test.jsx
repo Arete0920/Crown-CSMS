@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { storeSandboxSession } from "../sandbox/sandboxApi.js";
 
 vi.mock("../components/brand/CrownLogo", () => ({
   default: () => <div>CROWN</div>,
@@ -45,6 +46,28 @@ afterEach(() => {
 });
 
 describe("Sandbox persona launch", () => {
+  it("clears prior aid drafts when starting a new sandbox persona session", () => {
+    const aidKey = "crown_wizard_draft:financial-aid-setup:school-a:user-a";
+    sessionStorage.setItem(aidKey, "prior-persona-student-awards");
+    localStorage.setItem("crown_wizard_draft:financial-aid-setup:school-a", "legacy-award");
+    sessionStorage.setItem("crown_wizard_draft:billing-setup", "retain-unrelated-draft");
+
+    storeSandboxSession({
+      access: "fresh-persona-access",
+      refresh: "",
+      school_id: "school-a",
+      school_name: "Synthetic School",
+      role: "school_admin",
+      guidance: "guided",
+      command_center: {},
+    });
+
+    expect(sessionStorage.getItem(aidKey)).toBeNull();
+    expect(localStorage.getItem("crown_wizard_draft:financial-aid-setup:school-a")).toBeNull();
+    expect(sessionStorage.getItem("crown_wizard_draft:billing-setup")).toBe("retain-unrelated-draft");
+    expect(sessionStorage.getItem("crown.jwt.access")).toBe("fresh-persona-access");
+  });
+
   it("shows staff-only access on hosted DEV without persona launch or invite lookup", async () => {
     window.location.hostname = "crown-sales.example.invalid";
     window.location.search = "?invite=sbx_inv_legacy";
