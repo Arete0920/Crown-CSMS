@@ -66,6 +66,7 @@ export default function CrownWizard({
       steps={stepLabels}
       goNext={goNext}
       goBack={goBack}
+      goPrev={goBack}
       canGoBack={stepIndex > 0}
       canGoNext={stepIndex < totalSteps - 1}
       setStepIndex={setStepIndex}
