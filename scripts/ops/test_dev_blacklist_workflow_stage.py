@@ -155,7 +155,9 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
         self.assertIn("inputs.confirm_dev_support == 'dev-release-forensics-only'", self.job["if"])
         self.assertEqual(self.job["environment"], "dev")
         self.assertEqual(self.job["permissions"], {"contents": "read", "id-token": "write"})
-        for name in ("two-fixed-reference-gets", "inspect", "stage-reviewed-dev-migrations"):
+        self.assertIn("inputs.confirm_dev_support == 'crown269-reference-metadata-only'",
+                      self.jobs["two-fixed-reference-gets"]["if"])
+        for name in ("inspect", "stage-reviewed-dev-migrations"):
             self.assertIn("inputs.confirm_dev_support != 'dev-release-forensics-only'", self.jobs[name]["if"])
 
     def test_azure_login_follows_source_and_authority_guards(self):
