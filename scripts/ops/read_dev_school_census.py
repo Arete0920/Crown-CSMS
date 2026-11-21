@@ -17,6 +17,9 @@ from read_dev_blacklist_state import (
     read_dev_database_setting, verify_accepted_source,
 )
 from run_dev_inquiry_migration import Blocked, DEV_APP, DEV_HOST, read_azure, validate_database_url
+from crown637_history_readonly import (
+    AuditBlocked, requested_from_event, inspect_database as inspect_crown637_history,
+)
 
 HERITAGE_ID = "19801b59-8c05-4c84-9312-5d792e4e839d"
 HERITAGE_NAME = "Heritage Christian Academy"
@@ -187,17 +190,30 @@ def main(argv=None):
     stage = "source"
     try:
         verify_accepted_source(args.expected_sha)
+        stage = "requested_operation"
+        crown637_mode = requested_from_event()
         stage = "dev_configuration"
         database_url, name = read_dev_database_setting()
         packet["dev_demo_appsettings"] = read_demo_flag_markers()
         stage = "database_read_only"
         packet.update(inspect_database(database_url, name, args.expected_sha))
+        if crown637_mode:
+            # Separate guarded manual read; normal DEV inventory is unchanged.
+            stage = "historical_integrity"
+            from psycopg import connect
+            packet["crown637_history"] = inspect_crown637_history(
+                database_url, name, args.expected_sha,
+                validate_database_url=validate_database_url, dev_host=DEV_HOST,
+                ca_file=CA_FILE, connector=connect,
+            )
+            if packet["crown637_history"]["school_count"] != packet["school_count"]:
+                raise AuditBlocked("historical_school_coverage_mismatch")
         packet["status"] = "COLLECTED"
     except Exception as exc:
         reason = str(exc)
         packet["stage"] = stage
         packet["reason"] = (reason if (
-            (isinstance(exc, (CensusBlocked, EvidenceBlocked))
+            (isinstance(exc, (CensusBlocked, EvidenceBlocked, AuditBlocked))
              and re.fullmatch(r"[a-z_]{3,80}", reason))
             or (isinstance(exc, Blocked) and reason in SAFE_CONFIGURATION_REASONS)
         ) else "census_evidence_unavailable")
