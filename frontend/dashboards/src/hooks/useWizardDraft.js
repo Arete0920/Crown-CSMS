@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export function useWizardDraft(wizardKey, initialValue) {
+export function useWizardDraft(wizardKey, initialValue, { storage = 'local' } = {}) {
+  const storageName = storage === 'session' ? 'sessionStorage' : 'localStorage';
   const storageKey = useMemo(() => `crown_wizard_draft:${wizardKey}`, [wizardKey]);
 
   const [value, setValue] = useState(initialValue);
@@ -9,7 +10,7 @@ export function useWizardDraft(wizardKey, initialValue) {
 
   useEffect(() => {
     try {
-      const raw = globalThis.localStorage.getItem(storageKey);
+      const raw = globalThis[storageName].getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object' && parsed.__draftVersion === 2) {
@@ -25,13 +26,13 @@ export function useWizardDraft(wizardKey, initialValue) {
     } finally {
       setLoaded(true);
     }
-  }, [initialValue, storageKey]);
+  }, [initialValue, storageKey, storageName]);
 
   const saveDraft = useCallback(
     (nextValue) => {
       const toSave = nextValue ?? value;
       const savedAt = new Date().toISOString();
-      globalThis.localStorage.setItem(
+      globalThis[storageName].setItem(
         storageKey,
         JSON.stringify({
           __draftVersion: 2,
@@ -41,13 +42,13 @@ export function useWizardDraft(wizardKey, initialValue) {
       );
       setLastSavedAt(savedAt);
     },
-    [storageKey, value],
+    [storageKey, value, storageName],
   );
 
   const clearDraft = useCallback(() => {
-    globalThis.localStorage.removeItem(storageKey);
+    globalThis[storageName].removeItem(storageKey);
     setLastSavedAt(null);
-  }, [storageKey]);
+  }, [storageKey, storageName]);
 
   return {
     value,

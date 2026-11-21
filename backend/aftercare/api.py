@@ -34,6 +34,7 @@ class RosterTodayRowSerializer(serializers.Serializer):
     enrollment = AftercareEnrollmentSerializer(allow_null=True)
     attendance = AftercareAttendanceSerializer(allow_null=True)
     unscheduled = serializers.BooleanField()
+    unresolved_other_session = serializers.ChoiceField(choices=["AM", "PM"], allow_null=True)
 
 
 class RosterTodayResponseSerializer(serializers.Serializer):
@@ -318,6 +319,19 @@ def roster_today(request):
         if row.student_fk_id and row.date == today
     }
     scheduled_student_ids = {row.student_fk_id for row in enroll}
+    # Show a same-school, opposite-session open custody conflict even when
+    # the selected care session has not checked the child in today.
+    # Do not include foreign-school student identities or attendance details.
+    roster_student_ids = scheduled_student_ids | {
+        row.student_fk_id for row in attendance_records
+        if row.student_fk_id and row.student_fk and row.student_fk.school_id == school_id
+    }
+    opposing_session = "PM" if requested_session == "AM" else "AM"
+    conflicting_ids = set(AftercareAttendance.objects.filter(
+        school_fk_id=school_id, student_fk_id__in=roster_student_ids,
+        student_fk__school_id=school_id, care_session=opposing_session,
+        checkout_time__isnull=True,
+    ).values_list("student_fk_id", flat=True))
     rows = [
         {
             "student_id": row.student_fk_id,
@@ -329,6 +343,7 @@ def roster_today(request):
                 if row.student_fk_id in attendance_map else None
             ),
             "unscheduled": False,
+            "unresolved_other_session": opposing_session if row.student_fk_id in conflicting_ids else None,
         }
         for row in enroll
     ]
@@ -349,6 +364,7 @@ def roster_today(request):
             "enrollment": None,
             "attendance": AftercareAttendanceSerializer(attendance).data,
             "unscheduled": True,
+            "unresolved_other_session": opposing_session if student.pk in conflicting_ids else None,
         })
     return Response({
         "date": str(today), "dow": dow, "care_session": requested_session,

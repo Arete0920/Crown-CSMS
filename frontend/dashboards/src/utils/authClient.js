@@ -31,6 +31,22 @@ const AUTH_STORAGE_KEYS = [
   "crown.website.presenter",
 ];
 
+const AID_DRAFT_PREFIX = "crown_wizard_draft:financial-aid-setup";
+export function clearFinancialAidWizardDrafts({ includeSession = true } = {}) {
+  for (const name of includeSession ? ["sessionStorage", "localStorage"] : ["localStorage"]) {
+    try {
+      const storage = globalThis[name];
+      if (!storage || typeof storage.key !== "function") continue;
+      for (let index = storage.length - 1; index >= 0; index -= 1) {
+        const key = storage.key(index);
+        if (key === AID_DRAFT_PREFIX || key?.startsWith(AID_DRAFT_PREFIX + ":")) {
+          storage.removeItem(key);
+        }
+      }
+    } catch { /* Browser storage can be unavailable. */ }
+  }
+}
+
 function isSandboxBuild() {
   return import.meta.env.VITE_DEMO_MODE === "sandbox"
     || import.meta.env.VITE_SANDBOX_MODE === "1"
@@ -39,6 +55,7 @@ function isSandboxBuild() {
 
 /** Clear browser credentials and identity context, not unrelated drafts. */
 export function clearBrowserAuthState() {
+  clearFinancialAidWizardDrafts();
   for (const name of ["sessionStorage", "localStorage"]) {
     try {
       const storage = globalThis[name];
@@ -220,7 +237,10 @@ export function setAccessToken(token) {
   } catch (error) {
     console.error(error);
   }
-  if (getAccessToken() !== previous) notifyAuthContextChanged();
+  if (getAccessToken() !== previous) {
+    clearFinancialAidWizardDrafts();
+    notifyAuthContextChanged();
+  }
 }
 
 export function clearAccessToken() {

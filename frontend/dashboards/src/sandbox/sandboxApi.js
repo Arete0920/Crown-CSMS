@@ -1,4 +1,4 @@
-import { authenticatedJson, getAccessToken } from "../utils/authClient";
+import { authenticatedJson, clearFinancialAidWizardDrafts, getAccessToken } from "../utils/authClient";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
@@ -94,6 +94,14 @@ export async function createWebsitePresenterSession(role) {
 }
 
 export function storeSandboxSession(session) {
+  // A fresh sandbox persona must not inherit a previous session's Financial Aid draft.
+  clearFinancialAidWizardDrafts();
+  // Browser identity belongs to the previous persona, not the new access token.
+  // The authenticated whoami endpoint supplies the new staff principal.
+  sessionStorage.removeItem("crown_current_user");
+  sessionStorage.removeItem("crown_user");
+  sessionStorage.removeItem("crown_user_roles");
+  sessionStorage.removeItem("crown.website.presenter");
   sessionStorage.setItem("crown.jwt.access", session.access);
   sessionStorage.setItem("crown.jwt.refresh", session.refresh || "");
   sessionStorage.setItem("crown.school.id", session.school_id);
