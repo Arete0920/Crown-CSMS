@@ -183,7 +183,9 @@ def test_form_and_staff_ratio_status(monkeypatch):
     staff_manager = MagicMock()
     staff_manager.filter.return_value.exclude.return_value.values.return_value.distinct.return_value.count.return_value = 2
     monkeypatch.setattr(services.SummerCampStaffAssignment, "objects", staff_manager)
-    result = services.compute_staff_ratio_status("school-1", "session-1")
+    from datetime import date
+    result = services.compute_staff_ratio_status("school-1", "session-1", on_date=date(2026, 1, 1))
+    assert staff_manager.filter.call_args.kwargs["assigned_date__lte"] == date(2026, 1, 1)
     assert result["required_staff"] == 3
     assert result["coverage_status"] == "GAP"
 
@@ -208,7 +210,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
     pickup_manager = MagicMock()
     pickup_manager.filter.return_value.exists.return_value = False
     monkeypatch.setattr(services.SummerCampPickupContact, "objects", pickup_manager)
-    monkeypatch.setattr(services, "compute_staff_ratio_status", lambda school_id, session_id: {"coverage_status": "GAP"})
+    monkeypatch.setattr(services, "compute_staff_ratio_status", lambda school_id, session_id, *, on_date=None: {"coverage_status": "GAP"})
     result = services.compute_camper_readiness("school-1", "enrollment-1")
     assert result["status"] == "BLOCKED"
     assert result["blockers"] == [
@@ -226,7 +228,7 @@ def test_readiness_blockers_and_ready_state(monkeypatch):
     enrollment.health_status = "APPROVED"
     monkeypatch.setattr(services, "compute_form_status", lambda school_id, enrollment_id: "COMPLETE")
     pickup_manager.filter.return_value.exists.return_value = True
-    monkeypatch.setattr(services, "compute_staff_ratio_status", lambda school_id, session_id: {"coverage_status": "OK"})
+    monkeypatch.setattr(services, "compute_staff_ratio_status", lambda school_id, session_id, *, on_date=None: {"coverage_status": "OK"})
     assert services.compute_camper_readiness("school-1", "enrollment-1") == {"status": "READY", "blockers": []}
 
 
