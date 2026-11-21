@@ -5,6 +5,7 @@ import {
   buildApiUrl,
   clearBrowserAuthState,
   getAccessToken,
+  setAccessToken,
   jwtLogin,
   resolveApiUrl,
 } from "./authClient";
@@ -12,6 +13,8 @@ import {
 function memoryStorage(initial = {}) {
   const values = new Map(Object.entries(initial));
   return {
+    get length() { return values.size; },
+    key: vi.fn((index) => [...values.keys()][index] ?? null),
     getItem: vi.fn((key) => values.get(key) ?? null),
     setItem: vi.fn((key, value) => values.set(key, String(value))),
     removeItem: vi.fn((key) => values.delete(key)),
@@ -34,6 +37,19 @@ describe("canonical authenticated client", () => {
     vi.unstubAllGlobals();
   });
 
+  it("removes sensitive aid drafts on logout and credential replacement, leaving other wizards", () => {
+    const key = "crown_wizard_draft:financial-aid-setup:school-a:user-a";
+    sessionStorage.setItem(key, "secret");
+    localStorage.setItem("crown_wizard_draft:financial-aid-setup:school-a", "legacy");
+    localStorage.setItem("crown_wizard_draft:billing-setup", "preserve");
+    clearBrowserAuthState();
+    expect(sessionStorage.getItem(key)).toBeNull();
+    expect(localStorage.getItem("crown_wizard_draft:financial-aid-setup:school-a")).toBeNull();
+    expect(localStorage.getItem("crown_wizard_draft:billing-setup")).toBe("preserve");
+    sessionStorage.setItem(key, "new draft");
+    setAccessToken("new-token");
+    expect(sessionStorage.getItem(key)).toBeNull();
+  });
   it("routes relative API paths through the configured Azure API base", () => {
     vi.stubEnv("VITE_API_BASE_URL", "https://crown-api-prod.azurewebsites.net/");
     expect(resolveApiUrl("/api/v1/dashboards/summary/")).toBe(
