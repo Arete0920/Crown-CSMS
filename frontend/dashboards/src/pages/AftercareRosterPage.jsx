@@ -313,7 +313,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
   async function handleCheckin(studentId) {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || checkinInFlightRef.current || sessionRef.current !== careSession || !sameIdentity() || rosterScope !== identity) return;
     const original = currentRoster?.rows.find((row) => String(row.student_id) === String(studentId));
-    if (!original || original.attendance || original.unscheduled) return;
+    if (!original || original.attendance || original.unscheduled || original.unresolved_other_session) return;
     const marker = beginCustodyBarrier(identity, careSession, "checkin", studentId, {
       careDate: currentRoster.date,
     });
@@ -347,6 +347,8 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
 
   async function beginCheckout(studentId) {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || sessionRef.current !== careSession || isMorning || !sameIdentity() || rosterScope !== identity) return;
+    const original = currentRoster?.rows.find((row) => String(row.student_id) === String(studentId));
+    if (!original || original.unresolved_other_session) return;
     const epoch = scopeEpochRef.current;
     setPickupBusy(true);
     setError(null);
@@ -366,6 +368,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || isMorning || pickup?.careSession !== careSession || !pickup?.contactId || !pickup.verified
         || !sameIdentity() || rosterScope !== identity) return;
     const original = currentRoster?.rows.find((row) => String(row.student_id) === String(pickup.studentId));
+    if (!original || original.unresolved_other_session) return;
     const marker = beginCustodyBarrier(identity, careSession, "checkout", pickup.studentId, {
       careDate: original?.attendance?.date,
       attendanceId: original?.attendance?.id,
@@ -409,6 +412,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
     if (custodyWarning || readCustodyBarrier() || operationInFlightRef.current || !isMorning || handoff?.careSession !== careSession || !handoff?.acknowledged
         || !sameIdentity() || rosterScope !== identity) return;
     const original = currentRoster?.rows.find((row) => String(row.student_id) === String(handoff.studentId));
+    if (!original || original.unresolved_other_session) return;
     const marker = beginCustodyBarrier(identity, careSession, "school_handoff", handoff.studentId, {
       careDate: original?.attendance?.date,
       attendanceId: original?.attendance?.id,
@@ -541,6 +545,7 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                       <td style={TD}>
                         {row.student_name || row.student_id}
                         {row.unscheduled && <div role="alert">Not on an active care schedule; review this custody record.</div>}
+                        {row.unresolved_other_session && <div role="alert">Unresolved {row.unresolved_other_session} custody — supervisor reconciliation required.</div>}
                       </td>
                       <td style={TD}>{row.enrollment?.billing_model}</td>
                       <td style={TD}>{statusChip}</td>
@@ -551,13 +556,13 @@ export default function AftercareRosterPage({ careSession = "PM" }) {
                           : "-"}
                       </td>
                       <td style={TD}>
-                        {!hasCheckin && !row.unscheduled && !custodyWarning && !readCustodyBarrier() && (
+                        {!hasCheckin && !row.unscheduled && !row.unresolved_other_session && !custodyWarning && !readCustodyBarrier() && (
                           <button type="button" style={BTN_OUT} disabled={Boolean(checkinBusyId) || custodyWritePending || Boolean(readCustodyBarrier()) || loading || Boolean(custodyWarning)} onClick={() => handleCheckin(row.student_id)}>{checkinBusyId === row.student_id ? "Checking In..." : "Check In"}</button>
                         )}
-                        {hasCheckin && !hasCheckout && hasVerifiableRecord && !isMorning && !custodyWarning && !readCustodyBarrier() && (
+                        {hasCheckin && !hasCheckout && hasVerifiableRecord && !isMorning && !row.unresolved_other_session && !custodyWarning && !readCustodyBarrier() && (
                           <button style={BTN_PRIM} onClick={() => beginCheckout(row.student_id)} disabled={pickupBusy || custodyWritePending || Boolean(readCustodyBarrier()) || Boolean(custodyWarning)}>Verify Pickup</button>
                         )}
-                        {hasCheckin && !hasCheckout && hasVerifiableRecord && isMorning && !custodyWarning && !readCustodyBarrier() && (
+                        {hasCheckin && !hasCheckout && hasVerifiableRecord && isMorning && !row.unresolved_other_session && !custodyWarning && !readCustodyBarrier() && (
                           <button style={BTN_PRIM} onClick={() => setHandoff({ studentId: row.student_id, careSession, acknowledged: false })} disabled={handoffBusy || custodyWritePending || Boolean(readCustodyBarrier()) || Boolean(custodyWarning)}>Acknowledge School Handoff</button>
                         )}
                         {hasCheckin && !hasCheckout && !hasVerifiableRecord && (
