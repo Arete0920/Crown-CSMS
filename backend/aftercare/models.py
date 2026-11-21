@@ -256,3 +256,9 @@ from .daycare_checkin_models import (  # noqa: E402,F401
     DaycareRoomStaffCoverage, DaycareAttendance, DaycareReentryAuthorization,
 )
 from .daycare_release_models import DaycareRelease  # noqa: E402,F401
+
+# Default-off, append-only review evidence (never activates daycare coverage).
+from .daycare_approval_models import (
+    DaycareStaffQualificationReview, DaycareRoomPolicyReview,
+    DaycareStaffAssignmentReview,
+)
