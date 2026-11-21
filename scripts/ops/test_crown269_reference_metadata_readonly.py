@@ -203,12 +203,11 @@ class MetadataReadOnlyTests(unittest.TestCase):
         import yaml
         data = yaml.load(WF.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
         inputs = data["on"]["workflow_dispatch"]["inputs"]
-        self.assertEqual(len(inputs), 11)
-        self.assertEqual(inputs["dev_release_forensics"]["type"], "boolean")
-        self.assertEqual(inputs["dev_release_forensics"]["default"], "false")
+        self.assertEqual(len(inputs), 10)
         self.assertEqual(inputs["confirm_dev_support"]["type"], "string")
         self.assertEqual(inputs["confirm_dev_support"]["default"], "")
         self.assertIn("crown269-reference-metadata-only", inputs["confirm_dev_support"]["description"])
+        self.assertIn("dev-release-forensics-only", inputs["confirm_dev_support"]["description"])
         self.assertEqual(data["jobs"]["two-fixed-reference-gets"]["permissions"]["id-token"], "write")
 
     def test_cli_failure_does_not_echo_output(self):

@@ -147,15 +147,16 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
         self.steps = self.job["steps"]
 
     def test_manual_opt_in_is_off_by_default_and_excludes_other_jobs(self):
-        self.assertEqual(self.inputs["dev_release_forensics"]["type"], "boolean")
-        self.assertFalse(self.inputs["dev_release_forensics"]["default"])
+        self.assertEqual(len(self.inputs), 10)
+        self.assertEqual(self.inputs["confirm_dev_support"]["type"], "string")
+        self.assertEqual(self.inputs["confirm_dev_support"]["default"], "")
         self.assertIn("github.event_name == 'workflow_dispatch'", self.job["if"])
         self.assertIn("github.ref == 'refs/heads/main'", self.job["if"])
-        self.assertIn("inputs.dev_release_forensics == true", self.job["if"])
+        self.assertIn("inputs.confirm_dev_support == 'dev-release-forensics-only'", self.job["if"])
         self.assertEqual(self.job["environment"], "dev")
         self.assertEqual(self.job["permissions"], {"contents": "read", "id-token": "write"})
         for name in ("two-fixed-reference-gets", "inspect", "stage-reviewed-dev-migrations"):
-            self.assertIn("inputs.dev_release_forensics != true", self.jobs[name]["if"])
+            self.assertIn("inputs.confirm_dev_support != 'dev-release-forensics-only'", self.jobs[name]["if"])
 
     def test_azure_login_follows_source_and_authority_guards(self):
         names = [step.get('name', '') for step in self.steps]
@@ -166,7 +167,8 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
         self.assertIn('test ' + chr(34) + chr(36) + 'EXPECTED' + chr(34) + ' = ' + chr(34) + chr(36) + 'GITHUB_SHA' + chr(34), guard)
         for key in ('APPLY_SUPPORT', 'APPLY_LEGACY', 'APPLY_BLACKLIST', 'COMPARE', 'INSPECT'):
             self.assertIn('test ' + chr(34) + chr(36) + key + chr(34) + ' = false', guard)
-        for key in ('CONFIRM_SUPPORT', 'CONFIRM_LEGACY', 'CONFIRM_BLACKLIST', 'RECEIPT'):
+        self.assertIn('test "$CONFIRM_SUPPORT" = dev-release-forensics-only', guard)
+        for key in ('CONFIRM_LEGACY', 'CONFIRM_BLACKLIST', 'RECEIPT'):
             self.assertIn('test -z ' + chr(34) + chr(36) + key + chr(34), guard)
 
     def test_mixed_authority_fails_before_login(self):
@@ -176,7 +178,7 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
             "GITHUB_SHA": SHA, "EXPECTED": SHA,
             "APPLY_SUPPORT": "false", "APPLY_LEGACY": "false",
             "APPLY_BLACKLIST": "false", "COMPARE": "false",
-            "INSPECT": "false", "CONFIRM_SUPPORT": "",
+            "INSPECT": "false", "CONFIRM_SUPPORT": "dev-release-forensics-only",
             "CONFIRM_LEGACY": "", "CONFIRM_BLACKLIST": "",
             "RECEIPT": "",
         }
@@ -192,6 +194,7 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
                        {"APPLY_BLACKLIST": "true"},
                        {"COMPARE": "true"},
                        {"INSPECT": "true"},
+                       {"CONFIRM_SUPPORT": ""},
                        {"CONFIRM_SUPPORT": "migrate-dev-support"},
                        {"RECEIPT": RECOVERY}):
             with self.subTest(change=change):

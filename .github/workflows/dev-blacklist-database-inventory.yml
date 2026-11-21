@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       confirm_dev_support:
-        description: "Type migrate-dev-support for schema changes; or crown269-reference-metadata-only for #269 READ-ONLY"
+        description: "Type migrate-dev-support, crown269-reference-metadata-only, or dev-release-forensics-only"
         required: false
         type: string
         default: ""
@@ -62,11 +62,6 @@ on:
         required: false
         type: string
         default: ""
-      dev_release_forensics:
-        description: "Manual read-only DEV image and Activity Log report"
-        required: false
-        type: boolean
-        default: false
       dev_recovery_receipt:
         description: "Operator-verified current DEV backup/restore receipt URL; no secrets"
         required: false
@@ -80,7 +75,7 @@ concurrency:
 jobs:
   two-fixed-reference-gets:
     # Never run as part of an existing inventory push/PR, migration stage or DEV deployment.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.confirm_dev_support == 'crown269-reference-metadata-only' && inputs.dev_release_forensics != true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.confirm_dev_support == 'crown269-reference-metadata-only'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 8
@@ -175,7 +170,7 @@ jobs:
           rm -f "$RUNNER_TEMP/crown269-dev-reference-metadata.json"
           az logout >/dev/null 2>&1 || true
   dev-release-forensics:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.dev_release_forensics == true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == 'Arete0920/Crown-CSMS' && inputs.confirm_dev_support == 'dev-release-forensics-only'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 10
@@ -206,7 +201,7 @@ jobs:
           test "$APPLY_BLACKLIST" = false
           test "$COMPARE" = false
           test "$INSPECT" = false
-          test -z "$CONFIRM_SUPPORT"
+          test "$CONFIRM_SUPPORT" = dev-release-forensics-only
           test -z "$CONFIRM_LEGACY"
           test -z "$CONFIRM_BLACKLIST"
           test -z "$RECEIPT"
@@ -334,7 +329,7 @@ jobs:
           python -m unittest discover -s scripts/ops -p test_read_dev_school_census.py -v
           python -m unittest discover -s scripts/ops -p test_crown269_reference_metadata_readonly.py -v
   inspect:
-    if: github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true && inputs.dev_release_forensics != true
+    if: github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && inputs.apply_reviewed_support != true && inputs.apply_reviewed_legacy_refresh != true && inputs.apply_reviewed_blacklist != true && inputs.confirm_dev_support != 'dev-release-forensics-only'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 15
@@ -456,7 +451,7 @@ jobs:
         run: az logout
 
   stage-reviewed-dev-migrations:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true) && inputs.dev_release_forensics != true
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_dev_support != 'crown269-reference-metadata-only' && (inputs.apply_reviewed_support == true || inputs.apply_reviewed_legacy_refresh == true || inputs.apply_reviewed_blacklist == true) && inputs.confirm_dev_support != 'dev-release-forensics-only'
     runs-on: ubuntu-latest
     environment: dev
     timeout-minutes: 20
