@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       confirm_dev_support:
-        description: "Type migrate-dev-support, crown269-reference-metadata-only, or dev-release-forensics-only"
+        description: "Type migrate-dev-support for schema changes; crown269-reference-metadata-only for #269 READ-ONLY; or dev-release-forensics-only for Azure DEV READ-ONLY"
         required: false
         type: string
         default: ""
