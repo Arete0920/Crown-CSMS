@@ -166,7 +166,149 @@ class DevReleaseForensicsSafetyTests(unittest.TestCase):
         self.assertIn('test "$EXPECTED" = "$GITHUB_SHA"', guard)
         for key in ("APPLY_SUPPORT", "APPLY_LEGACY", "APPLY_BLACKLIST",
                     "COMPARE", "INSPECT"):
-            self.assertIn('test "    unittest.main()
+            self.assertIn('test "
+        for key in ("CONFIRM_SUPPORT", "CONFIRM_LEGACY", "CONFIRM_BLACKLIST", "RECEIPT"):
+            self.assertIn('test -z "
+
+    def test_mixed_authority_fails_before_login(self):
+        guard = self.steps[0]["run"]
+        env = {
+            **os.environ, "GITHUB_REPOSITORY_ID": "1339719218",
+            "GITHUB_SHA": SHA, "EXPECTED": SHA,
+            "APPLY_SUPPORT": "false", "APPLY_LEGACY": "false",
+            "APPLY_BLACKLIST": "false", "COMPARE": "false",
+            "INSPECT": "false", "CONFIRM_SUPPORT": "",
+            "CONFIRM_LEGACY": "", "CONFIRM_BLACKLIST": "",
+            "RECEIPT": "",
+        }
+        def run(**overrides):
+            return subprocess.run(["bash", "-e", "-c", guard],
+                                  env={**env, **overrides}, capture_output=True,
+                                  text=True, timeout=4).returncode
+        self.assertEqual(run(), 0)
+        for change in ({"GITHUB_REPOSITORY_ID": "123"},
+                       {"EXPECTED": "b" * 40},
+                       {"APPLY_SUPPORT": "true"},
+                       {"APPLY_LEGACY": "true"},
+                       {"APPLY_BLACKLIST": "true"},
+                       {"COMPARE": "true"},
+                       {"INSPECT": "true"},
+                       {"CONFIRM_SUPPORT": "migrate-dev-support"},
+                       {"RECEIPT": RECOVERY}):
+            with self.subTest(change=change):
+                self.assertNotEqual(run(**change), 0)
+
+    def test_collector_uses_only_read_commands_and_redacted_metadata(self):
+        collector = next(s["run"] for s in self.steps
+                         if s.get("name") == "Collect sanitized DEV configuration-change evidence")
+        self.assertIn('"activity-log", "list"', collector)
+        self.assertIn('"webapp", "config", "show"', collector)
+        self.assertIn('"webapp", "config", "appsettings", "list"', collector)
+        self.assertIn("caller_hash", collector)
+        self.assertNotIn('"caller": caller', collector)
+        self.assertIn('report["activity"]["status"] != "COLLECTED"', collector)
+        self.assertIn("any(value == \"UNVERIFIED\"", collector)
+        self.assertNotIn("az webapp config set", collector)
+        self.assertNotIn("az webapp config container set", collector)
+
+
+if __name__ == "__main__":
+    unittest.main()
+ + key + '" = false', guard)
+        for key in ("CONFIRM_SUPPORT", "CONFIRM_LEGACY", "CONFIRM_BLACKLIST", "RECEIPT"):
+            self.assertIn('test -z "    unittest.main()
+ + key + '"', guard)
+
+    def test_mixed_authority_fails_before_login(self):
+        guard = self.steps[0]["run"]
+        env = {
+            **os.environ, "GITHUB_REPOSITORY_ID": "1339719218",
+            "GITHUB_SHA": SHA, "EXPECTED": SHA,
+            "APPLY_SUPPORT": "false", "APPLY_LEGACY": "false",
+            "APPLY_BLACKLIST": "false", "COMPARE": "false",
+            "INSPECT": "false", "CONFIRM_SUPPORT": "",
+            "CONFIRM_LEGACY": "", "CONFIRM_BLACKLIST": "",
+            "RECEIPT": "",
+        }
+        def run(**overrides):
+            return subprocess.run(["bash", "-e", "-c", guard],
+                                  env={**env, **overrides}, capture_output=True,
+                                  text=True, timeout=4).returncode
+        self.assertEqual(run(), 0)
+        for change in ({"GITHUB_REPOSITORY_ID": "123"},
+                       {"EXPECTED": "b" * 40},
+                       {"APPLY_SUPPORT": "true"},
+                       {"APPLY_LEGACY": "true"},
+                       {"APPLY_BLACKLIST": "true"},
+                       {"COMPARE": "true"},
+                       {"INSPECT": "true"},
+                       {"CONFIRM_SUPPORT": "migrate-dev-support"},
+                       {"RECEIPT": RECOVERY}):
+            with self.subTest(change=change):
+                self.assertNotEqual(run(**change), 0)
+
+    def test_collector_uses_only_read_commands_and_redacted_metadata(self):
+        collector = next(s["run"] for s in self.steps
+                         if s.get("name") == "Collect sanitized DEV configuration-change evidence")
+        self.assertIn('"activity-log", "list"', collector)
+        self.assertIn('"webapp", "config", "show"', collector)
+        self.assertIn('"webapp", "config", "appsettings", "list"', collector)
+        self.assertIn("caller_hash", collector)
+        self.assertNotIn('"caller": caller', collector)
+        self.assertIn('report["activity"]["status"] != "COLLECTED"', collector)
+        self.assertIn("any(value == \"UNVERIFIED\"", collector)
+        self.assertNotIn("az webapp config set", collector)
+        self.assertNotIn("az webapp config container set", collector)
+
+
+if __name__ == "__main__":
+    unittest.main()
+ + key + '"', guard)
+
+    def test_mixed_authority_fails_before_login(self):
+        guard = self.steps[0]["run"]
+        env = {
+            **os.environ, "GITHUB_REPOSITORY_ID": "1339719218",
+            "GITHUB_SHA": SHA, "EXPECTED": SHA,
+            "APPLY_SUPPORT": "false", "APPLY_LEGACY": "false",
+            "APPLY_BLACKLIST": "false", "COMPARE": "false",
+            "INSPECT": "false", "CONFIRM_SUPPORT": "",
+            "CONFIRM_LEGACY": "", "CONFIRM_BLACKLIST": "",
+            "RECEIPT": "",
+        }
+        def run(**overrides):
+            return subprocess.run(["bash", "-e", "-c", guard],
+                                  env={**env, **overrides}, capture_output=True,
+                                  text=True, timeout=4).returncode
+        self.assertEqual(run(), 0)
+        for change in ({"GITHUB_REPOSITORY_ID": "123"},
+                       {"EXPECTED": "b" * 40},
+                       {"APPLY_SUPPORT": "true"},
+                       {"APPLY_LEGACY": "true"},
+                       {"APPLY_BLACKLIST": "true"},
+                       {"COMPARE": "true"},
+                       {"INSPECT": "true"},
+                       {"CONFIRM_SUPPORT": "migrate-dev-support"},
+                       {"RECEIPT": RECOVERY}):
+            with self.subTest(change=change):
+                self.assertNotEqual(run(**change), 0)
+
+    def test_collector_uses_only_read_commands_and_redacted_metadata(self):
+        collector = next(s["run"] for s in self.steps
+                         if s.get("name") == "Collect sanitized DEV configuration-change evidence")
+        self.assertIn('"activity-log", "list"', collector)
+        self.assertIn('"webapp", "config", "show"', collector)
+        self.assertIn('"webapp", "config", "appsettings", "list"', collector)
+        self.assertIn("caller_hash", collector)
+        self.assertNotIn('"caller": caller', collector)
+        self.assertIn('report["activity"]["status"] != "COLLECTED"', collector)
+        self.assertIn("any(value == \"UNVERIFIED\"", collector)
+        self.assertNotIn("az webapp config set", collector)
+        self.assertNotIn("az webapp config container set", collector)
+
+
+if __name__ == "__main__":
+    unittest.main()
  + key + '" = false', guard)
         for key in ("CONFIRM_SUPPORT", "CONFIRM_LEGACY", "CONFIRM_BLACKLIST", "RECEIPT"):
             self.assertIn('test -z "    unittest.main()
