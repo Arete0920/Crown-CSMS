@@ -23,7 +23,7 @@ pytestmark = pytest.mark.django_db
 @pytest.fixture
 def camp_case(django_user_model):
     when = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
-    school = School.objects.create(name="Safe Camp Checkin")
+    school = School.objects.create(name="Safe Camp Checkin", timezone="UTC")
     SchoolModule.objects.create(school=school, module_key="little_lambs", status="active", expiry_date=timezone.now() + timedelta(days=30))
     other_school = School.objects.create(name="Unrelated Camp")
     household = Household.objects.create(school_id=school.id, name="Synthetic Family")
@@ -55,7 +55,7 @@ def camp_case(django_user_model):
         username="synthetic-camp-checkin-staff", email="camp-checkin-staff@example.test", password="unused", school=school,
     )
     assignment = SummerCampStaffAssignment.objects.create(
-        school=school, session=session, staff_user=staff, role="COUNSELOR",
+        school=school, session=session, staff_user=staff, role="COUNSELOR", assigned_date=when.date(),
     )
     reviewer = django_user_model.objects.create_user(
         username="synthetic-camp-credential-reviewer", email="camp-credential-reviewer@example.test", password="unused", school=school,

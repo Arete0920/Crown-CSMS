@@ -32,7 +32,8 @@ export default function Step1Year({ context, setContext, goNext, stepIndex, tota
       });
       goNext();
     } catch (e) {
-      setError(e.body?.error || e.message || "Configuration failed.");
+      const data = e.response?.data;
+      setError(data?.error || data?.detail || (Array.isArray(data?.errors) ? data.errors.join("; ") : null) || e.message || "Configuration failed.");
     } finally {
       setLoading(false);
     }

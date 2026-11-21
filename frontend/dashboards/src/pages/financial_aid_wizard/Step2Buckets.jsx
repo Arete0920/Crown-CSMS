@@ -31,7 +31,8 @@ export default function Step2Buckets({ context, setContext, goNext, goPrev, step
       setContext((prev) => ({ ...prev, buckets: selected, bucketsData: data }));
       goNext();
     } catch (e) {
-      setError(e.body?.error || e.message || "Failed to save buckets.");
+      const data = e.response?.data;
+      setError(data?.error || data?.detail || (Array.isArray(data?.errors) ? data.errors.join("; ") : null) || e.message || "Failed to save buckets.");
     } finally {
       setLoading(false);
     }
