@@ -42,11 +42,11 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
               <div style={{ fontWeight: 600 }}>{buckets.join(", ") || "None"}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Total Awards</div>
+              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Staged Awards</div>
               <div style={{ fontWeight: 600 }}>{awards.length}</div>
             </div>
             <div>
-              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Total Aid Amount</div>
+              <div style={{ fontSize: 11, color: "var(--crown-muted)" }}>Total Staged Offer Amount</div>
               <div style={{ fontWeight: 600 }}><Currency value={grandTotal} /></div>
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function Step4Preview({ context, goNext, goPrev, stepIndex, total
 
           {awards.length === 0 && (
             <div style={{ color: "var(--crown-muted)", fontSize: 13 }}>
-              No awards staged — this cycle will record zero disbursements.
+              No awards staged — No offered awards will be created by this cycle.
             </div>
           )}
         </div>

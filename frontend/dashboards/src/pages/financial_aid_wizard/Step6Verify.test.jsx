@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Step6Verify from "./Step6Verify.jsx";
 import { verifyAidSetup } from "../../api/aid_wizard.js";
@@ -67,6 +67,32 @@ describe("Financial Aid setup verification truth", () => {
 
     expect((await screen.findByRole("alert")).textContent).toContain(`Financial aid setup is not verified. Status: ${status}.`);
     expect(screen.queryByText(/Financial aid setup complete!/)).toBeNull();
+  });
+
+  it("resets the actual saved wizard draft and returns to the first step", () => {
+    const setStepIndex = vi.fn();
+    const removeItem = vi.spyOn(Storage.prototype, "removeItem");
+    const setContext = vi.fn();
+    render(
+      <Step6Verify
+        context={{
+          sessionId: SESSION,
+          verify: { session_id: SESSION, status: "verified", awards_created: 0, awards_skipped: 0, errors: [] },
+        }}
+        setContext={setContext}
+        setStepIndex={setStepIndex}
+        stepIndex={5}
+        totalSteps={6}
+        steps={["Year", "Buckets", "Awards", "Preview", "Commit", "Verify"]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Start New Aid Cycle" }));
+
+    expect(removeItem).toHaveBeenCalledWith("crown_wizard_draft:financial-aid-setup");
+    expect(setContext).toHaveBeenCalledWith({});
+    expect(setStepIndex).toHaveBeenCalledWith(0);
+    removeItem.mockRestore();
   });
 
   it("shows a rejected API response without claiming completion", async () => {
